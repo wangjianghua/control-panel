@@ -94,6 +94,41 @@ code unsigned char con_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
 };
 
+bool uart_recv_align(void)
+{
+    u8 i, offset;
+
+
+    if(uart_rx_count < 3)
+    {
+        return (FALSE);
+    }
+    
+    for(i = 0; i < uart_rx_count; i++)
+    {
+        if((0xF7 == UART_RX_BUF[i]) && (0x17 == UART_RX_BUF[i + 1]))
+        {
+            offset = i;
+
+            break;
+        }
+    }
+
+    if(i < uart_rx_count)
+    {
+        for(i = 0; i < uart_rx_count; i++) //Êý¾Ý×ó¶ÔÆë
+        {
+            UART_RX_BUF[i] = UART_RX_BUF[i + offset];
+        }
+
+        return (TRUE);
+    }
+    else
+    {
+        return (FALSE);
+    }
+}
+
 void vfd_con(void)
 {
     s8 i;
@@ -266,7 +301,7 @@ void vfd_con(void)
 
         if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
         {
-            //ECHO();
+            uart_recv_align();
                         
             if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
             {
@@ -489,6 +524,8 @@ void form_home_callback(void)
         
         if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
         {
+            uart_recv_align();
+            
             if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
             {
                 switch(i)
@@ -645,6 +682,8 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
     }
 
     form_home_callback();
+
+    return (TRUE);
 }
 
 code unsigned char form_ref_cmd[MAX_FORM_REF_CMD][32] = {
@@ -758,6 +797,8 @@ void form_ref_callback(void)
         
         if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
         {
+            uart_recv_align();
+            
             if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
             {
                 switch(i)
@@ -862,6 +903,8 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
     }
 
     form_ref_callback();
+
+    return (TRUE);
 }
 
 code unsigned char form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
@@ -975,6 +1018,8 @@ void form_ref_val_callback(void)
         
         if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
         {
+            uart_recv_align();
+            
             if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
             {
                 switch(i)
@@ -1097,6 +1142,8 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
     }
 
     form_ref_val_callback();
+
+    return (TRUE);
 }
 
 void CPTask(void) _task_ CP_TASK
