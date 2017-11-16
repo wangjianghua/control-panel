@@ -556,32 +556,32 @@ void form_home_callback(void)
                         {
                         case FORM_ID_HOME1:
                             LED_BUFF[0] = led_tab[g_cp_para.disp_para1 % 10 + 16];
-                            LED_BUFF[1] = led_tab[g_cp_para.disp_para1 % 100 / 10 + 16];
-                            LED_BUFF[2] = led_tab[g_cp_para.disp_para1 % 1000 / 100 + 16];
-                            LED_BUFF[3] = 0xff;
-                            LED_BUFF[4] = 0xff;
+                            LED_BUFF[1] = (g_cp_para.disp_para1 > 9) ? (led_tab[g_cp_para.disp_para1 % 100 / 10 + 16]) : (0xff);
+                            LED_BUFF[2] = (g_cp_para.disp_para1 > 99) ? (led_tab[g_cp_para.disp_para1 % 1000 / 100 + 16]) : (0xff);
+                            LED_BUFF[3] = (g_cp_para.disp_para1 > 999) ? (led_tab[g_cp_para.disp_para1 % 10000 / 1000 + 16]) : (0xff);
+                            LED_BUFF[4] = (g_cp_para.disp_para1 > 9999) ? (led_tab[g_cp_para.disp_para1 % 100000 / 10000 + 16]) : (0xff);
                             LED_BUFF[5] |= LED_V_A_Hz_MASK;
                             LED_BUFF[5] &= ~LED_V_MASK;
                             LEDOE = 0;
                             break;
 
                         case FORM_ID_HOME2:
-                            LED_BUFF[0] = led_tab[g_cp_para.disp_para3 % 10 + 16];
-                            LED_BUFF[1] = led_tab[g_cp_para.disp_para3 % 100 / 10 + 16] & (~LED_DP_MASK);
-                            LED_BUFF[2] = led_tab[g_cp_para.disp_para3 % 1000 / 100 + 16];
-                            LED_BUFF[3] = 0xff;
-                            LED_BUFF[4] = 0xff;
+                            LED_BUFF[0] = led_tab[g_cp_para.disp_para2 % 10 + 16];
+                            LED_BUFF[1] = led_tab[g_cp_para.disp_para2 % 100 / 10 + 16] & (~LED_DP_MASK);
+                            LED_BUFF[2] = (g_cp_para.disp_para2 > 99) ? (led_tab[g_cp_para.disp_para2 % 1000 / 100 + 16]) : (0xff);
+                            LED_BUFF[3] = (g_cp_para.disp_para2 > 999) ? (led_tab[g_cp_para.disp_para2 % 10000 / 1000 + 16]) : (0xff);
+                            LED_BUFF[4] = (g_cp_para.disp_para2 > 9999) ? (led_tab[g_cp_para.disp_para2 % 100000 / 10000 + 16]) : (0xff);
                             LED_BUFF[5] |= LED_V_A_Hz_MASK;
                             LED_BUFF[5] &= ~LED_TORQUE_MASK;
                             LEDOE = 0;
                             break;
 
                         case FORM_ID_HOME3:
-                            LED_BUFF[0] = led_tab[g_cp_para.disp_para2 % 10 + 16];
-                            LED_BUFF[1] = led_tab[g_cp_para.disp_para2 % 100 / 10 + 16] & (~LED_DP_MASK);
-                            LED_BUFF[2] = led_tab[g_cp_para.disp_para2 % 1000 / 100 + 16];
-                            LED_BUFF[3] = led_tab[g_cp_para.disp_para2 % 10000 / 1000 + 16];
-                            LED_BUFF[4] = 0xff;
+                            LED_BUFF[0] = led_tab[g_cp_para.disp_para3 % 10 + 16];
+                            LED_BUFF[1] = led_tab[g_cp_para.disp_para3 % 100 / 10 + 16] & (~LED_DP_MASK);
+                            LED_BUFF[2] = (g_cp_para.disp_para3 > 99) ? (led_tab[g_cp_para.disp_para3 % 1000 / 100 + 16]) : (0xff);
+                            LED_BUFF[3] = (g_cp_para.disp_para3 > 999) ? (led_tab[g_cp_para.disp_para3 % 10000 / 1000 + 16]) : (0xff);
+                            LED_BUFF[4] = (g_cp_para.disp_para3 > 9999) ? (led_tab[g_cp_para.disp_para3 % 100000 / 10000 + 16]) : (0xff);
                             LED_BUFF[5] |= LED_V_A_Hz_MASK;
                             LED_BUFF[5] &= ~LED_Hz_MASK;
                             LEDOE = 0;
@@ -1069,9 +1069,9 @@ void form_ref_val_callback(void)
     
     LED_BUFF[0] = led_tab[temp % 10 + 16];
     LED_BUFF[1] = led_tab[temp % 100 / 10 + 16] & (~LED_DP_MASK);
-    LED_BUFF[2] = led_tab[temp % 1000 / 100 + 16];
-    LED_BUFF[3] = led_tab[temp % 10000 / 1000 + 16];    
-    LED_BUFF[4] = 0xff;
+    LED_BUFF[2] = (temp > 99) ? (led_tab[temp % 1000 / 100 + 16]) : (0xff);
+    LED_BUFF[3] = (temp > 999) ? (led_tab[temp % 10000 / 1000 + 16]) : (0xff);
+    LED_BUFF[4] = (temp > 9999) ? (led_tab[temp % 100000 / 10000 + 16]) : (0xff);
     LED_BUFF[5] |= LED_V_A_Hz_MASK;
     LED_BUFF[5] &= ~LED_Hz_MASK;
     LEDOE = 0;
@@ -1119,6 +1119,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         break;
         
     case KEY_MSG_EXIT:
+        g_cp_para.ref_temp = g_cp_para.ref;
         form_id = FORM_ID_REF;
         break;
 
