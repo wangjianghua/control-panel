@@ -99,7 +99,7 @@ bool uart_recv_align(void)
     u8 i, offset;
 
 
-    if(uart_rx_count < 3)
+    if(uart_rx_count < 2)
     {
         return (FALSE);
     }
@@ -120,6 +120,8 @@ bool uart_recv_align(void)
         {
             UART_RX_BUF[i] = UART_RX_BUF[i + offset];
         }
+
+        uart_rx_count -= offset;
 
         return (TRUE);
     }
