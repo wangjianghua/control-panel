@@ -54,7 +54,7 @@ code unsigned int wCRC16Table[256] = {
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-code unsigned char special_cmd[][32] = {
+code u8 special_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
 };
 
@@ -62,9 +62,9 @@ bit runstatus;
 
 CP g_cp_para;
 
-unsigned int CRC16Calculate(unsigned char*J_u8DataIn, unsigned int J_u16DataLen)  
+unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen)  
 {  
-    unsigned int J_u16Result = 0xffff;  
+    unsigned int J_u16Result = 0xffff;
     unsigned int J_u16TableNo = 0;
     unsigned int J_u16Index;  
     
@@ -83,7 +83,7 @@ unsigned int CRC16Calculate(unsigned char*J_u8DataIn, unsigned int J_u16DataLen)
     return (J_u16Result);  
 }
 
-code unsigned char con_cmd[][32] = {
+code u8 con_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x90, 0x82, 0x00, 0x02},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x01},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x17, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15, 0x38, 0x5C},
@@ -165,8 +165,8 @@ void vfd_con(void)
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
             {
-                UART_TX_BUF[15] = (unsigned char)(g_cp_para.count >> 8);
-                UART_TX_BUF[16] = (unsigned char)(g_cp_para.count & 0xff);
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
     			if(TRUE == g_cp_para.reset)
     			{
@@ -179,13 +179,13 @@ void vfd_con(void)
     			{
     				g_cp_para.ref_chang = FALSE;
                     
-    				UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref_temp >> 8);
-    				UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref_temp >> 0);
+    				UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+    				UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
     			}
                 else
     			{
-    				UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref >> 8);
-    				UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref >> 0);
+    				UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+    				UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
     			}
 
     			if(TRUE == g_cp_para.stop)
@@ -222,8 +222,8 @@ void vfd_con(void)
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
             {
-                UART_TX_BUF[15] = (unsigned char)(g_cp_para.count >> 8);
-                UART_TX_BUF[16] = (unsigned char)(g_cp_para.count & 0xff);
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
     			if(TRUE == g_cp_para.reset)
     			{
@@ -236,13 +236,13 @@ void vfd_con(void)
     			{
     				g_cp_para.ref_chang = FALSE;
                     
-    				UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref_temp >> 8);
-    				UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref_temp >> 0);
+    				UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+    				UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
     			}
                 else
     			{
-    				UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref >> 8);
-    				UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref >> 0);
+    				UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+    				UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
     			}
 
     			if(TRUE == g_cp_para.stop)
@@ -281,8 +281,8 @@ void vfd_con(void)
         }
 
         crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (unsigned char)(crc & 0xff);
-        UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
 
         uart_send(len);
 
@@ -315,7 +315,7 @@ void vfd_con(void)
                 case 5:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
-                        g_cp_para.count = (UART_RX_BUF[7] << 8) | (UART_RX_BUF[8]);
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
                         if (UART_RX_BUF[11] & 0x80)
@@ -323,7 +323,7 @@ void vfd_con(void)
                             g_cp_para.reset = TRUE;
                         }
 
-                        g_cp_para.ref = (UART_RX_BUF[15] << 8) | (UART_RX_BUF[16]);
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
 
                         g_cp_para.oper = UART_RX_BUF[11] & 0x10;
 
@@ -341,7 +341,7 @@ void vfd_con(void)
                 case 7:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
-                        g_cp_para.count = (UART_RX_BUF[7] << 8) | (UART_RX_BUF[8]);
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
                         if (UART_RX_BUF[11] & 0x80)
@@ -349,7 +349,7 @@ void vfd_con(void)
                             g_cp_para.reset = TRUE;
                         }
 
-                        g_cp_para.ref = (UART_RX_BUF[15] << 8) | (UART_RX_BUF[16]);
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     break;
                 
@@ -408,7 +408,7 @@ void MENU_Init(void)
     form_home(KEY_MSG_NONE, FORM_MSG_DATA);
 }
 
-code unsigned char form_home_cmd[MAX_FORM_HOME_CMD][32] = {
+code u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
     /* FORM_HOME_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_HOME_READ_CMD */
@@ -438,8 +438,8 @@ void form_home_callback(void)
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
             {
-                UART_TX_BUF[15] = (unsigned char)(g_cp_para.count >> 8);
-                UART_TX_BUF[16] = (unsigned char)(g_cp_para.count & 0xff);
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
                 if(TRUE == g_cp_para.reset)
                 {
@@ -452,13 +452,13 @@ void form_home_callback(void)
                 {
                     g_cp_para.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref_temp >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref_temp >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
                 }
                 else
                 {
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
                 }
 
                 if(TRUE == g_cp_para.stop)
@@ -503,8 +503,8 @@ void form_home_callback(void)
         }
 
         crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (unsigned char)(crc & 0xff);
-        UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
         
         uart_send(len);
 
@@ -533,7 +533,7 @@ void form_home_callback(void)
                 case FORM_HOME_SET_CMD:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
-                        g_cp_para.count = (UART_RX_BUF[7] << 8) | (UART_RX_BUF[8]);
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
                         if (UART_RX_BUF[11] & 0x80)
@@ -541,7 +541,7 @@ void form_home_callback(void)
                             g_cp_para.reset = TRUE;
                         }
 
-                        g_cp_para.ref = (UART_RX_BUF[15] << 8) | (UART_RX_BUF[16]);
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     break;
 
@@ -580,7 +580,7 @@ void form_home_callback(void)
                             LED_BUFF[0] = led_tab[g_cp_para.disp_para2 % 10 + 16];
                             LED_BUFF[1] = led_tab[g_cp_para.disp_para2 % 100 / 10 + 16] & (~LED_DP_MASK);
                             LED_BUFF[2] = led_tab[g_cp_para.disp_para2 % 1000 / 100 + 16];
-                            LED_BUFF[3] = 0xff;
+                            LED_BUFF[3] = led_tab[g_cp_para.disp_para2 % 10000 / 1000 + 16];
                             LED_BUFF[4] = 0xff;
                             LED_BUFF[5] |= LED_V_A_Hz_MASK;
                             LED_BUFF[5] &= ~LED_Hz_MASK;
@@ -686,7 +686,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code unsigned char form_ref_cmd[MAX_FORM_REF_CMD][32] = {
+code u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
     /* FORM_REF_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_REF_ALARM_CMD */
@@ -714,8 +714,8 @@ void form_ref_callback(void)
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
             {
-                UART_TX_BUF[15] = (unsigned char)(g_cp_para.count >> 8);
-                UART_TX_BUF[16] = (unsigned char)(g_cp_para.count & 0xff);
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
                 if(TRUE == g_cp_para.reset)
                 {
@@ -728,13 +728,13 @@ void form_ref_callback(void)
                 {
                     g_cp_para.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref_temp >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref_temp >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
                 }
                 else
                 {
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
                 }
 
                 if(TRUE == g_cp_para.stop)
@@ -775,8 +775,8 @@ void form_ref_callback(void)
         }
 
         crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (unsigned char)(crc & 0xff);
-        UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
         
         uart_send(len);
 
@@ -805,7 +805,7 @@ void form_ref_callback(void)
                 case FORM_HOME_SET_CMD:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
-                        g_cp_para.count = (UART_RX_BUF[7] << 8) | (UART_RX_BUF[8]);
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
                         if (UART_RX_BUF[11] & 0x80)
@@ -813,7 +813,7 @@ void form_ref_callback(void)
                             g_cp_para.reset = TRUE;
                         }
 
-                        g_cp_para.ref = (UART_RX_BUF[15] << 8) | (UART_RX_BUF[16]);
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     break;
 
@@ -906,7 +906,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code unsigned char form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
+code u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
     /* FORM_REF_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_REF_VAL_ALARM_CMD */
@@ -918,6 +918,7 @@ code unsigned char form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
 void form_ref_val_callback(void)
 {
     u8 i, len, timeout;
+    u16 temp;
     unsigned int crc;
     
     
@@ -934,8 +935,8 @@ void form_ref_val_callback(void)
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
             {
-                UART_TX_BUF[15] = (unsigned char)(g_cp_para.count >> 8);
-                UART_TX_BUF[16] = (unsigned char)(g_cp_para.count & 0xff);
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
                 if(TRUE == g_cp_para.reset)
                 {
@@ -948,13 +949,13 @@ void form_ref_val_callback(void)
                 {
                     g_cp_para.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref_temp >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref_temp >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
                 }
                 else
                 {
-                    UART_TX_BUF[23] = (unsigned char)(g_cp_para.ref >> 8);
-                    UART_TX_BUF[24] = (unsigned char)(g_cp_para.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
                 }
 
                 if(TRUE == g_cp_para.stop)
@@ -995,8 +996,8 @@ void form_ref_val_callback(void)
         }
 
         crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (unsigned char)(crc & 0xff);
-        UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
         
         uart_send(len);
 
@@ -1025,7 +1026,7 @@ void form_ref_val_callback(void)
                 case FORM_HOME_SET_CMD:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
-                        g_cp_para.count = (UART_RX_BUF[7] << 8) | (UART_RX_BUF[8]);
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
                         if (UART_RX_BUF[11] & 0x80)
@@ -1033,7 +1034,7 @@ void form_ref_val_callback(void)
                             g_cp_para.reset = TRUE;
                         }
 
-                        g_cp_para.ref = (UART_RX_BUF[15] << 8) | (UART_RX_BUF[16]);
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     break;
 
@@ -1063,11 +1064,13 @@ void form_ref_val_callback(void)
 
         uart_recv_clear();
     }
+
+    temp = g_cp_para.ref_temp / 100;
     
-    LED_BUFF[0] = led_tab[g_cp_para.ref_temp % 10 + 16];
-    LED_BUFF[1] = led_tab[g_cp_para.ref_temp % 100 / 10 + 16] & (~LED_DP_MASK);
-    LED_BUFF[2] = led_tab[g_cp_para.ref_temp % 1000 / 100 + 16];
-    LED_BUFF[3] = led_tab[g_cp_para.ref_temp % 10000 / 1000 + 16];    
+    LED_BUFF[0] = led_tab[temp % 10 + 16];
+    LED_BUFF[1] = led_tab[temp % 100 / 10 + 16] & (~LED_DP_MASK);
+    LED_BUFF[2] = led_tab[temp % 1000 / 100 + 16];
+    LED_BUFF[3] = led_tab[temp % 10000 / 1000 + 16];    
     LED_BUFF[4] = 0xff;
     LED_BUFF[5] |= LED_V_A_Hz_MASK;
     LED_BUFF[5] &= ~LED_Hz_MASK;
@@ -1120,14 +1123,14 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_UP:
-        g_cp_para.ref_temp++;
+        g_cp_para.ref_temp += 100;
         g_cp_para.ref_temp %= MAX_REF_VAL;
         break;
 
     case KEY_MSG_DOWN:
-        if(g_cp_para.ref_temp)
+        if(g_cp_para.ref_temp > 100)
         {
-            g_cp_para.ref_temp--;
+            g_cp_para.ref_temp -= 100;
         }
         else
         {

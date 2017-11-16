@@ -25,7 +25,8 @@
 #define LED_TORQUE_MASK         (LED_V_MASK | LED_A_MASK)
 #define LED_V_A_Hz_MASK         (LED_V_MASK | LED_A_MASK | LED_Hz_MASK)
 
-#define MAX_REF_VAL             5000u
+#define MAX_REF_VAL             (500u * 1000u)
+
 #define OPER_LOC                TRUE
 
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
