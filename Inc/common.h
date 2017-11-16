@@ -21,7 +21,7 @@ typedef enum
 #define START_TASK          0u
 #define LED_TASK            1u
 #define KEY_TASK            2u
-#define RX_TASK             3u
+#define UART_TASK           3u
 #define CP_TASK             4u
 
 

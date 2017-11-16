@@ -89,7 +89,7 @@ void Serial_TRx(void) interrupt 4 using 3
     }
 }
 
-void RxTask(void) _task_ RX_TASK  
+void UartTask(void) _task_ UART_TASK  
 {
     while(1)
     {

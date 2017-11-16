@@ -114,7 +114,7 @@ bool uart_recv_align(void)
         }
     }
 
-    if(i < uart_rx_count)
+    if(offset > 0) //串口接收数据存在赘余
     {
         for(i = 0; i < uart_rx_count; i++) //数据左对齐
         {
@@ -286,22 +286,21 @@ void vfd_con(void)
 
         uart_send(len);
 
-        timeout = 0;
-
-        while(FALSE == uart_rx_complete) //等待变频器应答
-        {   
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        {
             /* 250 = 100ms */
             os_wait(K_TMO, 25, 0);
 
-            timeout++;
-            
-            if(timeout >= 100)
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
             {
                 break;
             }
         }
 
-        if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
+        if(TRUE == uart_rx_complete)
         {
             uart_recv_align();
                         
@@ -508,23 +507,22 @@ void form_home_callback(void)
         UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
         
         uart_send(len);
-        
-        timeout = 0;
-        
-        while(FALSE == uart_rx_complete) //等待变频器应答
-        {   
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        {
             /* 250 = 100ms */
             os_wait(K_TMO, 25, 0);
-        
-            timeout++;
-            
-            if(timeout >= 100)
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
             {
                 break;
             }
         }
         
-        if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
+        if(TRUE == uart_rx_complete)
         {
             uart_recv_align();
             
@@ -781,23 +779,22 @@ void form_ref_callback(void)
         UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
         
         uart_send(len);
-        
-        timeout = 0;
-        
-        while(FALSE == uart_rx_complete) //等待变频器应答
-        {   
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        {
             /* 250 = 100ms */
             os_wait(K_TMO, 25, 0);
-        
-            timeout++;
-            
-            if(timeout >= 100)
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
             {
                 break;
             }
         }
         
-        if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
+        if(TRUE == uart_rx_complete)
         {
             uart_recv_align();
             
@@ -1002,23 +999,22 @@ void form_ref_val_callback(void)
         UART_TX_BUF[len++] = (unsigned char)((crc & 0xff00) >> 8);
         
         uart_send(len);
-        
-        timeout = 0;
-        
-        while(FALSE == uart_rx_complete) //等待变频器应答
-        {   
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        {
             /* 250 = 100ms */
             os_wait(K_TMO, 25, 0);
-        
-            timeout++;
-            
-            if(timeout >= 100)
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
             {
                 break;
             }
         }
         
-        if((0 != uart_rx_count) && (TRUE == uart_rx_complete))
+        if(TRUE == uart_rx_complete)
         {
             uart_recv_align();
             
