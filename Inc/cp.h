@@ -28,6 +28,7 @@
 #define MAX_REF_VAL             (500u * 1000u)
 
 #define OPER_LOC                TRUE
+#define OPER_REM                FALSE
 
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
@@ -83,8 +84,8 @@ typedef struct _cp
     bool start;
     bool stop;
     bool ref_chang;
-    u16 ref_temp;
     u16 count;
+    u16 ref_temp;
     u16 ref;
     u16 disp_para1;
     u16 disp_para2;
@@ -92,7 +93,7 @@ typedef struct _cp
 } CP, *PCP;
 
 extern CP g_cp_para;
-extern bit runstatus;
+extern bool runstatus;
 
 
 #endif

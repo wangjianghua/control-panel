@@ -58,9 +58,8 @@ code u8 special_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
 };
 
-bit runstatus;
-
 CP g_cp_para;
+bool runstatus = 0;
 
 unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen)  
 {  
@@ -69,15 +68,15 @@ unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen
     unsigned int J_u16Index;  
     
     
-    if (J_u16DataLen > 50)
+    if(J_u16DataLen > 50)
     {
         return (0);
     }
     
     for(J_u16Index = 0; J_u16Index < J_u16DataLen; J_u16Index++)  
     {  
-        J_u16TableNo = ((J_u16Result & 0xff) ^ (J_u8DataIn[J_u16Index] & 0xff));  
-        J_u16Result = ((J_u16Result >> 8) & 0xff) ^ wCRC16Table[J_u16TableNo];  
+        J_u16TableNo = (J_u16Result & 0xff) ^ (J_u8DataIn[J_u16Index] & 0xff);
+        J_u16Result = ((J_u16Result >> 8) & 0xff) ^ wCRC16Table[J_u16TableNo];
     }  
 
     return (J_u16Result);  
@@ -104,7 +103,7 @@ bool uart_recv_align(void)
         return (FALSE);
     }
     
-    for(i = 0; i < uart_rx_count; i++)
+    for(i = 0, offset = 0; i < uart_rx_count; i++)
     {
         if((0xF7 == UART_RX_BUF[i]) && (0x17 == UART_RX_BUF[i + 1]))
         {
@@ -262,16 +261,10 @@ void vfd_con(void)
                 if(OPER_LOC == g_cp_para.oper)
                 {
                     UART_TX_BUF[20] |= 0x08;
-                    
-                    LED_BUFF[5] &= ~LED_LOC_REM_MASK;
-                    LEDOE = 0;
                 }
                 else
                 {
                     UART_TX_BUF[20] &= ~0x08;
-                    
-                    LED_BUFF[5] |= LED_LOC_REM_MASK;
-                    LEDOE = 0;
                 }
             }
             break;
@@ -329,11 +322,13 @@ void vfd_con(void)
 
                         if(OPER_LOC == g_cp_para.oper) //本地
                         {
-
+                            LED_BUFF[5] &= ~LED_LOC_REM_MASK;
+                            LEDOE = 0;
                         }
                         else //远程
                         {
-
+                            LED_BUFF[5] |= LED_LOC_REM_MASK;
+                            LEDOE = 0;
                         }
                     }
                     break;
@@ -350,6 +345,19 @@ void vfd_con(void)
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+
+                        g_cp_para.oper = UART_RX_BUF[11] & 0x10;
+                        
+                        if(OPER_LOC == g_cp_para.oper) //本地
+                        {
+                            LED_BUFF[5] &= ~LED_LOC_REM_MASK;
+                            LEDOE = 0;
+                        }
+                        else //远程
+                        {
+                            LED_BUFF[5] |= LED_LOC_REM_MASK;
+                            LEDOE = 0;
+                        }
                     }
                     break;
                 
@@ -359,9 +367,9 @@ void vfd_con(void)
 
                 LED_BUFF[4] = 0xff;
                 LED_BUFF[3] = 0xff;
-                LED_BUFF[2] = led_tab['n' - 32];
-                LED_BUFF[1] = led_tab['o' - 32];
-                LED_BUFF[0] = led_tab[i + 16];
+                LED_BUFF[2] = 0xff;
+                LED_BUFF[1] = led_tab['C' - 32];
+                LED_BUFF[0] = led_tab['P' - 32];
                 LEDOE = 0;
             }
             else
@@ -372,6 +380,8 @@ void vfd_con(void)
                 LED_BUFF[1] = led_tab['r' - 32];
                 LED_BUFF[0] = led_tab[i + 16];
                 LEDOE = 0;
+
+                i = -1; //启动重复发送连接命令
             }
         }
         else
@@ -643,7 +653,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
 
         if(OPER_LOC == g_cp_para.oper)
         {
@@ -875,7 +885,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
 
         if(OPER_LOC == g_cp_para.oper)
         {
@@ -1099,7 +1109,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
 
         if(OPER_LOC == g_cp_para.oper)
         {

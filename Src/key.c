@@ -48,7 +48,7 @@ bit IsSomeKeyPress(u8 tKeyV)
 		case 7:	temp = PrgKey;   return !temp;break;
 		case 8:	temp = UpKey;    return !temp;break;	
 		case 9: if(	(RunKey==0)&&(StopKey==0)&&(runstatus) ) temp=0;	 return !temp;break;
-		default: return 0;						
+		default: return 0;break;						
 	}
 }
 u8 fsm_key=0;  
