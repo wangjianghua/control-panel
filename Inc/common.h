@@ -13,13 +13,13 @@ typedef unsigned long u32;
 typedef enum
 { 
     FALSE = 0, 
-    TRUE 
+    TRUE = !FALSE,
 } bool;
 
 #define SYS_TICK_PERIOD     10u //10ms
 
 #define START_TASK          0u
-#define LED_TASK            1u
+#define DISP_TASK           1u
 #define KEY_TASK            2u
 #define UART_TASK           3u
 #define CP_TASK             4u

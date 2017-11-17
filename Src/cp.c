@@ -194,14 +194,23 @@ void vfd_con(void)
     				UART_TX_BUF[20] |= 0x01;
     			}
                 
-    			if(TRUE == g_cp_para.start)
+    			if(TRUE == g_cp_para.run)
     			{
-    				g_cp_para.start = FALSE;
+    				g_cp_para.run = FALSE;
                     
     				UART_TX_BUF[20] |= 0x02;
     			}
 
-    			if(OPER_LOC == g_cp_para.oper)
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+
+    			if(VFD_LOC == g_cp_para.lr)
     			{
     				UART_TX_BUF[20] |= 0x08;
     			}
@@ -251,21 +260,16 @@ void vfd_con(void)
     				UART_TX_BUF[20] |= 0x01;
     			}
                 
-    			if(TRUE == g_cp_para.start)
+    			if(TRUE == g_cp_para.run)
     			{
-    				g_cp_para.start = FALSE;
+    				g_cp_para.run = FALSE;
                     
     				UART_TX_BUF[20] |= 0x02;
     			}
-                        
-                if(OPER_LOC == g_cp_para.oper)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+
+                UART_TX_BUF[20] &= ~0x04; //VFD_FWD
+
+                UART_TX_BUF[20] |= 0x08; //VFD_LOC
             }
             break;
 
@@ -311,16 +315,23 @@ void vfd_con(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if (UART_RX_BUF[11] & 0x80)
+                        if(UART_RX_BUF[11] & 0x80)
                         {
                             g_cp_para.reset = TRUE;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
 
-                        g_cp_para.oper = UART_RX_BUF[11] & 0x10;
+                        if(UART_RX_BUF[11] & 0x10)
+                        {
+                            g_cp_para.lr = VFD_LOC;
+                        }
+                        else
+                        {
+                            g_cp_para.lr = VFD_REM;
+                        }
 
-                        if(OPER_LOC == g_cp_para.oper) //本地
+                        if(VFD_LOC == g_cp_para.lr) //本地
                         {
                             LED_BUFF[5] &= ~LED_LOC_REM_MASK;
                             LEDOE = 0;
@@ -339,16 +350,23 @@ void vfd_con(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if (UART_RX_BUF[11] & 0x80)
+                        if(UART_RX_BUF[11] & 0x80)
                         {
                             g_cp_para.reset = TRUE;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
 
-                        g_cp_para.oper = UART_RX_BUF[11] & 0x10;
+                        if(UART_RX_BUF[11] & 0x10)
+                        {
+                            g_cp_para.lr = VFD_LOC;
+                        }
+                        else
+                        {
+                            g_cp_para.lr = VFD_REM;
+                        }
                         
-                        if(OPER_LOC == g_cp_para.oper) //本地
+                        if(VFD_LOC == g_cp_para.lr) //本地
                         {
                             LED_BUFF[5] &= ~LED_LOC_REM_MASK;
                             LEDOE = 0;
@@ -478,14 +496,23 @@ void form_home_callback(void)
                     UART_TX_BUF[20] |= 0x01;
                 }
                 
-                if(TRUE == g_cp_para.start)
+                if(TRUE == g_cp_para.run)
                 {
-                    g_cp_para.start = FALSE;
+                    g_cp_para.run = FALSE;
                     
                     UART_TX_BUF[20] |= 0x02;
                 }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
                 
-                if(OPER_LOC == g_cp_para.oper)
+                if(VFD_LOC == g_cp_para.lr)
                 {
                     UART_TX_BUF[20] |= 0x08;
                 }
@@ -546,7 +573,7 @@ void form_home_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if (UART_RX_BUF[11] & 0x80)
+                        if(UART_RX_BUF[11] & 0x80)
                         {
                             g_cp_para.reset = TRUE;
                         }
@@ -638,9 +665,9 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
     switch(key_msg)
     {
     case KEY_MSG_START:
-        g_cp_para.start = TRUE;
+        g_cp_para.run = TRUE;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_RUN_MASK;
             LEDOE = 0;
@@ -658,9 +685,9 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
          * 逻辑非(!x)的等价式: !x = (0 == x)
          * 华兄 */
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.lr = !g_cp_para.lr;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_LOC_REM_MASK;
             LEDOE = 0;
@@ -668,6 +695,21 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         else
         {
             LED_BUFF[5] |= LED_LOC_REM_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_FWD_REV:
+        g_cp_para.fr = !g_cp_para.fr;
+
+        if(VFD_REV == g_cp_para.fr)
+        {
+            LED_BUFF[5] &= ~LED_FWD_REV_MASK;
+            LEDOE = 0;
+        }
+        else
+        {
+            LED_BUFF[5] |= LED_FWD_REV_MASK;
             LEDOE = 0;
         }
         break;
@@ -759,14 +801,23 @@ void form_ref_callback(void)
                     UART_TX_BUF[20] |= 0x01;
                 }
                 
-                if(TRUE == g_cp_para.start)
+                if(TRUE == g_cp_para.run)
                 {
-                    g_cp_para.start = FALSE;
+                    g_cp_para.run = FALSE;
                     
                     UART_TX_BUF[20] |= 0x02;
                 }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
                 
-                if(OPER_LOC == g_cp_para.oper)
+                if(VFD_LOC == g_cp_para.lr)
                 {
                     UART_TX_BUF[20] |= 0x08;
                 }
@@ -823,7 +874,7 @@ void form_ref_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if (UART_RX_BUF[11] & 0x80)
+                        if(UART_RX_BUF[11] & 0x80)
                         {
                             g_cp_para.reset = TRUE;
                         }
@@ -875,9 +926,9 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
     switch(key_msg)
     {
     case KEY_MSG_START:
-        g_cp_para.start = TRUE;
+        g_cp_para.run = TRUE;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_RUN_MASK;
             LEDOE = 0;
@@ -895,9 +946,9 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
          * 逻辑非(!x)的等价式: !x = (0 == x)
          * 华兄 */
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.lr = !g_cp_para.lr;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_LOC_REM_MASK;
             LEDOE = 0;
@@ -905,6 +956,21 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         else
         {
             LED_BUFF[5] |= LED_LOC_REM_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_FWD_REV:
+        g_cp_para.fr = !g_cp_para.fr;
+
+        if(VFD_REV == g_cp_para.fr)
+        {
+            LED_BUFF[5] &= ~LED_FWD_REV_MASK;
+            LEDOE = 0;
+        }
+        else
+        {
+            LED_BUFF[5] |= LED_FWD_REV_MASK;
             LEDOE = 0;
         }
         break;
@@ -985,14 +1051,23 @@ void form_ref_val_callback(void)
                     UART_TX_BUF[20] |= 0x01;
                 }
                 
-                if(TRUE == g_cp_para.start)
+                if(TRUE == g_cp_para.run)
                 {
-                    g_cp_para.start = FALSE;
+                    g_cp_para.run = FALSE;
                     
                     UART_TX_BUF[20] |= 0x02;
                 }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
                 
-                if(OPER_LOC == g_cp_para.oper)
+                if(VFD_LOC == g_cp_para.lr)
                 {
                     UART_TX_BUF[20] |= 0x08;
                 }
@@ -1049,7 +1124,7 @@ void form_ref_val_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if (UART_RX_BUF[11] & 0x80)
+                        if(UART_RX_BUF[11] & 0x80)
                         {
                             g_cp_para.reset = TRUE;
                         }
@@ -1104,9 +1179,9 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
     switch(key_msg)
     {        
     case KEY_MSG_START:
-        g_cp_para.start = TRUE;
+        g_cp_para.run = TRUE;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_RUN_MASK;
             LEDOE = 0;
@@ -1124,9 +1199,9 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
          * 逻辑非(!x)的等价式: !x = (0 == x)
          * 华兄 */
-        g_cp_para.oper = !g_cp_para.oper;
+        g_cp_para.lr = !g_cp_para.lr;
 
-        if(OPER_LOC == g_cp_para.oper)
+        if(VFD_LOC == g_cp_para.lr)
         {
             LED_BUFF[5] &= ~LED_LOC_REM_MASK;
             LEDOE = 0;
@@ -1134,6 +1209,21 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         else
         {
             LED_BUFF[5] |= LED_LOC_REM_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_FWD_REV:
+        g_cp_para.fr = !g_cp_para.fr;
+
+        if(VFD_REV == g_cp_para.fr)
+        {
+            LED_BUFF[5] &= ~LED_FWD_REV_MASK;
+            LEDOE = 0;
+        }
+        else
+        {
+            LED_BUFF[5] |= LED_FWD_REV_MASK;
             LEDOE = 0;
         }
         break;

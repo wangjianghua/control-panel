@@ -49,7 +49,7 @@ void led_display( u8 com,u8 disdata )
 	 } 
 }
 
-void DispTask(void) _task_ LED_TASK  
+void DispTask(void) _task_ DISP_TASK  
 {
  	u8 i;
 	while (1)

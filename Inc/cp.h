@@ -10,7 +10,7 @@
 #define KEY_MSG_EXIT            0x07
 #define KEY_MSG_START           0x02
 #define KEY_MSG_STOP            0x03
-#define KEY_MSG_RF              0x04
+#define KEY_MSG_FWD_REV         0x04
 #define KEY_MSG_LOC_REM         0x06
 #define KEY_MSG_ENTER           0x01
 
@@ -20,15 +20,18 @@
 #define LED_V_MASK              0x20
 #define LED_A_MASK              0x08
 #define LED_Hz_MASK             0x10
-#define LED_FR_MASK             0x80
+#define LED_FWD_REV_MASK        0x80
 #define LED_SPEED_MASK          (LED_A_MASK | LED_Hz_MASK)
 #define LED_TORQUE_MASK         (LED_V_MASK | LED_A_MASK)
 #define LED_V_A_Hz_MASK         (LED_V_MASK | LED_A_MASK | LED_Hz_MASK)
 
 #define MAX_REF_VAL             (500u * 1000u)
 
-#define OPER_LOC                TRUE
-#define OPER_REM                FALSE
+#define VFD_LOC                 TRUE  //表示变频器处于本地控制，即控制命令来自控制盘
+#define VFD_REM                 FALSE //表示变频器处于远程控制，例如I/O (X1)或现场总线
+
+#define VFD_REV                 TRUE  //反转
+#define VFD_FWD                 FALSE //正转
 
 #define VFD_REPLY_TIMEOUT       100u //25 * 100 = 1s
 
@@ -80,18 +83,19 @@ typedef enum
 
 typedef struct _cp 
 {
-    u8 cmd;
-    bool reset;
-    bool oper;
-    bool start;
-    bool stop;
-    bool ref_chang;
-    u16 count;
-    u16 ref_temp;
-    u16 ref;
-    u16 disp_para1;
-    u16 disp_para2;
-    u16 disp_para3;
+    u8 cmd; //命令字
+    bool reset; //复位
+    bool lr; //本地远程操作方式，本地LOC、远程REM
+    bool run; //运行
+    bool stop; //停止
+    bool ref_chang; //给定更改标志
+    bool fr; //旋转状态，正转FWD、反转REV
+    u16 count; //计数器
+    u16 ref_temp; //给定临时值
+    u16 ref; //给定值
+    u16 disp_para1; //主界面显示参数1
+    u16 disp_para2; //主界面显示参数2
+    u16 disp_para3; //主界面显示参数3
 } CP, *PCP;
 
 extern bool runstatus;

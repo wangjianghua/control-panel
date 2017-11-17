@@ -24,7 +24,7 @@ void StartTask(void) _task_ START_TASK
 {
     init_system();
     
-    os_create_task(LED_TASK);	 
+    os_create_task(DISP_TASK);	 
     os_create_task(KEY_TASK);	 
     os_create_task(UART_TASK);
     os_create_task(CP_TASK);
