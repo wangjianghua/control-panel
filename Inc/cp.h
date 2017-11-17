@@ -30,11 +30,13 @@
 #define OPER_LOC                TRUE
 #define OPER_REM                FALSE
 
+#define VFD_REPLY_TIMEOUT       100u //25 * 100 = 1s
+
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
 {
-    FORM_ID_NONE = 0,
+    FORM_ID_HOME = 0,
     FORM_ID_HOME1 = 0,
     FORM_ID_HOME2,
     FORM_ID_HOME3,
@@ -92,8 +94,8 @@ typedef struct _cp
     u16 disp_para3;
 } CP, *PCP;
 
-extern CP g_cp_para;
 extern bool runstatus;
+extern CP g_cp_para;
 
 
 #endif

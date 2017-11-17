@@ -19,6 +19,9 @@ static int form_home(unsigned int key_msg, unsigned int form_msg);
 static int form_ref(unsigned int key_msg, unsigned int form_msg);
 static int form_ref_val(unsigned int key_msg, unsigned int form_msg);
 
+bool runstatus = FALSE;
+CP g_cp_para;
+
 code unsigned int wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
 	0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,  
@@ -57,9 +60,6 @@ code unsigned int wCRC16Table[256] = {
 code u8 special_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
 };
-
-CP g_cp_para;
-bool runstatus = 0;
 
 unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen)  
 {  
@@ -282,9 +282,9 @@ void vfd_con(void)
         /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
          * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
          * 华兄 */
-        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
         {
-            /* 250 = 100ms */
+            /* 2500 = 1s */
             os_wait(K_TMO, 25, 0);
 
             if(TRUE == uart_rx_complete) //串口接收数据完毕
@@ -415,7 +415,7 @@ void MENU_Init(void)
 {
     form_id = FORM_ID_HOME1;
     
-    form_home(KEY_MSG_NONE, FORM_MSG_DATA);
+    form_home(FORM_ID_HOME, FORM_MSG_DATA);
 }
 
 code u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
@@ -521,9 +521,9 @@ void form_home_callback(void)
         /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
          * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
          * 华兄 */
-        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
         {
-            /* 250 = 100ms */
+            /* 2500 = 1s */
             os_wait(K_TMO, 25, 0);
 
             if(TRUE == uart_rx_complete) //串口接收数据完毕
@@ -633,6 +633,8 @@ void form_home_callback(void)
 
 static int form_home(unsigned int key_msg, unsigned int form_msg)
 {
+    form_msg = form_msg;
+    
     switch(key_msg)
     {
     case KEY_MSG_START:
@@ -653,7 +655,10 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
+        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+         * 逻辑非(!x)的等价式: !x = (0 == x)
+         * 华兄 */
+        g_cp_para.oper = !g_cp_para.oper;
 
         if(OPER_LOC == g_cp_para.oper)
         {
@@ -673,7 +678,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_DOWN:
-        if(FORM_ID_NONE != form_id)
+        if(FORM_ID_HOME1 != form_id)
         {
             form_id--;
         }
@@ -793,9 +798,9 @@ void form_ref_callback(void)
         /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
          * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
          * 华兄 */
-        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
         {
-            /* 250 = 100ms */
+            /* 2500 = 1s */
             os_wait(K_TMO, 25, 0);
 
             if(TRUE == uart_rx_complete) //串口接收数据完毕
@@ -865,6 +870,8 @@ void form_ref_callback(void)
 
 static int form_ref(unsigned int key_msg, unsigned int form_msg)
 {
+    form_msg = form_msg;
+    
     switch(key_msg)
     {
     case KEY_MSG_START:
@@ -885,7 +892,10 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
+        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+         * 逻辑非(!x)的等价式: !x = (0 == x)
+         * 华兄 */
+        g_cp_para.oper = !g_cp_para.oper;
 
         if(OPER_LOC == g_cp_para.oper)
         {
@@ -1014,9 +1024,9 @@ void form_ref_val_callback(void)
         /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
          * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
          * 华兄 */
-        for(timeout = 0; timeout <= 100; timeout++) //等待变频器应答
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
         {
-            /* 250 = 100ms */
+            /* 2500 = 1s */
             os_wait(K_TMO, 25, 0);
 
             if(TRUE == uart_rx_complete) //串口接收数据完毕
@@ -1089,6 +1099,8 @@ void form_ref_val_callback(void)
 
 static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 {
+    form_msg = form_msg;
+    
     switch(key_msg)
     {        
     case KEY_MSG_START:
@@ -1109,7 +1121,10 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_LOC_REM:
-        g_cp_para.oper = (OPER_REM == g_cp_para.oper) ? (OPER_LOC) : (OPER_REM);
+        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+         * 逻辑非(!x)的等价式: !x = (0 == x)
+         * 华兄 */
+        g_cp_para.oper = !g_cp_para.oper;
 
         if(OPER_LOC == g_cp_para.oper)
         {
