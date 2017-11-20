@@ -47,6 +47,7 @@ typedef enum
     FORM_ID_REF_VAL,
     FORM_ID_PARA,
     FORM_ID_PARA_GROUP,
+    FORM_ID_PARA_GRADE,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -99,6 +100,14 @@ typedef enum
     MAX_FORM_PARA_GROUP_CMD,
 } FORM_PARA_GROUP_CMD;
 
+typedef enum
+{
+    FORM_PARA_GRADE_SET_CMD = 0,
+    FORM_PARA_GRADE_ALARM_CMD,
+    FORM_PARA_GRADE_FAULT_CMD,
+    MAX_FORM_PARA_GRADE_CMD,
+} FORM_PARA_GRADE_CMD;
+
 typedef struct _cp 
 {
     u8 cmd; //ÃüÁî×Ö
@@ -121,7 +130,7 @@ typedef struct _cp
 } CP, *PCP;
 
 extern bool runstatus;
-extern CP g_cp_para;
+extern xdata CP g_cp_para;
 
 
 #endif
