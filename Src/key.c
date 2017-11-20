@@ -1,295 +1,387 @@
 #include "includes.h"
 
-bit IsKeyPress(void)
+
+xdata u8 key_value = KEY_VAL_NONE;
+xdata u8 key_fsm = 0;  
+
+bit CheckKeyPress(void)
 {
-	if(ShiftKey==0 || RunKey==0 || StopKey==0 || EnterKey==0 || DownKey==0 || JogKey==0 || PrgKey==0 || UpKey==0)
-	{
-	  return 1;
-	}
-	else
-	{
-	  return 0;
+    if((0 == ShiftKey) || 
+       (0 == RunKey) || 
+       (0 == StopKey) || 
+       (0 == EnterKey) || 
+       (0 == DownKey) || 
+       (0 == JogKey) || 
+       (0 == PrgKey) || 
+       (0 == UpKey))
+    {
+        return (1);
+    }
+    else
+    {
+        return (0);
     }
 }
 
 u8 KeyScan(void)
 {
-  u8 temp=0;
-  if(ShiftKey==0)temp=1;
-  if(RunKey==0)  temp=2;
-  if(StopKey==0) temp=3;
-  if(EnterKey==0)temp=4;
-  if(DownKey==0) temp=5;
-  if(JogKey==0)  temp=6;
-  if(PrgKey==0)  temp=7;
-  if(UpKey==0)   temp=8;
+    u8 temp = 0;
 
-  if(runstatus)
-  {
-    if(	(RunKey==0)&&(StopKey==0) )	 temp=9;
-  }
+    
+    if(0 == ShiftKey)
+        temp = 1;
+    
+    if(0 == RunKey)  
+        temp = 2;
+    
+    if(0 == StopKey) 
+        temp = 3;
+    
+    if(0 == EnterKey)
+        temp = 4;
+    
+    if(0 == DownKey) 
+        temp = 5;
+    
+    if(0 == JogKey)  
+        temp = 6;
+    
+    if(0 == PrgKey)  
+        temp = 7;
+    
+    if(0 == UpKey)   
+        temp = 8;
 
-  return temp;
+    if(runstatus)
+    {
+        if((0 == RunKey) && (0 == StopKey))	 
+            temp = 9;
+    }
+
+    return (temp);
 }
 
-
-
-bit IsSomeKeyPress(u8 tKeyV)
+bit ReadKeyPress(u8 key)
 {
-	bit temp=1;
-	switch(tKeyV)
-	{
-		case 1: temp = ShiftKey; return !temp;break;
-		case 2: temp = RunKey;   return !temp;break;
-		case 3:	temp = StopKey;  return !temp;break;
-		case 4:	temp = EnterKey; return !temp;break;
-		case 5:	temp = DownKey;  return !temp;break;
-		case 6:	temp = JogKey;   return !temp;break;	
-		case 7:	temp = PrgKey;   return !temp;break;
-		case 8:	temp = UpKey;    return !temp;break;	
-		case 9: if(	(RunKey==0)&&(StopKey==0)&&(runstatus) ) temp=0;	 return !temp;break;
-		default: return 0;break;						
-	}
+    bit temp = 1;
+
+    
+    switch(key)
+    {
+    	case 1: 
+            temp = ShiftKey; 
+            return (!temp);
+            break;
+            
+    	case 2: 
+            temp = RunKey;   
+            return (!temp);
+            break;
+            
+    	case 3:	
+            temp = StopKey;  
+            return (!temp);
+            break;
+            
+    	case 4:	
+            temp = EnterKey; 
+            return (!temp);
+            break;
+            
+    	case 5:	
+            temp = DownKey;  
+            return (!temp);
+            break;
+            
+    	case 6:	
+            temp = JogKey;   
+            return (!temp);
+            break;   
+            
+    	case 7:	
+            temp = PrgKey;   
+            return (!temp);
+            break;
+            
+    	case 8:	
+            temp = UpKey;    
+            return (!temp);
+            break;    
+            
+    	case 9: 
+            if((0 == RunKey) && 
+               (0 == StopKey) && 
+               (runstatus)) 
+                temp = 0;   
+            
+            return (!temp);
+            break;
+            
+    	default: 
+            return (0);
+            break;                     
+    }
 }
-u8 fsm_key=0;  
-u8 ReadKeyV(void)
+
+u8 ReadKeyVal(void)
 {
-   u8 tKeyV=0;
-   static u8 tKeyV1=0;
+    u8 key_val = 0;
+    static u8 key = 0;
+    static u8 count = 0;
+    static u8 free_run_status = 0;
 
-   static u8 cnt=0;
 
-   static u8 freerunstatus=0;
+    key_val = KEY_VAL_NONE;
 
-   tKeyV = NoKeyV;
+    if(0 == free_run_status)
+    {
+        if(CheckKeyPress())
+        {
+            if(FreeRunKey == KeyScan())
+            {
+                os_wait(K_TMO, 20, 0);
+                
+                if(FreeRunKey == KeyScan())
+                {
+                    key = FreeRunKey;
+                    key_fsm = 2;
+                    free_run_status = 1;
+                    
+                    return (FreeRunKey);
+                }
+            }
+        }
+    }
 
-   if(freerunstatus==0)
-   {
-     if(IsKeyPress())
-     {
-	   if(FreeRunKey==KeyScan())
-       {
-	     os_wait(K_TMO,20,0);
-	     if(FreeRunKey==KeyScan())
-	     {
-		   tKeyV1=FreeRunKey;
-	       fsm_key=2;
-		   freerunstatus=1;
-		   return  FreeRunKey;
-	     }
-	   }
-     }
+    switch(key_fsm)
+    {
+    case 0:
+        if(CheckKeyPress())
+        {
+            key = KeyScan();
+            
+            if(key)
+            {
+                key_fsm = 1;
+            }
+        }
+        break;
+        
+    case 1:
+        os_wait(K_TMO, 20, 0);  
+        
+        if(CheckKeyPress())      
+        {
+            if(ReadKeyPress(key))
+            {
+                key_val = key;
+                key_fsm = 2;
+                count = 0;
+            }
+            else
+            {
+                key_fsm = 0;
+            }
+        }
+        else
+        {
+            key_fsm=0;
+        }
+        break;
+        
+    case 2:
+        if(FreeRunKey == key)
+        {
+            if(!CheckKeyPress())
+            {
+                os_wait(K_TMO, 20, 0);
+                
+                if(!CheckKeyPress())
+                {
+                    key_val = key + 45;
+                    free_run_status = 0;
+                    key_fsm = 0;
+                }
+            }
+            else
+            {
+                key_val = FreeRunKey;
+            }
+            
+            break;
+        }
+
+        if(count > 66)
+        {
+            count = 0;
+            key_fsm = 3;
+            key_val = key + 9;
+            
+            break;
+        }
+        
+        os_wait(K_TMO, 20, 0);
+
+        if(!ReadKeyPress(key))
+        {
+            os_wait(K_TMO, 20, 0);
+            
+            if(!ReadKeyPress(key))
+            {
+                key_val = key + 45;
+                key_fsm = 0;
+            }
+            else
+            {
+                count++;
+            }
+        }
+        else
+        {
+            count++;
+        }
+        break;
+        
+    case 3:
+        if(count > 20)
+        {
+            count = 0;
+            key_fsm = 4;
+            key_val = key + 18;
+            
+            break;
+        }
+        
+        os_wait(K_TMO, 20, 0);
+        
+        if(!ReadKeyPress(key))
+        {
+            os_wait(K_TMO, 20, 0);
+            
+            if(!ReadKeyPress(key))
+            {
+                key_val = key + 45;
+                key_fsm = 0;
+            }
+            else
+            {
+                count++;
+            }
+        }
+        else
+        {
+            count++;
+        }
+        break;
+        
+    case 4:
+        if(count > 20)
+        {
+            count = 0;
+            key_fsm = 5;
+            key_val = key + 27;
+            
+            break;
+        }
+        
+        os_wait(K_TMO, 20, 0);
+        
+        if(!ReadKeyPress(key))
+        {
+            os_wait(K_TMO, 20, 0);
+            
+            if(!ReadKeyPress(key))
+            {
+                key_val = key + 45;
+                key_fsm = 0;
+            }
+            else
+            {
+                count++;
+            }
+        }
+        else
+        {
+            count++;
+        }
+        break;
+        
+    case 5:
+        if(count > 20)
+        {
+            count = 0;
+            key_val = key + 36;
+            
+            break;
+        }
+        
+        os_wait(K_TMO, 20, 0);
+        
+        if(!ReadKeyPress(key))
+        {
+            os_wait(K_TMO, 20, 0);
+            
+            if(!ReadKeyPress(key))
+            {
+                key_val = key + 45;
+                key_fsm = 0;
+            }
+            else
+            {
+                count++;
+            }
+        }
+        else
+        {
+            count++;
+        }
+        break;
+
+    default:
+        key_fsm = 0;
+        break; 
    }
-
-   switch(fsm_key)
-   {
-	 case 0:
-	        if(IsKeyPress())
-			{
-	          tKeyV1=KeyScan();
-	          if(tKeyV1)
-			  {
-			    fsm_key=1;
-			  }
-			}
-			break;
-	 case 1:
-	        os_wait(K_TMO,20,0);  
-			if(IsKeyPress())      
-			{
-			  if(IsSomeKeyPress(tKeyV1))
-			  {
-			    tKeyV = tKeyV1;
-			    fsm_key=2;
-			    cnt=0;
-			  }
-			  else
-			  {
-			    fsm_key=0;
-			  }
-			}
-			else
-			{
-			  fsm_key=0;
-			}
-	        break;
-	  case 2:
-			if(tKeyV1==FreeRunKey)
-			{
-   		      if(!IsKeyPress())
-			  {
-			    os_wait(K_TMO,20,0);
-			    if(!IsKeyPress())
-			    {
-			      tKeyV=tKeyV1+45;
-				  freerunstatus=0;
-			      fsm_key=0;
-			    }
-			  }
-			  else
-			  {
-			    tKeyV=FreeRunKey;
-			  }
-			  break;
-			}
-	  //////////////////////////////////////////
-	        if(cnt>66)
-			{
-			  cnt=0;
-			  fsm_key=3;
-			  tKeyV=tKeyV1+9;
-			  break;
- 			}
-	        os_wait(K_TMO,20,0);
-
-   		    if(!IsSomeKeyPress(tKeyV1))
-			{
-			  os_wait(K_TMO,20,0);
-			  if(!IsSomeKeyPress(tKeyV1))
-			  {
-			    tKeyV=tKeyV1+45;
-			    fsm_key=0;
-			  }
-			  else
-			  {
-			    cnt++;
-			  }
-			}
-			else
-			{
-			  cnt ++;
-			}
-	        break;
-	  case 3:
-	        if(cnt>20)
-			{
-			  cnt=0;
-			  fsm_key=4;
-			  tKeyV=tKeyV1+18;
-			  break;
- 			}
-	        os_wait(K_TMO,20,0);
-   		    if(!IsSomeKeyPress(tKeyV1))
-			{
-			  os_wait(K_TMO,20,0);
-			  if(!IsSomeKeyPress(tKeyV1))
-			  {
-			    tKeyV=tKeyV1+45;
-			    fsm_key=0;
-			  }
-			  else
-			  {
-			    cnt++;
-			  }
-			}
-			else
-			{
-			  cnt ++;
-			}
-	        break;
-	  case 4:
-	        if(cnt>20)
-			{
-			  cnt=0;
-			  fsm_key=5;
-			  tKeyV=tKeyV1+27;
-			  break;
- 			}
-	        os_wait(K_TMO,20,0);
-   		    if(!IsSomeKeyPress(tKeyV1))
-			{
-			  os_wait(K_TMO,20,0);
-			  if(!IsSomeKeyPress(tKeyV1))
-			  {
-			    tKeyV=tKeyV1+45;
-			    fsm_key=0;
-			  }
-			  else
-			  {
-			    cnt++;
-			  }
-			}
-			else
-			{
-			  cnt ++;
-			}
-	        break;
-	  case 5:
-	        if(cnt>20)
-			{
-			  cnt=0;
-			  tKeyV=tKeyV1+36;
-			  break;
- 			}
-	        os_wait(K_TMO,20,0);
-   		    if(!IsSomeKeyPress(tKeyV1))
-			{
-			  os_wait(K_TMO,20,0);
-			  if(!IsSomeKeyPress(tKeyV1))
-			  {
-			    tKeyV=tKeyV1+45;
-			    fsm_key=0;
-			  }
-			  else
-			  {
-			    cnt++;
-			  }
-			}
-			else
-			{
-			  cnt++;
-			}
-	        break;
-
-	  default:
-	        fsm_key=0;
-	        break; 
-	         
-
-
-   }
-   return tKeyV;
+    
+   return (key_val);
 } 
 
-
-
-
-u8 KeyV1 = NoKeyV;
 void KeyTask(void) _task_ KEY_TASK 
 {
+    s8 event;
+    s8 jump = 0;
 
- char event;
- char jump=0;
- char status=0;
- KeyV1 = NoKeyV;
- os_wait (K_SIG , 0, 0); 
- ///////////////////////////////////////////////////////////////////
-	while (1)
-	{                        
-		KeyV1 = ReadKeyV();	
- 		if(KeyV1 != NoKeyV)	
-		{
-		  os_send_signal (CP_TASK);
-		  jump=1; status=0;
-		  while(jump)
-		  {
-	         event = os_wait (K_SIG , 0, 0);	
-	         switch (event)
-             {
+    
+    key_value = KEY_VAL_NONE;
+    
+    os_wait(K_SIG, 0, 0); 
+
+    while(1)
+    {                        
+        key_value = ReadKeyVal();	
+        
+        if(KEY_VAL_NONE != key_value)	
+        {
+            os_send_signal(CP_TASK);
+            
+            jump = 1; 
+            
+            while(jump)
+            {
+                event = os_wait(K_SIG, 0, 0);
+
+                switch(event)
+                {
                 case SIG_EVENT:
-				             KeyV1 = NoKeyV;
-                             os_wait(K_TMO,50,0);  
-			     		     jump=0;
-                             break;
+                    key_value = KEY_VAL_NONE;
+                    os_wait(K_TMO, 50, 0);  
+                    jump = 0;
+                    break;
+                    
                 default:    
-                             break;
-             }
-
-		  }
-		}
-	  }
-
+                    break;
+                }
+            }
+        }
+    }
 }
-
-
 

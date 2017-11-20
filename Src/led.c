@@ -1,7 +1,7 @@
 #include "includes.h"
 
 
-code u8 led_tab[] = {
+code u8 led_table[] = {
     0xff,0xf7,0xdf,0xfd,0xfb, //sp,!,",#,$,
     0x7f,0xbf,0xef,0xfe,0xff, //%,&,',(,),
     0xff,0xff,0xff,0xbf,0xfe, //*,+,,,-,.,
@@ -23,127 +23,198 @@ code u8 led_tab[] = {
     0xff,0xff,0xff,0xff,0xff  //z,{,|,},~,
 };
 
-u8  FlashTime=80;
+xdata u8 led_disp_buf[LED_DISP_BUF_SIZE] = {0x39, 0x25, 0x05, 0xf1, 0x01, 0xff};   
 
-u8  LED_BUFF[6]={0x39,0x25,0x05,0xf1,0x01,0xff};   
+xdata u8 FlashTime = 80; 
+xdata u8 FlashPosition = 0;
+xdata u8 FlashLed = 0;
 
-u8          FlashLed    = 0; 
-u8          FlashPosition = 0;
-
-
-void led_display( u8 com,u8 disdata )
+void led_display(u8 com, u8 disp_data)
 {
-     u8 i;
-	 LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;  
-	 for(i=0;i<6;i++);	   
-	 P0 = disdata;		    
-  	 switch(com)
-	 {
-	   case 0x00: LEDX0=0;break;
- 	   case 0x01: LEDX1=0;break;
-	   case 0x02: LEDX2=0;break;
-	   case 0x03: LEDX3=0;break;
-	   case 0x04: LEDX4=0;break;
-	   case 0x05: LEDX5=0;break;
-	   default: break;
-	 } 
+    u8 i;
+
+     
+    LEDX0 = 1;
+    LEDX1 = 1;
+    LEDX2 = 1;
+    LEDX3 = 1;
+    LEDX4 = 1;	
+    LEDX5 = 1;  
+    
+    for(i = 0; i < 6; i++);
+    
+    LED_DISP_PORT = disp_data;
+    
+    switch(com)
+    {
+    case 0: 
+        LEDX0 = 0;
+        break;
+        
+    case 1: 
+        LEDX1 = 0;
+        break;
+        
+    case 2: 
+        LEDX2 = 0;
+        break;
+        
+    case 3: 
+        LEDX3 = 0;
+        break;
+        
+    case 4: 
+        LEDX4 = 0;
+        break;
+        
+    case 5: 
+        LEDX5 = 0;
+        break;
+        
+    default: 
+        break;
+    } 
 }
 
 void DispTask(void) _task_ DISP_TASK  
 {
- 	u8 i;
-	while (1)
-	{           
-	                
-		for(i = 0;i <FlashTime;i++)
-		{
+    u8 i;
 
-			led_display(0,LED_BUFF[0]);	
-			os_wait(K_TMO,DisKeepTime,0);
+    
+    while(1)
+    {           
+    	for(i = 0; i < FlashTime; i++)
+    	{
 
-			led_display(1,LED_BUFF[1]);
-			os_wait(K_TMO,DisKeepTime,0);
+    		led_display(0, led_disp_buf[0]);	
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
 
-			led_display(2,LED_BUFF[2]);
-			os_wait(K_TMO,DisKeepTime,0);
+    		led_display(1, led_disp_buf[1]);
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
 
-			led_display(3,LED_BUFF[3]);
-			os_wait(K_TMO,DisKeepTime,0);	
+    		led_display(2, led_disp_buf[2]);
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
 
-			led_display(4,LED_BUFF[4]);
-			os_wait(K_TMO,DisKeepTime,0);	
-		
-			led_display(5,LED_BUFF[5]);		
-			os_wait(K_TMO,DisKeepTime,0);
-		}
-		for(i = 0;i < FlashTime;i++)
-		{
-			if(FlashPosition>5)
-			{
-				LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				os_wait(K_TMO,5*DisKeepTime,0);			
-			}
-			else
-			{
-			    if(FlashPosition==1)
-				{
-  				  LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				  os_wait(K_TMO,DisKeepTime,0);					  
-				}
-				else
-				{
-				  led_display(0,LED_BUFF[0]);
-				  os_wait(K_TMO,DisKeepTime,0);
-				}
+    		led_display(3, led_disp_buf[3]);
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);	
 
-				if(FlashPosition==2)
-				{
-				  LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				  os_wait(K_TMO,DisKeepTime,0);	
-				}
-				else
-				{
-				  led_display(1,LED_BUFF[1]);
-				  os_wait(K_TMO,DisKeepTime,0);
-				}
-
-				if(FlashPosition==3)
-				{	
-				  LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				  os_wait(K_TMO,DisKeepTime,0);															  
-				}
-				else
-				{
-				  led_display(2,LED_BUFF[2]);
-				  os_wait(K_TMO,DisKeepTime,0);
-				}
+    		led_display(4, led_disp_buf[4]);
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+    	
+    		led_display(5, led_disp_buf[5]);		
+    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    	}
+        
+    	for(i = 0; i < FlashTime; i++)
+    	{
+    		if(FlashPosition > 5)
+    		{
+    			LEDX0 = 1;
+                LEDX1 = 1;
+                LEDX2 = 1;
+                LEDX3 = 1;
+                LEDX4 = 1;	
+                LEDX5 = 1;
                 
-				if(FlashPosition==4)
-				{
-				  LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				  os_wait(K_TMO,DisKeepTime,0);	
-				}
-				else
-				{
-				  led_display(3,LED_BUFF[3]);
-				  os_wait(K_TMO,DisKeepTime,0);
-				}
-				if(FlashPosition==5)
-				{
-				  LEDX0 = 1;LEDX1 = 1;LEDX2 = 1;LEDX3 = 1;LEDX4 = 1;	LEDX5=1;
-				  os_wait(K_TMO,DisKeepTime,0);	
-				}
-				else
-				{
-				  led_display(4,LED_BUFF[4]);
-				  os_wait(K_TMO,DisKeepTime,0);
-				}
-			}
+    			os_wait(K_TMO, 5 * DISP_KEEP_TIME, 0);			
+    		}
+    		else
+    		{
+                if(1 == FlashPosition)
+                {
+                    LEDX0 = 1;
+                    LEDX1 = 1;
+                    LEDX2 = 1;
+                    LEDX3 = 1;
+                    LEDX4 = 1;	
+                    LEDX5 = 1;
+                    
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);					  
+                }
+                else
+                {
+                    led_display(0, led_disp_buf[0]);
+                    
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                }
 
-			led_display(5,LED_BUFF[5]|FlashLed);
-			os_wait(K_TMO,DisKeepTime,0);
-   		}
+                if(2 == FlashPosition)
+                {
+                    LEDX0 = 1;
+                    LEDX1 = 1;
+                    LEDX2 = 1;
+                    LEDX3 = 1;
+                    LEDX4 = 1;	
+                    LEDX5 = 1;
 
-	}
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                }
+                else
+                {
+                    led_display(1, led_disp_buf[1]);
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                }
+
+                if(3 == FlashPosition)
+                {	
+                    LEDX0 = 1;
+                    LEDX1 = 1;
+                    LEDX2 = 1;
+                    LEDX3 = 1;
+                    LEDX4 = 1;	
+                    LEDX5 = 1;
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);															  
+                }
+                else
+                {
+                    led_display(2, led_disp_buf[2]);
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                }
+
+                if(4 == FlashPosition)
+                {
+                    LEDX0 = 1;
+                    LEDX1 = 1;
+                    LEDX2 = 1;
+                    LEDX3 = 1;
+                    LEDX4 = 1;	
+                    LEDX5 = 1;
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                }
+                else
+                {
+                    led_display(3, led_disp_buf[3]);
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                }
+                
+                if(5 == FlashPosition)
+                {
+                    LEDX0 = 1;
+                    LEDX1 = 1;
+                    LEDX2 = 1;
+                    LEDX3 = 1;
+                    LEDX4 = 1;	
+                    LEDX5 = 1;
+
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                }
+                else
+                {
+                    led_display(4, led_disp_buf[4]);
+                    
+                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                }
+    		}
+
+            led_display(5, led_disp_buf[5] | FlashLed);
+            
+            os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    	}
+    }
 }
 

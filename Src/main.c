@@ -12,11 +12,11 @@ void init_system(void)
 
     init_uart();
 
-    LED_BUFF[4] = led_tab['H' - 32];
-    LED_BUFF[3] = led_tab['E' - 32];
-    LED_BUFF[2] = led_tab['L' - 32];
-    LED_BUFF[1] = led_tab['L' - 32];
-    LED_BUFF[0] = led_tab['O' - 32];
+    led_disp_buf[4] = led_table['H' - 32];
+    led_disp_buf[3] = led_table['E' - 32];
+    led_disp_buf[2] = led_table['L' - 32];
+    led_disp_buf[1] = led_table['L' - 32];
+    led_disp_buf[0] = led_table['O' - 32];
     LEDOE = 0;
 }
 

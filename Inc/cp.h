@@ -2,8 +2,8 @@
 #define __CP_H__
 
 
-#define KEY_MSG_NONE            NoKeyV
-#define KEY_MSG                 KeyV1
+#define KEY_MSG_NONE            KEY_VAL_NONE
+#define KEY_MSG                 key_value
 
 #define KEY_MSG_UP              0x05
 #define KEY_MSG_DOWN            0x08
@@ -50,6 +50,9 @@ typedef enum
     FORM_ID_PARA_GRADE,
     FORM_ID_PARA_VAL,
     FORM_ID_COPY,
+    FORM_ID_COPY_UPLOAD,
+    FORM_ID_COPY_DOWNLOAD_ALL,
+    FORM_ID_COPY_DOWNLOAD_PART,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -127,6 +130,30 @@ typedef enum
     FORM_COPY_FAULT_CMD,
     MAX_FORM_COPY_CMD,
 } FORM_COPY_CMD;
+
+typedef enum
+{
+    FORM_COPY_UPLOAD_SET_CMD = 0,
+    FORM_COPY_UPLOAD_ALARM_CMD,
+    FORM_COPY_UPLOAD_FAULT_CMD,
+    MAX_FORM_COPY_UPLOAD_CMD,
+} FORM_COPY_UPLOAD_CMD;
+
+typedef enum
+{
+    FORM_COPY_DOWNLOAD_ALL_SET_CMD = 0,
+    FORM_COPY_DOWNLOAD_ALL_ALARM_CMD,
+    FORM_COPY_DOWNLOAD_ALL_FAULT_CMD,
+    MAX_FORM_COPY_DOWNLOAD_ALL_CMD,
+} FORM_COPY_DOWNLOAD_ALL_CMD;
+
+typedef enum
+{
+    FORM_COPY_DOWNLOAD_PART_SET_CMD = 0,
+    FORM_COPY_DOWNLOAD_PART_ALARM_CMD,
+    FORM_COPY_DOWNLOAD_PART_FAULT_CMD,
+    MAX_FORM_COPY_DOWNLOAD_PART_CMD,
+} FORM_COPY_DOWNLOAD_PART_CMD;
 
 typedef struct _cp 
 {
