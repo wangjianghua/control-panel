@@ -19,6 +19,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg);
 static int form_ref(unsigned int key_msg, unsigned int form_msg);
 static int form_ref_val(unsigned int key_msg, unsigned int form_msg);
 static int form_para(unsigned int key_msg, unsigned int form_msg);
+static int form_para_group(unsigned int key_msg, unsigned int form_msg);
 
 bool runstatus = FALSE;
 CP g_cp_para;
@@ -427,6 +428,7 @@ static const FORM form_list[MAX_FORM_NUM] =
     {form_ref},
     {form_ref_val},
     {form_para},
+    {form_para_group},
 };
 
 static unsigned int form_id;
@@ -1506,6 +1508,7 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_ENTER:
+        form_id = FORM_ID_PARA_GROUP;
         break;
 
     case KEY_MSG_EXIT:
@@ -1525,6 +1528,270 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
     }
 
     form_para_callback();
+
+    return (TRUE);
+}
+
+code u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
+    /* FORM_PARA_GROUP_SET_CMD */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    /* FORM_PARA_GROUP_ALARM_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
+    /* FORM_PARA_GROUP_FAULT_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
+};
+
+void form_para_group_callback(void)
+{
+    u8 i, len, timeout;
+    unsigned int crc;
+    
+    
+    for(i = 0; i < MAX_FORM_PARA_GROUP_CMD - 2; i++)
+    {        
+        len = form_para_group_cmd[i][10] + 11;
+                        
+        memcpy(UART_TX_BUF, form_para_group_cmd[i], len);
+
+        switch(i)
+        {
+        case FORM_PARA_GROUP_SET_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+            if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            {
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+                if(TRUE == g_cp_para.reset)
+                {
+                    g_cp_para.reset = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x10;
+                }
+
+                if(TRUE == g_cp_para.ref_chang)
+                {
+                    g_cp_para.ref_chang = FALSE;
+                    
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+                }
+                else
+                {
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+                }
+
+                if(TRUE == g_cp_para.stop)
+                {
+                    g_cp_para.stop = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x01;
+                }
+                
+                if(TRUE == g_cp_para.run)
+                {
+                    g_cp_para.run = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x02;
+                }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+                
+                if(VFD_LOC == g_cp_para.lr)
+                {
+                    UART_TX_BUF[20] |= 0x08;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x08;
+                }
+            }
+            break;
+
+        case FORM_PARA_GROUP_ALARM_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        case FORM_PARA_GROUP_FAULT_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        default:
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+        {
+            /* 2500 = 1s */
+            os_wait(K_TMO, 25, 0);
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
+            {
+                break;
+            }
+        }
+        
+        if(TRUE == uart_rx_complete)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case FORM_PARA_GROUP_SET_CMD:
+                    if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        g_cp_para.count++;
+
+                        if(UART_RX_BUF[11] & 0x80)
+                        {
+                            g_cp_para.reset = TRUE;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                LED_BUFF[4] = 0xff;
+                LED_BUFF[3] = led_tab['E' - 32];
+                LED_BUFF[2] = led_tab['r' - 32];
+                LED_BUFF[1] = led_tab['r' - 32];
+                LED_BUFF[0] = led_tab[i + 16];
+                LEDOE = 0;
+            }
+        }
+        else
+        {
+            LED_BUFF[4] = 0xff;
+            LED_BUFF[3] = led_tab['E' - 32];
+            LED_BUFF[2] = led_tab['r' - 32];
+            LED_BUFF[1] = led_tab['r' - 32];
+            LED_BUFF[0] = led_tab[i + 16];
+            LEDOE = 0;
+        }
+
+        uart_recv_clear();
+    }
+    
+    LED_BUFF[0] = led_tab[g_cp_para.group % 10 + 16];
+    LED_BUFF[1] = led_tab[g_cp_para.group % 100 / 10 + 16];
+    LED_BUFF[2] = 0xff;
+    LED_BUFF[3] = 0xff;
+    LED_BUFF[4] = 0xff;
+    LED_BUFF[5] |= LED_V_A_Hz_MASK;
+    LEDOE = 0;
+}
+
+static int form_para_group(unsigned int key_msg, unsigned int form_msg)
+{
+    form_msg = form_msg;
+    
+    switch(key_msg)
+    {        
+    case KEY_MSG_RUN:
+        g_cp_para.run = TRUE;
+
+        if(VFD_LOC == g_cp_para.lr)
+        {
+            LED_BUFF[5] &= ~LED_RUN_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_STOP:
+        g_cp_para.stop = TRUE;
+
+        LED_BUFF[5] |= LED_RUN_MASK;
+        LEDOE = 0;
+        break;
+
+    case KEY_MSG_LOC_REM:
+        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+         * 逻辑非(!x)的等价式: !x = (0 == x)
+         * 华兄 */
+        g_cp_para.lr = !g_cp_para.lr;
+
+        if(VFD_LOC == g_cp_para.lr)
+        {
+            LED_BUFF[5] &= ~LED_LOC_REM_MASK;
+            LEDOE = 0;
+        }
+        else
+        {
+            LED_BUFF[5] |= LED_LOC_REM_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_FWD_REV:
+        g_cp_para.fr = !g_cp_para.fr;
+
+        if(VFD_REV == g_cp_para.fr)
+        {
+            LED_BUFF[5] &= ~LED_FWD_REV_MASK;
+            LEDOE = 0;
+        }
+        else
+        {
+            LED_BUFF[5] |= LED_FWD_REV_MASK;
+            LEDOE = 0;
+        }
+        break;
+
+    case KEY_MSG_ENTER:
+        break;
+
+    case KEY_MSG_EXIT:
+        form_id = FORM_ID_PARA;
+        break;
+
+    case KEY_MSG_UP:
+        g_cp_para.group++;
+        g_cp_para.group %= 100;
+        break;
+
+    case KEY_MSG_DOWN:
+        if(g_cp_para.group)
+        {
+            g_cp_para.group--;
+        }
+        else
+        {
+            g_cp_para.group = 99;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    form_para_group_callback();
 
     return (TRUE);
 }

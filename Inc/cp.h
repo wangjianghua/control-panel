@@ -46,6 +46,7 @@ typedef enum
     FORM_ID_REF,
     FORM_ID_REF_VAL,
     FORM_ID_PARA,
+    FORM_ID_PARA_GROUP,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -90,9 +91,21 @@ typedef enum
     MAX_FORM_PARA_CMD,
 } FORM_PARA_CMD;
 
+typedef enum
+{
+    FORM_PARA_GROUP_SET_CMD = 0,
+    FORM_PARA_GROUP_ALARM_CMD,
+    FORM_PARA_GROUP_FAULT_CMD,
+    MAX_FORM_PARA_GROUP_CMD,
+} FORM_PARA_GROUP_CMD;
+
 typedef struct _cp 
 {
     u8 cmd; //命令字
+	u8 group_index; //变频器分组索引
+	u8 group; //变频器分组
+	u8 grade_index; //变频器分级索引
+	u8 grade; //变频器分级
     bool reset; //复位
     bool lr; //本地远程操作方式，本地LOC、远程REM
     bool run; //运行
