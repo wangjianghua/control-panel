@@ -48,6 +48,7 @@ typedef enum
     FORM_ID_PARA,
     FORM_ID_PARA_GROUP,
     FORM_ID_PARA_GRADE,
+    FORM_ID_PARA_VAL,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -105,8 +106,18 @@ typedef enum
     FORM_PARA_GRADE_SET_CMD = 0,
     FORM_PARA_GRADE_ALARM_CMD,
     FORM_PARA_GRADE_FAULT_CMD,
+    FORM_PARA_GRADE_FUNC_CODE_READ_CMD,
     MAX_FORM_PARA_GRADE_CMD,
 } FORM_PARA_GRADE_CMD;
+
+typedef enum
+{
+    FORM_PARA_VAL_SET_CMD = 0,
+    FORM_PARA_VAL_ALARM_CMD,
+    FORM_PARA_VAL_FAULT_CMD,
+    FORM_PARA_VAL_FUNC_CODE_WRITE_CMD,
+    MAX_FORM_PARA_VAL_CMD,
+} FORM_PARA_VAL_CMD;
 
 typedef struct _cp 
 {
@@ -127,9 +138,10 @@ typedef struct _cp
     u16 disp_para1; //主界面显示参数1
     u16 disp_para2; //主界面显示参数2
     u16 disp_para3; //主界面显示参数3
+    u16 vfd_para; //变频器参数
 } CP, *PCP;
 
-extern bool runstatus;
+extern xdata bool runstatus;
 extern xdata CP g_cp_para;
 
 

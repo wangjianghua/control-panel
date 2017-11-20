@@ -3,10 +3,10 @@
 
 xdata u8 uart_tx_buf[UART_TX_LEN];
 xdata u8 uart_rx_buf[UART_RX_LEN];
-u8 uart_tx_index = 0, uart_tx_count = 0;
-u8 uart_rx_count = 0;
-u16 uart_rx_timeout = 0;
-bool uart_rx_complete = FALSE;
+xdata u8 uart_tx_index = 0, uart_tx_count = 0;
+xdata u8 uart_rx_count = 0;
+xdata u16 uart_rx_timeout = 0;
+xdata bool uart_rx_complete = FALSE;
 
 /* 【参数】
  * 波特率: 9600bps
