@@ -8,7 +8,7 @@
 #define KEY_MSG_UP              0x05
 #define KEY_MSG_DOWN            0x08
 #define KEY_MSG_EXIT            0x07
-#define KEY_MSG_START           0x02
+#define KEY_MSG_RUN             0x02
 #define KEY_MSG_STOP            0x03
 #define KEY_MSG_FWD_REV         0x04
 #define KEY_MSG_LOC_REM         0x06
@@ -45,6 +45,7 @@ typedef enum
     FORM_ID_HOME3,
     FORM_ID_REF,
     FORM_ID_REF_VAL,
+    FORM_ID_PARA,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -80,6 +81,14 @@ typedef enum
     FORM_REF_VAL_FAULT_CMD,
     MAX_FORM_REF_VAL_CMD,
 } FORM_REF_VAL_CMD;
+
+typedef enum
+{
+    FORM_PARA_SET_CMD = 0,
+    FORM_PARA_ALARM_CMD,
+    FORM_PARA_FAULT_CMD,
+    MAX_FORM_PARA_CMD,
+} FORM_PARA_CMD;
 
 typedef struct _cp 
 {
