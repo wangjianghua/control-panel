@@ -49,6 +49,7 @@ typedef enum
     FORM_ID_PARA_GROUP,
     FORM_ID_PARA_GRADE,
     FORM_ID_PARA_VAL,
+    FORM_ID_COPY,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -118,6 +119,14 @@ typedef enum
     FORM_PARA_VAL_FUNC_CODE_WRITE_CMD,
     MAX_FORM_PARA_VAL_CMD,
 } FORM_PARA_VAL_CMD;
+
+typedef enum
+{
+    FORM_COPY_SET_CMD = 0,
+    FORM_COPY_ALARM_CMD,
+    FORM_COPY_FAULT_CMD,
+    MAX_FORM_COPY_CMD,
+} FORM_COPY_CMD;
 
 typedef struct _cp 
 {
