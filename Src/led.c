@@ -1,7 +1,7 @@
 #include "includes.h"
 
 
-code u8 led_table[] = {
+CODE u8 led_table[] = {
     0xff,0xf7,0xdf,0xfd,0xfb, //sp,!,",#,$,
     0x7f,0xbf,0xef,0xfe,0xff, //%,&,',(,),
     0xff,0xff,0xff,0xbf,0xfe, //*,+,,,-,.,
@@ -23,11 +23,10 @@ code u8 led_table[] = {
     0xff,0xff,0xff,0xff,0xff  //z,{,|,},~,
 };
 
-xdata u8 led_disp_buf[LED_DISP_BUF_SIZE] = {0x39, 0x25, 0x05, 0xf1, 0x01, 0xff};   
+XDATA u8 led_disp_buf[LED_DISP_BUF_SIZE] = {0x39, 0x25, 0x05, 0xf1, 0x01, 0xff};   
 
-xdata u8 FlashTime = 80; 
-xdata u8 FlashPosition = 0;
-xdata u8 FlashLed = 0;
+XDATA u8 led_blink_pos = 0;
+XDATA u8 blink_led = 0;
 
 void led_display(u8 com, u8 disp_data)
 {
@@ -83,31 +82,31 @@ void DispTask(void) _task_ DISP_TASK
     
     while(1)
     {           
-    	for(i = 0; i < FlashTime; i++)
+    	for(i = 0; i < LED_BLINK_TIME; i++)
     	{
 
     		led_display(0, led_disp_buf[0]);	
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    		os_wait(K_TMO, LED_DISP_TIME, 0);
 
     		led_display(1, led_disp_buf[1]);
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    		os_wait(K_TMO, LED_DISP_TIME, 0);
 
     		led_display(2, led_disp_buf[2]);
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    		os_wait(K_TMO, LED_DISP_TIME, 0);
 
     		led_display(3, led_disp_buf[3]);
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+    		os_wait(K_TMO, LED_DISP_TIME, 0);	
 
     		led_display(4, led_disp_buf[4]);
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+    		os_wait(K_TMO, LED_DISP_TIME, 0);	
     	
     		led_display(5, led_disp_buf[5]);		
-    		os_wait(K_TMO, DISP_KEEP_TIME, 0);
+    		os_wait(K_TMO, LED_DISP_TIME, 0);
     	}
         
-    	for(i = 0; i < FlashTime; i++)
+    	for(i = 0; i < LED_BLINK_TIME; i++)
     	{
-    		if(FlashPosition > 5)
+    		if(led_blink_pos > 5)
     		{
     			LEDX0 = 1;
                 LEDX1 = 1;
@@ -116,11 +115,11 @@ void DispTask(void) _task_ DISP_TASK
                 LEDX4 = 1;	
                 LEDX5 = 1;
                 
-    			os_wait(K_TMO, 5 * DISP_KEEP_TIME, 0);			
+    			os_wait(K_TMO, 5 * LED_DISP_TIME, 0);			
     		}
     		else
     		{
-                if(1 == FlashPosition)
+                if(1 == led_blink_pos)
                 {
                     LEDX0 = 1;
                     LEDX1 = 1;
@@ -129,16 +128,16 @@ void DispTask(void) _task_ DISP_TASK
                     LEDX4 = 1;	
                     LEDX5 = 1;
                     
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);					  
+                    os_wait(K_TMO, LED_DISP_TIME, 0);					  
                 }
                 else
                 {
                     led_display(0, led_disp_buf[0]);
                     
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                    os_wait(K_TMO, LED_DISP_TIME, 0);
                 }
 
-                if(2 == FlashPosition)
+                if(2 == led_blink_pos)
                 {
                     LEDX0 = 1;
                     LEDX1 = 1;
@@ -147,16 +146,16 @@ void DispTask(void) _task_ DISP_TASK
                     LEDX4 = 1;	
                     LEDX5 = 1;
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                    os_wait(K_TMO, LED_DISP_TIME, 0);	
                 }
                 else
                 {
                     led_display(1, led_disp_buf[1]);
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                    os_wait(K_TMO, LED_DISP_TIME, 0);
                 }
 
-                if(3 == FlashPosition)
+                if(3 == led_blink_pos)
                 {	
                     LEDX0 = 1;
                     LEDX1 = 1;
@@ -165,16 +164,16 @@ void DispTask(void) _task_ DISP_TASK
                     LEDX4 = 1;	
                     LEDX5 = 1;
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);															  
+                    os_wait(K_TMO, LED_DISP_TIME, 0);															  
                 }
                 else
                 {
                     led_display(2, led_disp_buf[2]);
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                    os_wait(K_TMO, LED_DISP_TIME, 0);
                 }
 
-                if(4 == FlashPosition)
+                if(4 == led_blink_pos)
                 {
                     LEDX0 = 1;
                     LEDX1 = 1;
@@ -183,16 +182,16 @@ void DispTask(void) _task_ DISP_TASK
                     LEDX4 = 1;	
                     LEDX5 = 1;
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                    os_wait(K_TMO, LED_DISP_TIME, 0);	
                 }
                 else
                 {
                     led_display(3, led_disp_buf[3]);
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                    os_wait(K_TMO, LED_DISP_TIME, 0);
                 }
                 
-                if(5 == FlashPosition)
+                if(5 == led_blink_pos)
                 {
                     LEDX0 = 1;
                     LEDX1 = 1;
@@ -201,19 +200,19 @@ void DispTask(void) _task_ DISP_TASK
                     LEDX4 = 1;	
                     LEDX5 = 1;
 
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);	
+                    os_wait(K_TMO, LED_DISP_TIME, 0);	
                 }
                 else
                 {
                     led_display(4, led_disp_buf[4]);
                     
-                    os_wait(K_TMO, DISP_KEEP_TIME, 0);
+                    os_wait(K_TMO, LED_DISP_TIME, 0);
                 }
     		}
 
-            led_display(5, led_disp_buf[5] | FlashLed);
+            led_display(5, led_disp_buf[5] | blink_led);
             
-            os_wait(K_TMO, DISP_KEEP_TIME, 0);
+            os_wait(K_TMO, LED_DISP_TIME, 0);
     	}
     }
 }

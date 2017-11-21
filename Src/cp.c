@@ -27,10 +27,10 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg);
 
-xdata bool runstatus = FALSE;
-xdata CP g_cp_para;
+XDATA bool runstatus = FALSE;
+XDATA CP g_cp_para;
 
-code unsigned int wCRC16Table[256] = {   
+CODE unsigned int wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
 	0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,  
 	0xCC01, 0x0CC0, 0x0D80, 0xCD41, 0x0F00, 0xCFC1, 0xCE81, 0x0E40,   
@@ -65,7 +65,7 @@ code unsigned int wCRC16Table[256] = {
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-code u8 special_cmd[][32] = {
+CODE u8 special_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
 };
 
@@ -90,7 +90,7 @@ unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen
     return (J_u16Result);  
 }
 
-code u8 con_cmd[][32] = {
+CODE u8 con_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x90, 0x82, 0x00, 0x02},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x01},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x17, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15, 0x38, 0x5C},
@@ -447,12 +447,20 @@ static unsigned int form_id;
 
 void MENU_Init(void)
 {
+    led_disp_buf[5] = 0xff;
+    led_disp_buf[4] = 0xff;
+    led_disp_buf[3] = 0xff;
+    led_disp_buf[2] = 0xff;
+    led_disp_buf[1] = 0xff;
+    led_disp_buf[0] = 0xff;
+    LEDOE = 0;
+    
     form_id = FORM_ID_HOME1;
     
     form_home(FORM_ID_HOME, FORM_MSG_DATA);
 }
 
-code u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
+CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
     /* FORM_HOME_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_HOME_READ_CMD */
@@ -759,7 +767,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
+CODE u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
     /* FORM_REF_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_REF_ALARM_CMD */
@@ -1016,7 +1024,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
+CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
     /* FORM_REF_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_REF_VAL_ALARM_CMD */
@@ -1287,7 +1295,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_para_cmd[MAX_FORM_PARA_CMD][32] = {
+CODE u8 form_para_cmd[MAX_FORM_PARA_CMD][32] = {
     /* FORM_PARA_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_PARA_ALARM_CMD */
@@ -1544,7 +1552,7 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
+CODE u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
     /* FORM_PARA_GROUP_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_PARA_GROUP_ALARM_CMD */
@@ -1809,7 +1817,7 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
+CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
     /* FORM_PARA_GRADE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_PARA_GRADE_ALARM_CMD */
@@ -1987,7 +1995,7 @@ void form_para_grade_callback(void)
     LEDOE = 0;
 }
 
-bool func_code_read(void)
+bool func_CODE_read(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
@@ -2116,7 +2124,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_ENTER:
-        func_code_read();
+        func_CODE_read();
         break;
 
     case KEY_MSG_EXIT:
@@ -2148,7 +2156,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
+CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
     /* FORM_PARA_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_PARA_VAL_ALARM_CMD */
@@ -2326,7 +2334,7 @@ void form_para_val_callback(void)
     LEDOE = 0;
 }
 
-bool func_code_write(void)
+bool func_CODE_write(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
@@ -2455,7 +2463,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         break;
 
     case KEY_MSG_ENTER:
-        func_code_write();
+        func_CODE_write();
         break;
 
     case KEY_MSG_EXIT:
@@ -2482,7 +2490,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_copy_cmd[MAX_FORM_COPY_CMD][32] = {
+CODE u8 form_copy_cmd[MAX_FORM_COPY_CMD][32] = {
     /* FORM_COPY_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_COPY_ALARM_CMD */
@@ -2739,7 +2747,7 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_copy_upload_cmd[MAX_FORM_COPY_UPLOAD_CMD][32] = {
+CODE u8 form_copy_upload_cmd[MAX_FORM_COPY_UPLOAD_CMD][32] = {
     /* FORM_COPY_UPLOAD_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_COPY_UPLOAD_ALARM_CMD */
@@ -2995,7 +3003,7 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_copy_download_all_cmd[MAX_FORM_COPY_DOWNLOAD_ALL_CMD][32] = {
+CODE u8 form_copy_download_all_cmd[MAX_FORM_COPY_DOWNLOAD_ALL_CMD][32] = {
     /* FORM_COPY_DOWNLOAD_ALL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_COPY_DOWNLOAD_ALL_ALARM_CMD */
@@ -3251,7 +3259,7 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
     return (TRUE);
 }
 
-code u8 form_copy_download_part_cmd[MAX_FORM_COPY_DOWNLOAD_PART_CMD][32] = {
+CODE u8 form_copy_download_part_cmd[MAX_FORM_COPY_DOWNLOAD_PART_CMD][32] = {
     /* FORM_COPY_DOWNLOAD_PART_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* FORM_COPY_DOWNLOAD_PART_ALARM_CMD */
@@ -3514,6 +3522,8 @@ void CPTask(void) _task_ CP_TASK
     unsigned int form_msg;
 
 
+    os_wait(K_TMO, 250, 0);
+    os_wait(K_TMO, 250, 0);
     os_wait(K_TMO, 250, 0);
     os_wait(K_TMO, 250, 0);
     

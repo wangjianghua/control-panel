@@ -2,14 +2,14 @@
 #define __KEY_H__
 
 
-sbit ShiftKey = P2^7;    
-sbit RunKey = P2^0;
-sbit StopKey = P2^2;
-sbit EnterKey = P2^4;
-sbit DownKey = P2^1;
-sbit JogKey = P2^3;
-sbit PrgKey = P2^6;
-sbit UpKey = P2^5;
+SBIT ShiftKey = P2^7;    
+SBIT RunKey = P2^0;
+SBIT StopKey = P2^2;
+SBIT EnterKey = P2^4;
+SBIT DownKey = P2^1;
+SBIT JogKey = P2^3;
+SBIT PrgKey = P2^6;
+SBIT UpKey = P2^5;
 
 #define ERRORCOUNT                  20
 
@@ -138,12 +138,12 @@ sbit UpKey = P2^5;
 #define IDENTIFYMENU                8
 #define FACTMENU                    9
 
-extern xdata u8 key_value;
-extern xdata u8 key_fsm; 
+extern XDATA u8 key_value;
+extern XDATA u8 key_fsm; 
 
-extern bit CheckKeyPress(void);
+extern BIT CheckKeyPress(void);
 extern u8 KeyScan(void);
-extern bit ReadKeyPress(u8 key);
+extern BIT ReadKeyPress(u8 key);
 extern u8 ReadKeyVal(void);
 
 

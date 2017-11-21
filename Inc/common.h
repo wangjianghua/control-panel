@@ -10,6 +10,12 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 
+#define CODE                code
+#define XDATA               xdata
+#define SBIT                sbit
+#define BIT                 bit
+#define SFR                 sfr
+
 typedef enum
 { 
     FALSE = 0, 

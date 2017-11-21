@@ -177,8 +177,8 @@ typedef struct _cp
     u16 vfd_para; //±äÆµÆ÷²ÎÊı
 } CP, *PCP;
 
-extern xdata bool runstatus;
-extern xdata CP g_cp_para;
+extern XDATA bool runstatus;
+extern XDATA CP g_cp_para;
 
 
 #endif

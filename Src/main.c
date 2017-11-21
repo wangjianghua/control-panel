@@ -12,11 +12,12 @@ void init_system(void)
 
     init_uart();
 
-    led_disp_buf[4] = led_table['H' - 32];
-    led_disp_buf[3] = led_table['E' - 32];
-    led_disp_buf[2] = led_table['L' - 32];
-    led_disp_buf[1] = led_table['L' - 32];
-    led_disp_buf[0] = led_table['O' - 32];
+    led_disp_buf[5] = 0x00;
+    led_disp_buf[4] = led_table['8' - 32];
+    led_disp_buf[3] = led_table['8' - 32];
+    led_disp_buf[2] = led_table['8' - 32];
+    led_disp_buf[1] = led_table['8' - 32];
+    led_disp_buf[0] = led_table['8' - 32];
     LEDOE = 0;
 }
 

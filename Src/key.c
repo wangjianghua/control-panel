@@ -1,10 +1,10 @@
 #include "includes.h"
 
 
-xdata u8 key_value = KEY_VAL_NONE;
-xdata u8 key_fsm = 0;  
+XDATA u8 key_value = KEY_VAL_NONE;
+XDATA u8 key_fsm = 0;  
 
-bit CheckKeyPress(void)
+BIT CheckKeyPress(void)
 {
     if((0 == ShiftKey) || 
        (0 == RunKey) || 
@@ -61,9 +61,9 @@ u8 KeyScan(void)
     return (temp);
 }
 
-bit ReadKeyPress(u8 key)
+BIT ReadKeyPress(u8 key)
 {
-    bit temp = 1;
+    BIT temp = 1;
 
     
     switch(key)
@@ -185,7 +185,7 @@ u8 ReadKeyVal(void)
         }
         else
         {
-            key_fsm=0;
+            key_fsm = 0;
         }
         break;
         

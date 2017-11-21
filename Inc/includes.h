@@ -4,8 +4,8 @@
 #include <string.h>
 #include <INTRINS.H>
 
-#include "stc12c5a60ad.h"
 #include "common.h"
+#include "stc12c5a60ad.h"
 #include "led.h"
 #include "key.h"
 #include "uart.h"
