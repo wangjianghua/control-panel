@@ -361,6 +361,7 @@ void KeyTask(void) _task_ KEY_TASK
         
         if(KEY_VAL_NONE != key_value)	
         {
+            os_clear_signal(KEY_TASK);
             os_send_signal(CP_TASK);
             
             jump = 1; 
