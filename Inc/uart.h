@@ -3,7 +3,7 @@
 
 
 #define UART_MAX_LEN        150u
-#define UART_RX_TIMEOUT     (40u / SYS_TICK_PERIOD)
+#define UART_RX_TIMEOUT     (30u / SYS_TICK_PERIOD)
 
 #define UART_TX_BUF         uart_tx_buf
 #define UART_TX_LEN         UART_MAX_LEN

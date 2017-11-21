@@ -109,7 +109,7 @@ void UartTask(void) _task_ UART_TASK
             uart_rx_timeout = 0;
         }
 
-        os_wait(K_TMO, 5, 0);
+        os_wait(K_TMO, 25, 0);
     }    
 }
 
