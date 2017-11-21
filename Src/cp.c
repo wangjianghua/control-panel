@@ -456,8 +456,6 @@ void MENU_Init(void)
     LEDOE = 0;
     
     form_id = FORM_ID_HOME1;
-    
-    form_home(FORM_ID_HOME, FORM_MSG_DATA);
 }
 
 CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
