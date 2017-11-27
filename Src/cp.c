@@ -3533,7 +3533,7 @@ void CPTask(void) _task_ CP_TASK
     
     while(1)
     {
-        event = os_wait(K_SIG + K_TMO, 5, 0);
+        event = os_wait(K_SIG + K_TMO, 10, 0);
 
         switch(event)
         {
