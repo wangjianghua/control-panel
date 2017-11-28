@@ -348,7 +348,7 @@ u8 ReadKeyVal(void)
 void KeyTask(void) _task_ KEY_TASK 
 {
     s8 event;
-    s8 jump = 0;
+    bool jump = FALSE;
 
     
     key_value = KEY_VAL_NONE;
@@ -364,7 +364,7 @@ void KeyTask(void) _task_ KEY_TASK
             os_clear_signal(KEY_TASK);
             os_send_signal(CP_TASK);
             
-            jump = 1; 
+            jump = TRUE; 
             
             while(jump)
             {
@@ -375,7 +375,7 @@ void KeyTask(void) _task_ KEY_TASK
                 case SIG_EVENT:
                     key_value = KEY_VAL_NONE;
                     os_wait(K_TMO, 50, 0);  
-                    jump = 0;
+                    jump = FALSE;
                     break;
                     
                 default:    

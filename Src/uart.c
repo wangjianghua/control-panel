@@ -27,6 +27,24 @@ void UartInit_9600bps(void) //9600bps@11.0592MHz
 }
 
 /* 【参数】
+ * 波特率: 19200bps
+ * 数据位: 8位
+ * 校验位: 无
+ * 停止位: 1位
+ * 华兄 */
+void UartInit_19200bps(void) //19200bps@11.0592MHz
+{
+	PCON |= 0x80;            //使能波特率倍速位SMOD
+	SCON = 0x50;             //8位数据,可变波特率
+	AUXR &= 0xFB;            //独立波特率发生器时钟为Fosc/12,即12T
+	BRT = 0xFD;	             //设定独立波特率发生器重装值
+	AUXR |= 0x01;            //串口1选择独立波特率发生器为波特率发生器
+	AUXR |= 0x10;            //启动独立波特率发生器
+
+    IE |= 0x9a;
+}
+
+/* 【参数】
  * 波特率: 57600bps
  * 数据位: 8位
  * 校验位: 无
@@ -59,7 +77,7 @@ void init_uart(void)
 #endif
 }
 
-void Serial_TRx(void) interrupt 4 using 3 
+void Uart1_ISR(void) interrupt 4 using 3 
 { 
     if(RI)   
     { 
@@ -89,6 +107,22 @@ void Serial_TRx(void) interrupt 4 using 3
     }
 }
 
+void uart_recv_clear(void)
+{
+    uart_rx_count = 0;
+    uart_rx_complete = FALSE;
+}
+
+void uart_send(u8 len)
+{    
+    uart_recv_clear();
+    
+    uart_tx_count = len;
+    
+    uart_tx_index = 0;
+    SBUF = UART_TX_BUF[uart_tx_index++];
+}
+
 void UartTask(void) _task_ UART_TASK  
 {
     while(1)
@@ -111,21 +145,5 @@ void UartTask(void) _task_ UART_TASK
 
         os_wait(K_TMO, 25, 0);
     }    
-}
-
-void uart_recv_clear(void)
-{
-    uart_rx_count = 0;
-    uart_rx_complete = FALSE;
-}
-
-void uart_send(u8 len)
-{    
-    uart_recv_clear();
-    
-    uart_tx_count = len;
-    
-    uart_tx_index = 0;
-    SBUF = UART_TX_BUF[uart_tx_index++];
 }
 

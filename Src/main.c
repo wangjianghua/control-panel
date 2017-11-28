@@ -33,7 +33,7 @@ void StartTask(void) _task_ START_TASK
     os_delete_task(START_TASK);
 }
 
-void Timer1(void) interrupt 3 using 2
+void Timer1_ISR(void) interrupt 3 using 2
 {	
 	TH1 = 0xff;
 	TL1 = 0x6a;
