@@ -16,6 +16,8 @@ typedef unsigned long u32;
 #define BIT                 bit
 #define SFR                 sfr
 
+#define NOP                 _nop_
+
 typedef enum
 { 
     FALSE = 0, 
