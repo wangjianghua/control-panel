@@ -81,7 +81,7 @@ void IIC_SendByte(u8 dat)
     
 	for(i = 7; i >= 0; i--)
 	{
-		if(1 == ((dat >> i) & 1))
+		if((dat >> i) & 0x01)
 		{
 			IIC_SDA_HIGH();
 		}
@@ -252,40 +252,70 @@ void IIC_WriteHalfWord(u16 addr, u16 dat)
 
 void IIC_Test(void)
 {
-    u8 byte = 0;
-    u16 half_word = 0;
+    u8 i = 0, month = 0, day = 0;
+    u16 year = 0;
 
 
-    led_disp_buf[5] |= LED_FWD_REV_MASK | LED_LOC_REM_MASK;
-    LEDOE = 0;
-    os_wait(K_TMO, 12, 0);
+    year = IIC_ReadHalfWord(AT24CXX - 2); 
+
+    if(YEAR == year)
+    {
+        led_disp_buf[0] = led_table[year % 10 + 16];
+        led_disp_buf[1] = (year > 9) ? (led_table[year % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (year > 99) ? (led_table[year % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (year > 999) ? (led_table[year % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (year > 9999) ? (led_table[year % 100000 / 10000 + 16]) : (0xff);
+        LEDOE = 0;
+
+        for(i = 0; i < 50; i++)
+        {
+            os_wait(K_TMO, 25, 0);
+        }
+    }
+    else
+    {
+        IIC_WriteHalfWord(AT24CXX - 2, YEAR);
+    }
     
-    byte = IIC_ReadByte(0);
+    month = IIC_ReadByte(0);
 
-    if(0x5a == byte)
+    if(MONTH == month)
     {
-        led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-        LEDOE = 0;
+        led_disp_buf[4] = led_table[month % 100 / 10 + 16];
+        led_disp_buf[3] = led_table[month % 10 + 16];
+        led_disp_buf[2] = led_table['-' - 32];
     }
     else
     {
-        IIC_WriteByte(0, 0x5a);
+        IIC_WriteByte(0, MONTH);
     }
 
-    half_word = IIC_ReadHalfWord(AT24CXX - 2); 
+    day = IIC_ReadByte(1);
 
-    if(0x5a5a == half_word)
+    if(DAY == day)
     {
-        led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+        led_disp_buf[1] = led_table[day % 100 / 10 + 16];
+        led_disp_buf[0] = led_table[day % 10 + 16];
         LEDOE = 0;
+
+        for(i = 0; i < 50; i++)
+        {
+            os_wait(K_TMO, 25, 0);
+        }
     }
     else
     {
-        IIC_WriteHalfWord(AT24CXX - 2, 0x5a5a);
+        IIC_WriteByte(1, DAY);
     }
 
-    os_wait(K_TMO, 12, 0);
+    led_disp_buf[5] = 0xff;
+    led_disp_buf[4] = 0xff;
+    led_disp_buf[3] = 0xff;
+    led_disp_buf[2] = 0xff;
+    led_disp_buf[1] = 0xff;
+    led_disp_buf[0] = 0xff;
+    LEDOE = 0;
 
-    while(1);
+    os_wait(K_TMO, 25, 0);
 }
 

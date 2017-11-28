@@ -10,7 +10,7 @@ SBIT IIC_SDA = P4^1;
 #define	IIC_SDA_LOW()		    IIC_SDA = 0
 #define	IIC_SDA_HIGH()	        IIC_SDA = 1
 
-#define IIC_TEST_EN             0u
+#define IIC_TEST_EN             1u
 
 #define AT24C01                 128u  
 #define AT24C02                 256u  
