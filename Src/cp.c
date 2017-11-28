@@ -452,6 +452,8 @@ void MENU_Init(void)
     LEDOE = 0;
     
     form_id = FORM_ID_HOME1;
+
+    os_wait(K_TMO, 10, 0);
 }
 
 CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
@@ -3524,6 +3526,10 @@ void CPTask(void) _task_ CP_TASK
     os_send_signal(KEY_TASK);
     
     MENU_Init();
+
+#if (IIC_TEST_EN > 0u)
+    IIC_Test();
+#endif
 
     vfd_con();
     

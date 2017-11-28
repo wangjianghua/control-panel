@@ -361,6 +361,16 @@
           <GroupName>Src</GroupName>
           <Files>
             <File>
+              <FileName>Conf_tny.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\Conf_tny.A51</FilePath>
+            </File>
+            <File>
+              <FileName>cp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\cp.c</FilePath>
+            </File>
+            <File>
               <FileName>key.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\key.c</FilePath>
@@ -376,19 +386,9 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>table.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\table.c</FilePath>
-            </File>
-            <File>
               <FileName>uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\uart.c</FilePath>
-            </File>
-            <File>
-              <FileName>Conf_tny.A51</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\Conf_tny.A51</FilePath>
             </File>
           </Files>
         </Group>
