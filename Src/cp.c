@@ -682,87 +682,88 @@ void form_home_callback(void)
 
 static int form_home(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
+    if(FORM_MSG_KEY == form_msg)
     {
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
-
-        if(VFD_LOC == g_cp_para.lr)
+        switch(key_msg)
         {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_UP:
+            form_id++;
+            form_id %= 3;
+            break;
+
+        case KEY_MSG_DOWN:
+            if(FORM_ID_HOME1 != form_id)
+            {
+                form_id--;
+            }
+            else
+            {
+                form_id = FORM_ID_HOME3;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_REF;
+            break;
+            
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_UP:
-        form_id++;
-        form_id %= 3;
-        break;
-
-    case KEY_MSG_DOWN:
-        if(FORM_ID_HOME1 != form_id)
-        {
-            form_id--;
-        }
-        else
-        {
-            form_id = FORM_ID_HOME3;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_REF;
-        break;
-        
-    default:
-        break;
     }
 
     form_home_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
@@ -943,83 +944,84 @@ void form_ref_callback(void)
 
 static int form_ref(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
+    if(FORM_MSG_KEY == form_msg)
     {
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
-
-        if(VFD_LOC == g_cp_para.lr)
+        switch(key_msg)
         {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_REF_VAL;
+            break;
+            
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_HOME;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_COPY;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_PARA;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_REF_VAL;
-        break;
-        
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_HOME;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_COPY;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_PARA;
-        break;
-
-    default:
-        break;
     }
 
     form_ref_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
@@ -1204,93 +1206,94 @@ void form_ref_val_callback(void)
 
 static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            g_cp_para.ref_chang = TRUE;
+            form_id = FORM_ID_REF;
+            break;
+            
+        case KEY_MSG_EXIT:
+            g_cp_para.ref_temp = g_cp_para.ref;
+            form_id = FORM_ID_REF;
+            break;
+
+        case KEY_MSG_UP:
+            g_cp_para.ref_temp += 100;
+            g_cp_para.ref_temp %= MAX_REF_VAL;
+            break;
+
+        case KEY_MSG_DOWN:
+            if(g_cp_para.ref_temp > 100)
+            {
+                g_cp_para.ref_temp -= 100;
+            }
+            else
+            {
+                g_cp_para.ref_temp = MAX_REF_VAL;
+            }
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        g_cp_para.ref_chang = TRUE;
-        form_id = FORM_ID_REF;
-        break;
-        
-    case KEY_MSG_EXIT:
-        g_cp_para.ref_temp = g_cp_para.ref;
-        form_id = FORM_ID_REF;
-        break;
-
-    case KEY_MSG_UP:
-        g_cp_para.ref_temp += 100;
-        g_cp_para.ref_temp %= MAX_REF_VAL;
-        break;
-
-    case KEY_MSG_DOWN:
-        if(g_cp_para.ref_temp > 100)
-        {
-            g_cp_para.ref_temp -= 100;
-        }
-        else
-        {
-            g_cp_para.ref_temp = MAX_REF_VAL;
-        }
-        break;
-
-    default:
-        break;
     }
 
     form_ref_val_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_para_cmd[MAX_FORM_PARA_CMD][32] = {
@@ -1471,83 +1474,84 @@ void form_para_callback(void)
 
 static int form_para(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_PARA_GROUP;
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_HOME;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_REF;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_COPY;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_PARA_GROUP;
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_HOME;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_REF;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_COPY;
-        break;
-
-    default:
-        break;
     }
 
     form_para_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
@@ -1728,91 +1732,92 @@ void form_para_group_callback(void)
 
 static int form_para_group(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_PARA_GRADE;
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_PARA;
+            break;
+
+        case KEY_MSG_UP:
+            g_cp_para.group++;
+            g_cp_para.group %= 100;
+            break;
+
+        case KEY_MSG_DOWN:
+            if(g_cp_para.group)
+            {
+                g_cp_para.group--;
+            }
+            else
+            {
+                g_cp_para.group = 99;
+            }
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_PARA_GRADE;
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_PARA;
-        break;
-
-    case KEY_MSG_UP:
-        g_cp_para.group++;
-        g_cp_para.group %= 100;
-        break;
-
-    case KEY_MSG_DOWN:
-        if(g_cp_para.group)
-        {
-            g_cp_para.group--;
-        }
-        else
-        {
-            g_cp_para.group = 99;
-        }
-        break;
-
-    default:
-        break;
     }
 
     form_para_group_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
@@ -2067,91 +2072,92 @@ bool func_CODE_read(void)
 
 static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            func_CODE_read();
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_PARA_GROUP;
+            break;
+
+        case KEY_MSG_UP:
+            g_cp_para.grade++;
+            g_cp_para.grade %= 100;
+            break;
+
+        case KEY_MSG_DOWN:
+            if(g_cp_para.grade)
+            {
+                g_cp_para.grade--;
+            }
+            else
+            {
+                g_cp_para.grade = 99;
+            }
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        func_CODE_read();
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_PARA_GROUP;
-        break;
-
-    case KEY_MSG_UP:
-        g_cp_para.grade++;
-        g_cp_para.grade %= 100;
-        break;
-
-    case KEY_MSG_DOWN:
-        if(g_cp_para.grade)
-        {
-            g_cp_para.grade--;
-        }
-        else
-        {
-            g_cp_para.grade = 99;
-        }
-        break;
-
-    default:
-        break;
     }
 
     form_para_grade_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
@@ -2406,86 +2412,87 @@ bool func_CODE_write(void)
 
 static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            func_CODE_write();
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_PARA_GRADE;
+            break;
+
+        case KEY_MSG_UP:
+            g_cp_para.vfd_para++;
+            break;
+
+        case KEY_MSG_DOWN:
+            if(g_cp_para.vfd_para)
+            {
+                g_cp_para.vfd_para--;
+            }
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        func_CODE_write();
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_PARA_GRADE;
-        break;
-
-    case KEY_MSG_UP:
-        g_cp_para.vfd_para++;
-        break;
-
-    case KEY_MSG_DOWN:
-        if(g_cp_para.vfd_para)
-        {
-            g_cp_para.vfd_para--;
-        }
-        break;
-
-    default:
-        break;
     }
 
     form_para_val_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_copy_cmd[MAX_FORM_COPY_CMD][32] = {
@@ -2666,83 +2673,84 @@ void form_copy_callback(void)
 
 static int form_copy(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_COPY_UPLOAD;
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_HOME;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_PARA;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_REF;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_COPY_UPLOAD;
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_HOME;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_PARA;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_REF;
-        break;
-
-    default:
-        break;
     }
 
     form_copy_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_copy_upload_cmd[MAX_FORM_COPY_UPLOAD_CMD][32] = {
@@ -2923,83 +2931,84 @@ void form_copy_upload_callback(void)
 
 static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            form_id = FORM_ID_COPY_UPLOAD_RATE;
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_COPY;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_COPY_DOWNLOAD_PART;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        form_id = FORM_ID_COPY_UPLOAD_RATE;
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_COPY;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_COPY_DOWNLOAD_PART;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_COPY_DOWNLOAD_ALL;
-        break;
-
-    default:
-        break;
     }
 
     form_copy_upload_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_copy_download_all_cmd[MAX_FORM_COPY_DOWNLOAD_ALL_CMD][32] = {
@@ -3180,82 +3189,83 @@ void form_copy_download_all_callback(void)
 
 static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_COPY;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_COPY_UPLOAD;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_COPY_DOWNLOAD_PART;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_COPY;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_COPY_UPLOAD;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_COPY_DOWNLOAD_PART;
-        break;
-
-    default:
-        break;
     }
 
     form_copy_download_all_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_copy_download_part_cmd[MAX_FORM_COPY_DOWNLOAD_PART_CMD][32] = {
@@ -3436,82 +3446,83 @@ void form_copy_download_part_callback(void)
 
 static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_COPY;
+            break;
+
+        case KEY_MSG_UP:
+            form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+            break;
+
+        case KEY_MSG_DOWN:
+            form_id = FORM_ID_COPY_UPLOAD;
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_COPY;
-        break;
-
-    case KEY_MSG_UP:
-        form_id = FORM_ID_COPY_DOWNLOAD_ALL;
-        break;
-
-    case KEY_MSG_DOWN:
-        form_id = FORM_ID_COPY_UPLOAD;
-        break;
-
-    default:
-        break;
     }
 
     form_copy_download_part_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 CODE u8 form_copy_upload_rate_cmd[MAX_FORM_COPY_UPLOAD_RATE_CMD][32] = {
@@ -3693,80 +3704,81 @@ void form_copy_upload_rate_callback(void)
 
 static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 {
-    form_msg = form_msg;
-    
-    switch(key_msg)
-    {        
-    case KEY_MSG_RUN:
-        g_cp_para.run = TRUE;
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
 
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_RUN_MASK;
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            break;
+
+        case KEY_MSG_EXIT:
+            form_id = FORM_ID_COPY_UPLOAD;
+            break;
+
+        case KEY_MSG_UP:
+            break;
+
+        case KEY_MSG_DOWN:
+            break;
+
+        default:
+            break;
         }
-        break;
-
-    case KEY_MSG_STOP:
-        g_cp_para.stop = TRUE;
-
-        led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE = 0;
-        break;
-
-    case KEY_MSG_LOC_REM:
-        /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-         * 逻辑非(!x)的等价式: !x = (0 == x)
-         * 华兄 */
-        g_cp_para.lr = !g_cp_para.lr;
-
-        if(VFD_LOC == g_cp_para.lr)
-        {
-            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_FWD_REV:
-        g_cp_para.fr = !g_cp_para.fr;
-
-        if(VFD_REV == g_cp_para.fr)
-        {
-            led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        else
-        {
-            led_disp_buf[5] |= LED_FWD_REV_MASK;
-            LEDOE = 0;
-        }
-        break;
-
-    case KEY_MSG_ENTER:
-        break;
-
-    case KEY_MSG_EXIT:
-        form_id = FORM_ID_COPY_UPLOAD;
-        break;
-
-    case KEY_MSG_UP:
-        break;
-
-    case KEY_MSG_DOWN:
-        break;
-
-    default:
-        break;
     }
 
     form_copy_upload_rate_callback();
 
-    return (TRUE);
+    return (FORM_MSG_NONE);
 }
 
 void CPTask(void) _task_ CP_TASK
@@ -3810,8 +3822,14 @@ void CPTask(void) _task_ CP_TASK
             key_msg = KEY_MSG_NONE;
             break;
         }
-        
-        (*form_list[form_id])(key_msg, form_msg);
+
+        if(NULL != form_list[form_id])
+        {
+            if(FORM_MSG_NONE != (form_msg = (*form_list[form_id])(key_msg, FORM_MSG_KEY)))
+            {
+                (*form_list[form_id])(key_msg, form_msg);
+            }
+        }
     }
 }
 
