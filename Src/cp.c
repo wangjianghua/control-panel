@@ -3792,13 +3792,13 @@ void form_copy_upload_rate_callback(void)
     static bool first = TRUE;
     
     
-    for(i = COPY_UPLOAD_RATE_SET_CMD; i < MAX_COPY_UPLOAD_RATE_CMD; i++)
+    for(i = COPY_UPLOAD_RATE_SET_CMD; i < COPY_UPLOAD_RATE_TAIL_CMD; i++)
     {    
         if((COPY_UPLOAD_RATE_CMD == i) && 
            (FALSE == first) &&
            ((g_cp_para.vfd_para_total - g_cp_para.vfd_para_count) < 0x24))
         {
-            i = COPY_UPLOAD_RATE_TAIL_CMD;
+            //i = COPY_UPLOAD_RATE_TAIL_CMD;
         }
         
         len = copy_upload_rate_cmd[i][10] + 11;
