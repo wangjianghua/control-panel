@@ -277,7 +277,7 @@ void IIC_Test(void)
         IIC_WriteHalfWord(AT24CXX - 2, YEAR);
     }
     
-    month = IIC_ReadByte(0);
+    month = IIC_ReadByte(AT24CXX - 3);
 
     if(MONTH == month)
     {
@@ -287,10 +287,10 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(0, MONTH);
+        IIC_WriteByte(AT24CXX - 3, MONTH);
     }
 
-    day = IIC_ReadByte(1);
+    day = IIC_ReadByte(AT24CXX - 4);
 
     if(DAY == day)
     {
@@ -305,7 +305,7 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(1, DAY);
+        IIC_WriteByte(AT24CXX - 4, DAY);
     }
 
     led_disp_buf[5] = 0xff;

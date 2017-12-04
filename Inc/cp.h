@@ -53,6 +53,7 @@ typedef enum
     FORM_ID_COPY_UPLOAD,
     FORM_ID_COPY_DOWNLOAD_ALL,
     FORM_ID_COPY_DOWNLOAD_PART,
+    FORM_ID_COPY_UPLOAD_RATE,
     MAX_FORM_NUM,
 } FORM_ID;
 
@@ -155,6 +156,14 @@ typedef enum
     MAX_FORM_COPY_DOWNLOAD_PART_CMD,
 } FORM_COPY_DOWNLOAD_PART_CMD;
 
+typedef enum
+{
+    FORM_COPY_UPLOAD_RATE_SET_CMD = 0,
+    FORM_COPY_UPLOAD_RATE_ALARM_CMD,
+    FORM_COPY_UPLOAD_RATE_FAULT_CMD,
+    MAX_FORM_COPY_UPLOAD_RATE_CMD,
+} FORM_COPY_UPLOAD_RATE_CMD;
+
 typedef struct _cp 
 {
     u8 cmd; //命令字
@@ -162,6 +171,7 @@ typedef struct _cp
 	u8 group; //变频器分组
 	u8 grade_index; //变频器分级索引
 	u8 grade; //变频器分级
+	u8 rate; //进度
     bool reset; //复位
     bool lr; //本地远程操作方式，本地LOC、远程REM
     bool run; //运行
