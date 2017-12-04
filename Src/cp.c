@@ -2987,6 +2987,8 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_ENTER:
             form_id = FORM_ID_COPY_UPLOAD_RATE;
+
+            return (FORM_MSG_DATA);
             break;
 
         case KEY_MSG_EXIT:
@@ -3525,30 +3527,118 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
     return (FORM_MSG_NONE);
 }
 
-CODE u8 form_copy_upload_rate_cmd[MAX_FORM_COPY_UPLOAD_RATE_CMD][32] = {
-    /* FORM_COPY_UPLOAD_RATE_SET_CMD */
-	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
-    /* FORM_COPY_UPLOAD_RATE_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_COPY_UPLOAD_RATE_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
+CODE u8 copy_upload_rate_baudrate_cmd[][32] = {
+    /* FORM_COPY_UPLOAD_RATE_BAUDRATE_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x05, 0x0A, 0x05, 0xA9, 0x50, 0x84, 0x00, 0x01, 0x00, 0x00, 0x4B, 0x00},    
 };
 
-void form_copy_upload_rate_callback(void)
+bool chang_baudrate(u16 baudrate)
+{
+    u8 i, len, timeout, ret = FALSE;
+    unsigned int crc;
+
+
+    len = copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11;
+                    
+    memcpy(UART_TX_BUF, copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+    
+    UART_TX_BUF[19] = (u8)(baudrate >> 8);
+    UART_TX_BUF[20] = (u8)baudrate;
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+
+    uart_send(len);
+
+    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+     * 华兄 */
+    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+    {
+        /* 2500 = 1s */
+        os_wait(K_TMO, 25, 0);
+
+        if(TRUE == uart_rx_complete) //串口接收数据完毕
+        {
+            break;
+        }
+    }
+
+    if(TRUE == uart_rx_complete)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {
+            switch(baudrate)
+            {
+            case COPY_BAUDRATE:
+                UartInit_19200bps();
+                break;
+
+            case OTHER_BAUDRATE:
+                UartInit_9600bps();
+                break;
+
+            default:
+                UartInit_9600bps();
+                break;
+            }
+            
+            ret = TRUE;
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[i + 16];
+        LEDOE = 0;
+    }
+
+    uart_recv_clear();
+
+    return (ret);
+}
+
+CODE u8 form_copy_upload_rate_init_cmd[][32] = {
+    /* COPY_UPLOAD_RATE_INIT */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x11, 0x00, 0x59, 0x00, 0x02, 0x04, 0x10, 0xA4, 0x50, 0x0D},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x05, 0x0A, 0x08, 0xAA, 0x50, 0x02, 0x00, 0x03, 0x01, 0x03, 0xFD, 0x82},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0C, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x06, 0xA2, 0x50, 0x82, 0x10, 0x01},
+};
+
+void copy_upload_rate_init(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_COPY_UPLOAD_RATE_CMD - 2; i++)
+    for(i = 0; i < 5; i++)
     {        
-        len = form_copy_upload_rate_cmd[i][10] + 11;
+        len = form_copy_upload_rate_init_cmd[i][10] + 11;
                         
-        memcpy(UART_TX_BUF, form_copy_upload_rate_cmd[i], len);
+        memcpy(UART_TX_BUF, form_copy_upload_rate_init_cmd[i], len);
 
         switch(i)
         {
-        case FORM_COPY_UPLOAD_RATE_SET_CMD:
+        case 2:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
 
             if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
@@ -3610,15 +3700,8 @@ void form_copy_upload_rate_callback(void)
             }
             break;
 
-        case FORM_COPY_UPLOAD_RATE_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_COPY_UPLOAD_RATE_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
             break;
         }
 
@@ -3650,7 +3733,7 @@ void form_copy_upload_rate_callback(void)
             {
                 switch(i)
                 {
-                case FORM_COPY_UPLOAD_RATE_SET_CMD:
+                case 2:
                     if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
                     {
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
@@ -3691,7 +3774,210 @@ void form_copy_upload_rate_callback(void)
 
         uart_recv_clear();
     }
+}
+
+CODE u8 copy_upload_rate_cmd[][32] = {
+    /* COPY_UPLOAD_RATE_SET_CMD */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    /* COPY_UPLOAD_RATE_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x14, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x89, 0x00, 0x08},
+    /* COPY_UPLOAD_RATE_TAIL_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x04},
+};
+
+void form_copy_upload_rate_callback(void)
+{
+    u8 i, len, timeout;
+    unsigned int crc;
+    static bool first = TRUE;
     
+    
+    for(i = COPY_UPLOAD_RATE_SET_CMD; i < MAX_COPY_UPLOAD_RATE_CMD; i++)
+    {    
+        if((COPY_UPLOAD_RATE_CMD == i) && 
+           (FALSE == first) &&
+           ((g_cp_para.vfd_para_total - g_cp_para.vfd_para_count) < 0x24))
+        {
+            i = COPY_UPLOAD_RATE_TAIL_CMD;
+        }
+        
+        len = copy_upload_rate_cmd[i][10] + 11;
+                        
+        memcpy(UART_TX_BUF, copy_upload_rate_cmd[i], len);
+
+        switch(i)
+        {
+        case COPY_UPLOAD_RATE_SET_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+            if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            {
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+                if(TRUE == g_cp_para.reset)
+                {
+                    g_cp_para.reset = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x10;
+                }
+
+                if(TRUE == g_cp_para.ref_chang)
+                {
+                    g_cp_para.ref_chang = FALSE;
+                    
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+                }
+                else
+                {
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+                }
+
+                if(TRUE == g_cp_para.stop)
+                {
+                    g_cp_para.stop = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x01;
+                }
+                
+                if(TRUE == g_cp_para.run)
+                {
+                    g_cp_para.run = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x02;
+                }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+                
+                if(VFD_LOC == g_cp_para.lr)
+                {
+                    UART_TX_BUF[20] |= 0x08;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x08;
+                }
+            }
+            break;
+
+        case COPY_UPLOAD_RATE_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        case COPY_UPLOAD_RATE_TAIL_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        default:
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+        {
+            /* 2500 = 1s */
+            os_wait(K_TMO, 25, 0);
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
+            {
+                break;
+            }
+        }
+        
+        if(TRUE == uart_rx_complete)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case COPY_UPLOAD_RATE_SET_CMD:
+                    if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        g_cp_para.count++;
+
+                        if(UART_RX_BUF[11] & 0x80)
+                        {
+                            g_cp_para.reset = TRUE;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    break;
+
+                case COPY_UPLOAD_RATE_CMD:
+                case COPY_UPLOAD_RATE_TAIL_CMD:    
+                    if(TRUE == first)
+                    {
+                        first = FALSE;
+                        
+                        g_cp_para.vfd_para_total = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                    }
+
+                    g_cp_para.vfd_para_count += UART_RX_BUF[2] - 4;
+
+                    g_cp_para.rate = (u8)(g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
+                    g_cp_para.rate %= 101;
+                    
+                    if(g_cp_para.vfd_para_count >= g_cp_para.vfd_para_total)
+                    {
+                        g_cp_para.vfd_para_count = 0;
+
+                        first = TRUE;
+
+                        if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+                        {
+                            form_id = FORM_ID_COPY_UPLOAD;
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                led_disp_buf[4] = 0xff;
+                led_disp_buf[3] = led_table['E' - 32];
+                led_disp_buf[2] = led_table['r' - 32];
+                led_disp_buf[1] = led_table['r' - 32];
+                led_disp_buf[0] = led_table[i + 16];
+                LEDOE = 0;
+            }
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+
+        uart_recv_clear();
+    }
+
     led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
     led_disp_buf[1] = (g_cp_para.rate > 9) ? (led_table[g_cp_para.rate % 100 / 10 + 16]) : (0xff);
     led_disp_buf[2] = (g_cp_para.rate > 99) ? (led_table[g_cp_para.rate % 1000 / 100 + 16]) : (0xff);
@@ -3704,6 +3990,20 @@ void form_copy_upload_rate_callback(void)
 
 static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 {
+    if(FORM_MSG_DATA == form_msg)
+    {
+        if(TRUE == chang_baudrate(COPY_BAUDRATE))
+        {
+            copy_upload_rate_init();
+        }
+        else
+        {
+            form_id = FORM_ID_COPY_UPLOAD;
+
+            return (FORM_MSG_NONE);
+        }
+    }
+    
     if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
@@ -3762,7 +4062,10 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_EXIT:
-            form_id = FORM_ID_COPY_UPLOAD;
+            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            {
+                form_id = FORM_ID_COPY_UPLOAD;
+            }
             break;
 
         case KEY_MSG_UP:

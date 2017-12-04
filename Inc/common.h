@@ -10,6 +10,8 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 
+typedef float fp32;
+
 #define CODE                code
 #define XDATA               xdata
 #define SBIT                sbit

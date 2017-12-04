@@ -35,6 +35,9 @@
 
 #define VFD_REPLY_TIMEOUT       100u //25 * 100 = 1s
 
+#define COPY_BAUDRATE		    19200u
+#define OTHER_BAUDRATE		    9600u
+
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
@@ -55,7 +58,7 @@ typedef enum
     FORM_ID_COPY_DOWNLOAD_PART,
     FORM_ID_COPY_UPLOAD_RATE,
     MAX_FORM_NUM,
-} FORM_ID;
+} ENUM_FORM_ID;
 
 typedef enum
 {
@@ -63,7 +66,7 @@ typedef enum
     FORM_MSG_REFRESH,
     FORM_MSG_KEY,
     FORM_MSG_DATA,
-} FORM_MSG;
+} ENUM_FORM_MSG;
 
 typedef enum
 {
@@ -72,7 +75,7 @@ typedef enum
     FORM_HOME_ALARM_CMD,
     FORM_HOME_FAULT_CMD,
     MAX_FORM_HOME_CMD,
-} FORM_HOME_CMD;
+} ENUM_FORM_HOME_CMD;
 
 typedef enum
 {
@@ -80,7 +83,7 @@ typedef enum
     FORM_REF_ALARM_CMD,
     FORM_REF_FAULT_CMD,
     MAX_FORM_REF_CMD,
-} FORM_REF_CMD;
+} ENUM_FORM_REF_CMD;
 
 typedef enum
 {
@@ -88,7 +91,7 @@ typedef enum
     FORM_REF_VAL_ALARM_CMD,
     FORM_REF_VAL_FAULT_CMD,
     MAX_FORM_REF_VAL_CMD,
-} FORM_REF_VAL_CMD;
+} ENUM_FORM_REF_VAL_CMD;
 
 typedef enum
 {
@@ -96,7 +99,7 @@ typedef enum
     FORM_PARA_ALARM_CMD,
     FORM_PARA_FAULT_CMD,
     MAX_FORM_PARA_CMD,
-} FORM_PARA_CMD;
+} ENUM_FORM_PARA_CMD;
 
 typedef enum
 {
@@ -104,7 +107,7 @@ typedef enum
     FORM_PARA_GROUP_ALARM_CMD,
     FORM_PARA_GROUP_FAULT_CMD,
     MAX_FORM_PARA_GROUP_CMD,
-} FORM_PARA_GROUP_CMD;
+} ENUM_FORM_PARA_GROUP_CMD;
 
 typedef enum
 {
@@ -113,7 +116,7 @@ typedef enum
     FORM_PARA_GRADE_FAULT_CMD,
     FORM_PARA_GRADE_FUNC_CODE_READ_CMD,
     MAX_FORM_PARA_GRADE_CMD,
-} FORM_PARA_GRADE_CMD;
+} ENUM_FORM_PARA_GRADE_CMD;
 
 typedef enum
 {
@@ -122,7 +125,7 @@ typedef enum
     FORM_PARA_VAL_FAULT_CMD,
     FORM_PARA_VAL_FUNC_CODE_WRITE_CMD,
     MAX_FORM_PARA_VAL_CMD,
-} FORM_PARA_VAL_CMD;
+} ENUM_FORM_PARA_VAL_CMD;
 
 typedef enum
 {
@@ -130,7 +133,7 @@ typedef enum
     FORM_COPY_ALARM_CMD,
     FORM_COPY_FAULT_CMD,
     MAX_FORM_COPY_CMD,
-} FORM_COPY_CMD;
+} ENUM_FORM_COPY_CMD;
 
 typedef enum
 {
@@ -138,7 +141,7 @@ typedef enum
     FORM_COPY_UPLOAD_ALARM_CMD,
     FORM_COPY_UPLOAD_FAULT_CMD,
     MAX_FORM_COPY_UPLOAD_CMD,
-} FORM_COPY_UPLOAD_CMD;
+} ENUM_FORM_COPY_UPLOAD_CMD;
 
 typedef enum
 {
@@ -146,7 +149,7 @@ typedef enum
     FORM_COPY_DOWNLOAD_ALL_ALARM_CMD,
     FORM_COPY_DOWNLOAD_ALL_FAULT_CMD,
     MAX_FORM_COPY_DOWNLOAD_ALL_CMD,
-} FORM_COPY_DOWNLOAD_ALL_CMD;
+} ENUM_FORM_COPY_DOWNLOAD_ALL_CMD;
 
 typedef enum
 {
@@ -154,15 +157,21 @@ typedef enum
     FORM_COPY_DOWNLOAD_PART_ALARM_CMD,
     FORM_COPY_DOWNLOAD_PART_FAULT_CMD,
     MAX_FORM_COPY_DOWNLOAD_PART_CMD,
-} FORM_COPY_DOWNLOAD_PART_CMD;
+} ENUM_FORM_COPY_DOWNLOAD_PART_CMD;
 
 typedef enum
 {
-    FORM_COPY_UPLOAD_RATE_SET_CMD = 0,
-    FORM_COPY_UPLOAD_RATE_ALARM_CMD,
-    FORM_COPY_UPLOAD_RATE_FAULT_CMD,
-    MAX_FORM_COPY_UPLOAD_RATE_CMD,
-} FORM_COPY_UPLOAD_RATE_CMD;
+    COPY_UPLOAD_RATE_BAUDRATE = 0,
+    MAX_COPY_UPLOAD_RATE_BAUDRATE_CMD,
+} ENUM_COPY_UPLOAD_RATE_BAUDRATE_CMD;
+
+typedef enum
+{
+    COPY_UPLOAD_RATE_SET_CMD = 0,
+    COPY_UPLOAD_RATE_CMD,
+    COPY_UPLOAD_RATE_TAIL_CMD,
+    MAX_COPY_UPLOAD_RATE_CMD,
+} ENUM_COPY_UPLOAD_RATE_CMD;
 
 typedef struct _cp 
 {
@@ -185,6 +194,8 @@ typedef struct _cp
     u16 disp_para2; //主界面显示参数2
     u16 disp_para3; //主界面显示参数3
     u16 vfd_para; //变频器参数
+    fp32 vfd_para_count; //变频器参数当前数目
+    u16 vfd_para_total; //变频器参数总数目
 } CP, *PCP;
 
 extern XDATA bool runstatus;

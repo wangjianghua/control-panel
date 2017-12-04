@@ -27,6 +27,9 @@ extern XDATA u8 uart_rx_count;
 extern XDATA u16 uart_rx_timeout;
 extern XDATA bool uart_rx_complete;
 
+extern void UartInit_9600bps(void);
+extern void UartInit_19200bps(void);
+extern void UartInit_57600bps(void);
 extern void init_uart(void);
 extern void uart_recv_clear(void);
 extern void uart_send(u8 len);
