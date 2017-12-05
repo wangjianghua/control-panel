@@ -3925,7 +3925,6 @@ void form_copy_upload_rate_callback(void)
                     break;
 
                 case COPY_UPLOAD_RATE_CMD:
-                case COPY_UPLOAD_RATE_TAIL_CMD:   
                     num = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
                     
                     if((0x41 == UART_RX_BUF[3]) && (0x82 == UART_RX_BUF[4])) //头帧
@@ -3939,22 +3938,22 @@ void form_copy_upload_rate_callback(void)
 
                     if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
                     {
+                        g_cp_para.vfd_para_count += UART_RX_BUF[2] - 8; //自身长度
+                        
                         last_frame = TRUE;
                     }
 
-                    if((0x41 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
-                    {
-                        g_cp_para.vfd_para_count += UART_RX_BUF[2] - 8; //尾帧自身长度
-                    }
-
                     g_cp_para.rate = (u8)((fp32)g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
+                    break;
 
-                    if((0x41 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //上传结束
+                case COPY_UPLOAD_RATE_TAIL_CMD:
+                    if((0x41 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
                     {
                         last_frame = FALSE;
                         
                         g_cp_para.vfd_para_count = 0;
                         g_cp_para.vfd_para_total = 0;
+                        g_cp_para.rate = 0;
                         
                         if(TRUE == chang_baudrate(OTHER_BAUDRATE))
                         {
