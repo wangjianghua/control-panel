@@ -3789,16 +3789,19 @@ void form_copy_upload_rate_callback(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
-    static bool first = TRUE;
+    static bool first_frame = TRUE, last_frame = FALSE;
+    static u16 frame_num = 0;
     
     
     for(i = COPY_UPLOAD_RATE_SET_CMD; i < COPY_UPLOAD_RATE_TAIL_CMD; i++)
     {    
-        if((COPY_UPLOAD_RATE_CMD == i) && 
-           (FALSE == first) &&
-           ((g_cp_para.vfd_para_total - g_cp_para.vfd_para_count) < 0x24))
+        if((0 != g_cp_para.vfd_para_total) && 
+           (g_cp_para.vfd_para_count >= g_cp_para.vfd_para_total) && 
+           (COPY_UPLOAD_RATE_CMD == i))
         {
-            //i = COPY_UPLOAD_RATE_TAIL_CMD;
+            i = COPY_UPLOAD_RATE_TAIL_CMD;
+
+            last_frame = TRUE;
         }
         
         len = copy_upload_rate_cmd[i][10] + 11;
@@ -3926,23 +3929,33 @@ void form_copy_upload_rate_callback(void)
 
                 case COPY_UPLOAD_RATE_CMD:
                 case COPY_UPLOAD_RATE_TAIL_CMD:    
-                    if(TRUE == first)
+                    if(TRUE == first_frame)
                     {
-                        first = FALSE;
+                        first_frame = FALSE;
                         
                         g_cp_para.vfd_para_total = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
                     }
 
-                    g_cp_para.vfd_para_count += UART_RX_BUF[2] - 4;
+                    if((0 == (frame_num % 2)) &&
+                       (FALSE == last_frame))
+                    {
+                        g_cp_para.vfd_para_count += UART_RX_BUF[2] - 4; //偶数帧数据有效
+                    }
 
-                    g_cp_para.rate = (u8)(g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
-                    g_cp_para.rate %= 101;
+                    frame_num++;
+
+                    g_cp_para.rate = (u8)((fp32)g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
+                    //g_cp_para.rate %= 101;
                     
-                    if(g_cp_para.vfd_para_count >= g_cp_para.vfd_para_total)
+                    if(TRUE == last_frame)
                     {
                         g_cp_para.vfd_para_count = 0;
+                        g_cp_para.vfd_para_total = 0;
 
-                        first = TRUE;
+                        first_frame = TRUE;
+                        last_frame = FALSE;
+
+                        frame_num = 0;
 
                         if(TRUE == chang_baudrate(OTHER_BAUDRATE))
                         {

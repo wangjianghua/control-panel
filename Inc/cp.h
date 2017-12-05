@@ -194,7 +194,7 @@ typedef struct _cp
     u16 disp_para2; //主界面显示参数2
     u16 disp_para3; //主界面显示参数3
     u16 vfd_para; //变频器参数
-    fp32 vfd_para_count; //变频器参数当前数目
+    u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
 } CP, *PCP;
 
