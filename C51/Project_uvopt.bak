@@ -196,8 +196,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>3810</TopLine>
-      <CurrentLine>3826</CurrentLine>
+      <TopLine>3529</TopLine>
+      <CurrentLine>3540</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\Src\cp.c</PathWithFileName>
       <FilenameWithoutPath>cp.c</FilenameWithoutPath>
@@ -276,7 +276,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>133</TopLine>
+      <TopLine>122</TopLine>
       <CurrentLine>146</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\Src\eeprom.c</PathWithFileName>
