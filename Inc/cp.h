@@ -38,6 +38,9 @@
 #define COPY_BAUDRATE		    19200u
 #define OTHER_BAUDRATE		    9600u
 
+#define VFD_PARA_LEN_ADDR       0u                       //2B, 变频器参数长度存储地址
+#define VFD_PARA_ADDR           (VFD_PARA_LEN_ADDR + 2u) //nB, 变频器参数存储地址
+
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
@@ -181,6 +184,7 @@ typedef struct _cp
 	u8 grade_index; //变频器分级索引
 	u8 grade; //变频器分级
 	u8 rate; //进度
+	u8 vfd_para_crc; //变频器参数存取校验码
     bool reset; //复位
     bool lr; //本地远程操作方式，本地LOC、远程REM
     bool run; //运行
@@ -196,6 +200,7 @@ typedef struct _cp
     u16 vfd_para; //变频器参数
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
+    u16 vfd_para_index; //变频器参数存取索引
 } CP, *PCP;
 
 extern XDATA bool runstatus;

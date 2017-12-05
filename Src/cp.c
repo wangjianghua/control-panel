@@ -3955,7 +3955,7 @@ CODE u8 copy_upload_rate_cmd[][32] = {
 
 void form_copy_upload_rate_callback(void)
 {
-    u8 i, len, timeout;
+    u8 i, j, len, timeout, size;
     unsigned int crc;
     u16 num;
     static bool last_frame = FALSE;
@@ -4093,22 +4093,57 @@ void form_copy_upload_rate_callback(void)
                     break;
 
                 case COPY_UPLOAD_RATE_CMD:
-                    num = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                    num = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]); //计数
+                    size = UART_RX_BUF[2] - 8; //帧数据长度
                     
                     if((0x41 == UART_RX_BUF[3]) && (0x82 == UART_RX_BUF[4])) //头帧
                     {                        
                         g_cp_para.vfd_para_total = num;
+
+                        IIC_WriteHalfWord(VFD_PARA_LEN_ADDR, g_cp_para.vfd_para_total + 2); //存储变频器参数长度
+
+                        g_cp_para.vfd_para_crc = (g_cp_para.vfd_para_total & 0xff) + 2; //变频器参数长度和变频器参数一起校验
+
+                        os_wait(K_TMO, 12, 0); //5ms
+
+                        for(j = 0; j < (size + 2); j++)
+                        {
+                            IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, UART_RX_BUF[9 + j]);
+
+                            g_cp_para.vfd_para_crc += UART_RX_BUF[9 + j];
+
+                            g_cp_para.vfd_para_index++;
+
+                            os_wait(K_TMO, 12, 0); //5ms
+                        }
                     }
                     else if(0 != num) //避开无效帧
                     {
                         g_cp_para.vfd_para_count = num;
+
+                        for(j = 0; j < size; j++)
+                        {
+                            IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, UART_RX_BUF[11 + j]);
+
+                            g_cp_para.vfd_para_crc += UART_RX_BUF[11 + j];
+                        
+                            g_cp_para.vfd_para_index++;
+                        
+                            os_wait(K_TMO, 12, 0); //5ms
+                        }
                     }
 
                     if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
                     {
-                        g_cp_para.vfd_para_count += UART_RX_BUF[2] - 8; //自身长度
+                        g_cp_para.vfd_para_count += size; //自身长度
                         
                         last_frame = TRUE;
+
+                        IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, g_cp_para.vfd_para_crc);
+                        
+                        g_cp_para.vfd_para_index++;
+                        
+                        os_wait(K_TMO, 12, 0); //5ms
                     }
 
                     g_cp_para.rate = (u8)((fp32)g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
@@ -4122,6 +4157,9 @@ void form_copy_upload_rate_callback(void)
                         g_cp_para.vfd_para_count = 0;
                         g_cp_para.vfd_para_total = 0;
                         g_cp_para.rate = 0;
+                        
+                        g_cp_para.vfd_para_index = 0;
+                        g_cp_para.vfd_para_crc = 0;
                         
                         if(TRUE == chang_baudrate(OTHER_BAUDRATE))
                         {
