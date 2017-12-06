@@ -4100,6 +4100,10 @@ void form_copy_upload_rate_callback(void)
                     {                        
                         g_cp_para.vfd_para_total = num;
 
+                        IIC_WriteByte(VFD_PARA_FLAG_ADDR, ~VFD_PARA_FLAG); //禁能变频器参数标志
+
+                        os_wait(K_TMO, 12, 0); //5ms
+
                         IIC_WriteHalfWord(VFD_PARA_LEN_ADDR, g_cp_para.vfd_para_total + 2); //存储变频器参数长度
 
                         g_cp_para.vfd_para_crc = (g_cp_para.vfd_para_total & 0xff) + 2; //变频器参数长度和变频器参数一起校验
@@ -4110,9 +4114,9 @@ void form_copy_upload_rate_callback(void)
                         {
                             IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, UART_RX_BUF[9 + j]);
 
-                            g_cp_para.vfd_para_crc += UART_RX_BUF[9 + j];
-
                             g_cp_para.vfd_para_index++;
+
+                            g_cp_para.vfd_para_crc += UART_RX_BUF[9 + j];
 
                             os_wait(K_TMO, 12, 0); //5ms
                         }
@@ -4125,10 +4129,10 @@ void form_copy_upload_rate_callback(void)
                         {
                             IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, UART_RX_BUF[11 + j]);
 
-                            g_cp_para.vfd_para_crc += UART_RX_BUF[11 + j];
-                        
                             g_cp_para.vfd_para_index++;
-                        
+
+                            g_cp_para.vfd_para_crc += UART_RX_BUF[11 + j];
+                                                
                             os_wait(K_TMO, 12, 0); //5ms
                         }
                     }
@@ -4142,6 +4146,10 @@ void form_copy_upload_rate_callback(void)
                         IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, g_cp_para.vfd_para_crc);
                         
                         g_cp_para.vfd_para_index++;
+
+                        os_wait(K_TMO, 12, 0); //5ms
+
+                        IIC_WriteByte(VFD_PARA_FLAG_ADDR, VFD_PARA_FLAG); //使能变频器参数标志
                         
                         os_wait(K_TMO, 12, 0); //5ms
                     }
