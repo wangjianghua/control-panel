@@ -2,7 +2,7 @@
 #define __UART_H__
 
 
-#define UART_MAX_LEN        150u
+#define UART_MAX_LEN        128u
 #define UART_RX_TIMEOUT     (30u / SYS_TICK_PERIOD)
 
 #define UART_TX_BUF         uart_tx_buf

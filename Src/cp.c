@@ -74,7 +74,7 @@ unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen
     unsigned int J_u16Index;  
     
     
-    if(J_u16DataLen > 50)
+    if(J_u16DataLen > (UART_MAX_LEN - 2))
     {
         return (0);
     }
@@ -4300,6 +4300,8 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_EXIT:
             if(TRUE == chang_baudrate(OTHER_BAUDRATE))
             {
+                copy_comm_reset();
+                
                 form_id = FORM_ID_COPY_UPLOAD;
             }
             break;
@@ -4522,21 +4524,105 @@ bool check_vfd_para(void)
 CODE u8 copy_download_all_rate_cmd[][60] = {
     /* COPY_DOWNLOAD_ALL_RATE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    /* COPY_DOWNLOAD_ALL_RATE_CMD */
+    /* 0     1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34    35    36    37    38    39    40    41    42    43    44    45    46    47    48    49    50    51    52    53    54    55    56 */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x15, 0x2A, 0x01, 0x42, 0x50, 0x89, 0x00, 0x10, 0x00, 0x00, 0x00, 0x3E, 0x06, 0x22, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x11, 0x01, 0x26, 0x01, 0x6E, 0x00, 0x00, 0x00, 0x00},
 };
 
 void form_copy_download_all_rate_callback(void)
 {
-    u8 i, j, len, timeout, size;
+    u8 i, j, len, timeout;
     unsigned int crc;
-    u16 num;
-    static bool last_frame = FALSE;
+    static bool frame_num = 0;
     
     
-    for(i = COPY_DOWNLOAD_ALL_RATE_SET_CMD; i < 1; i++)
-    {    
-        len = copy_download_all_rate_cmd[i][10] + 11;
-                        
-        memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+    for(i = COPY_DOWNLOAD_ALL_RATE_SET_CMD; i < 2; i++)
+    {            
+        if(COPY_DOWNLOAD_ALL_RATE_CMD != i)
+        {
+            len = copy_download_all_rate_cmd[i][10] + 11;
+                            
+            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+        }
+        else
+        {
+            if(0 == frame_num) //头帧
+            {
+                frame_num = 1;
+                
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+            
+                UART_TX_BUF[9]  = 0x16;
+                UART_TX_BUF[10] = 0x2C;
+                UART_TX_BUF[11] = 0x08;
+                UART_TX_BUF[12] = 0x8A;
+                UART_TX_BUF[14] = 0x86;
+                UART_TX_BUF[16] = 0x03;
+                UART_TX_BUF[17] = 0x01;
+                UART_TX_BUF[18] = 0x03;
+                UART_TX_BUF[19] = 0x00;
+                UART_TX_BUF[20] = 0x00;
+
+                len = UART_TX_BUF[10] + 11;
+            
+                g_cp_para.vfd_para_index = 0;
+                g_cp_para.vfd_para_count = 0;
+                g_cp_para.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR);
+            
+                os_wait(K_TMO, 12, 0); //5ms
+            }
+            else if(1 == frame_num) //第二帧
+            {
+                frame_num = 2;
+            
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+            
+                UART_TX_BUF[9]  = 0x14;
+                UART_TX_BUF[10] = 0x28;
+                UART_TX_BUF[16] = 0x03;
+                UART_TX_BUF[17] = 0x01;
+                UART_TX_BUF[18] = 0x03;
+
+                len = UART_TX_BUF[10] + 11;
+            }
+            else
+            {
+                len = copy_download_all_rate_cmd[i][10] + 11;
+                                
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+            }
+            
+            for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
+            {
+                UART_TX_BUF[21 + j] = IIC_ReadByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index + j);
+        
+                os_wait(K_TMO, 12, 0); //5ms
+            }
+        
+            g_cp_para.vfd_para_index += UART_TX_BUF[10] - 10;
+        
+            if(1 == frame_num) //头帧
+            {
+                UART_TX_BUF[19] = (u8)(g_cp_para.vfd_para_count >> 8);
+                UART_TX_BUF[20] = (u8)(g_cp_para.vfd_para_count);
+
+                g_cp_para.vfd_para_count += UART_TX_BUF[10] - 12;
+            }
+            else
+            {
+                UART_TX_BUF[19] = (u8)(g_cp_para.vfd_para_count >> 8);
+                UART_TX_BUF[20] = (u8)(g_cp_para.vfd_para_count);
+                
+                g_cp_para.vfd_para_count += UART_TX_BUF[10] - 10;
+            }
+                
+            if(g_cp_para.vfd_para_count >= g_cp_para.vfd_para_total)
+            {
+                form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+            }
+
+            g_cp_para.rate = (u8)((fp32)g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
+        }
 
         switch(i)
         {
@@ -4602,6 +4688,10 @@ void form_copy_download_all_rate_callback(void)
             }
             break;
 
+        case COPY_DOWNLOAD_ALL_RATE_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+            
         default:
             break;
         }
@@ -4690,6 +4780,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 {
     if(FORM_MSG_DATA == form_msg)
     {
+#if 0        
         if((TRUE == check_vfd_para()) &&
            (TRUE == chang_baudrate(COPY_BAUDRATE)))
         {
@@ -4701,6 +4792,9 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
             return (FORM_MSG_NONE);
         }
+#else //调试变频器参数下载
+        UartInit_19200bps();
+#endif        
     }
     
     if(FORM_MSG_KEY == form_msg)
@@ -4762,7 +4856,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
         case KEY_MSG_EXIT:
             if(TRUE == chang_baudrate(OTHER_BAUDRATE))
-            {
+            {                
                 form_id = FORM_ID_COPY_DOWNLOAD_ALL;
             }
             break;
