@@ -30,6 +30,7 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg);
+static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_msg);
 
 CODE unsigned int wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
@@ -439,6 +440,7 @@ static const FORM form_list[MAX_FORM_NUM] =
     {form_copy_download_all},
     {form_copy_download_part},
     {form_copy_upload_rate},
+    {form_copy_download_all_rate},
 };
 
 static unsigned int form_id;
@@ -3246,6 +3248,9 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
+            form_id = FORM_ID_COPY_DOWNLOAD_ALL_RATE;
+
+            return (FORM_MSG_DATA);
             break;
 
         case KEY_MSG_EXIT:
@@ -4307,6 +4312,430 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
     }
 
     form_copy_upload_rate_callback();
+
+    return (FORM_MSG_NONE);
+}
+
+CODE u8 form_copy_download_all_rate_init_cmd[][32] = {
+    /* COPY_DOWNLOAD_ALL_RATE_INIT */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x11, 0x00, 0x59, 0x00, 0x02, 0x04, 0x10, 0xA4, 0x50, 0x0D},
+    /* COPY_DOWNLOAD_ALL_RATE_SET_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0C, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x06, 0xA2, 0x50, 0x82, 0x10, 0x01},
+};
+
+void copy_download_all_rate_init(void)
+{
+    u8 i, len, timeout;
+    unsigned int crc;
+    
+    
+    for(i = 0; i < 4; i++)
+    {        
+        len = form_copy_download_all_rate_init_cmd[i][10] + 11;
+                        
+        memcpy(UART_TX_BUF, form_copy_download_all_rate_init_cmd[i], len);
+
+        switch(i)
+        {
+        case 1:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+            if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            {
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+                if(TRUE == g_cp_para.reset)
+                {
+                    g_cp_para.reset = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x10;
+                }
+
+                if(TRUE == g_cp_para.ref_chang)
+                {
+                    g_cp_para.ref_chang = FALSE;
+                    
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+                }
+                else
+                {
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+                }
+
+                if(TRUE == g_cp_para.stop)
+                {
+                    g_cp_para.stop = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x01;
+                }
+                
+                if(TRUE == g_cp_para.run)
+                {
+                    g_cp_para.run = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x02;
+                }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+                
+                if(VFD_LOC == g_cp_para.lr)
+                {
+                    UART_TX_BUF[20] |= 0x08;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x08;
+                }
+            }
+            break;
+
+        default:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+        {
+            /* 2500 = 1s */
+            os_wait(K_TMO, 25, 0);
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
+            {
+                break;
+            }
+        }
+        
+        if(TRUE == uart_rx_complete)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case 1:
+                    if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        g_cp_para.count++;
+
+                        if(UART_RX_BUF[11] & 0x80)
+                        {
+                            g_cp_para.reset = TRUE;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                led_disp_buf[4] = 0xff;
+                led_disp_buf[3] = led_table['E' - 32];
+                led_disp_buf[2] = led_table['r' - 32];
+                led_disp_buf[1] = led_table['r' - 32];
+                led_disp_buf[0] = led_table[i + 16];
+                LEDOE = 0;
+            }
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+
+        uart_recv_clear();
+    }
+}
+
+CODE u8 copy_download_all_rate_cmd[][60] = {
+    /* COPY_DOWNLOAD_ALL_RATE_SET_CMD */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+};
+
+void form_copy_download_all_rate_callback(void)
+{
+    u8 i, j, len, timeout, size;
+    unsigned int crc;
+    u16 num;
+    static bool last_frame = FALSE;
+    
+    
+    for(i = COPY_DOWNLOAD_ALL_RATE_SET_CMD; i < 1; i++)
+    {    
+        len = copy_download_all_rate_cmd[i][10] + 11;
+                        
+        memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+
+        switch(i)
+        {
+        case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+            if((4 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            {
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+                if(TRUE == g_cp_para.reset)
+                {
+                    g_cp_para.reset = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x10;
+                }
+
+                if(TRUE == g_cp_para.ref_chang)
+                {
+                    g_cp_para.ref_chang = FALSE;
+                    
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+                }
+                else
+                {
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+                }
+
+                if(TRUE == g_cp_para.stop)
+                {
+                    g_cp_para.stop = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x01;
+                }
+                
+                if(TRUE == g_cp_para.run)
+                {
+                    g_cp_para.run = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x02;
+                }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+                
+                if(VFD_LOC == g_cp_para.lr)
+                {
+                    UART_TX_BUF[20] |= 0x08;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x08;
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+        {
+            /* 2500 = 1s */
+            os_wait(K_TMO, 25, 0);
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
+            {
+                break;
+            }
+        }
+        
+        if(TRUE == uart_rx_complete)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
+                    if((4 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        g_cp_para.count++;
+
+                        if(UART_RX_BUF[11] & 0x80)
+                        {
+                            g_cp_para.reset = TRUE;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                led_disp_buf[4] = 0xff;
+                led_disp_buf[3] = led_table['E' - 32];
+                led_disp_buf[2] = led_table['r' - 32];
+                led_disp_buf[1] = led_table['r' - 32];
+                led_disp_buf[0] = led_table[i + 16];
+                LEDOE = 0;
+            }
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+
+        uart_recv_clear();
+    }
+
+    led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
+    led_disp_buf[1] = (g_cp_para.rate > 9) ? (led_table[g_cp_para.rate % 100 / 10 + 16]) : (0xff);
+    led_disp_buf[2] = (g_cp_para.rate > 99) ? (led_table[g_cp_para.rate % 1000 / 100 + 16]) : (0xff);
+    led_disp_buf[3] = led_table['L' - 32];
+    led_disp_buf[4] = led_table['d' - 32];
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[5] &= ~LED_TORQUE_MASK;
+    LEDOE = 0;
+}
+
+static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_msg)
+{
+    if(FORM_MSG_DATA == form_msg)
+    {
+        if(TRUE == chang_baudrate(COPY_BAUDRATE))
+        {
+            copy_download_all_rate_init();
+        }
+        else
+        {
+            form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+
+            return (FORM_MSG_NONE);
+        }
+    }
+    
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            break;
+
+        case KEY_MSG_EXIT:
+            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            {
+                form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+            }
+            break;
+
+        case KEY_MSG_UP:
+            break;
+
+        case KEY_MSG_DOWN:
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    form_copy_download_all_rate_callback();
 
     return (FORM_MSG_NONE);
 }
