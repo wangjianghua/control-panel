@@ -4108,10 +4108,16 @@ void form_copy_upload_rate_callback(void)
                         IIC_WriteByte(VFD_PARA_FLAG_ADDR, ~VFD_PARA_FLAG); //禁能变频器参数标志
 
                         os_wait(K_TMO, 12, 0); //5ms
-
+                        
                         IIC_WriteHalfWord(VFD_PARA_LEN_ADDR, g_cp_para.vfd_para_total + 2); //存储变频器参数长度
+                        
+                        os_wait(K_TMO, 12, 0); //5ms
 
-                        g_cp_para.vfd_para_crc = (g_cp_para.vfd_para_total & 0xff) + 2; //变频器参数长度和变频器参数一起校验
+                        g_cp_para.vfd_para_crc = IIC_ReadByte(VFD_PARA_LEN_ADDR); //变频器参数长度和变频器参数一起校验
+
+                        os_wait(K_TMO, 12, 0); //5ms
+                        
+                        g_cp_para.vfd_para_crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + 1);
 
                         os_wait(K_TMO, 12, 0); //5ms
 
@@ -4148,12 +4154,10 @@ void form_copy_upload_rate_callback(void)
                         
                         last_frame = TRUE;
 
-                        IIC_WriteByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index, g_cp_para.vfd_para_crc);
-                        
-                        g_cp_para.vfd_para_index++;
+                        IIC_WriteByte(VFD_PARA_ADDR + (g_cp_para.vfd_para_total + 2), g_cp_para.vfd_para_crc);
 
                         os_wait(K_TMO, 12, 0); //5ms
-
+                        
                         IIC_WriteByte(VFD_PARA_FLAG_ADDR, VFD_PARA_FLAG); //使能变频器参数标志
                         
                         os_wait(K_TMO, 12, 0); //5ms
@@ -4477,6 +4481,44 @@ void copy_download_all_rate_init(void)
     }
 }
 
+bool check_vfd_para(void)
+{
+    u8 crc;
+    u16 i, len;
+    bool ret = FALSE;
+
+
+    if(VFD_PARA_FLAG == IIC_ReadByte(VFD_PARA_FLAG_ADDR))
+    {
+        os_wait(K_TMO, 12, 0); //5ms
+        
+        len = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR);
+
+        os_wait(K_TMO, 12, 0); //5ms
+
+        if((len + 3) < AT24CXX)
+        {
+            g_cp_para.vfd_para_crc = IIC_ReadByte(VFD_PARA_ADDR + len);
+
+            os_wait(K_TMO, 12, 0); //5ms
+            
+            for(i = 0, crc = 0; i < (len + 2); i++)
+            {
+                crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + i);
+
+                os_wait(K_TMO, 12, 0); //5ms
+            }
+
+            if(g_cp_para.vfd_para_crc == crc)
+            {
+                ret = TRUE;
+            }
+        }
+    }
+
+    return (ret);
+}
+
 CODE u8 copy_download_all_rate_cmd[][60] = {
     /* COPY_DOWNLOAD_ALL_RATE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
@@ -4648,7 +4690,8 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 {
     if(FORM_MSG_DATA == form_msg)
     {
-        if(TRUE == chang_baudrate(COPY_BAUDRATE))
+        if((TRUE == check_vfd_para()) &&
+           (TRUE == chang_baudrate(COPY_BAUDRATE)))
         {
             copy_download_all_rate_init();
         }
