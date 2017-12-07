@@ -4514,20 +4514,20 @@ void copy_download_all_rate_init(void)
     }
 }
 
-CODE u8 check_vfd_para_cmd[][32] = {
-    /* CHECK_VFD_PARA_SET_CMD */
+CODE u8 keep_vfd_connect_cmd[][32] = {
+    /* KEEP_VFD_CONNECT_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
 };
 
-void check_vfd_para_callback(void)
+void keep_vfd_connect(void)
 {
     u8 len, timeout;
     unsigned int crc;
 
     
-    len = check_vfd_para_cmd[CHECK_VFD_PARA_SET_CMD][10] + 11;
+    len = keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11;
                     
-    memcpy(UART_TX_BUF, check_vfd_para_cmd[CHECK_VFD_PARA_SET_CMD], len);
+    memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
 
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
 
@@ -4634,7 +4634,7 @@ void check_vfd_para_callback(void)
             led_disp_buf[3] = led_table['E' - 32];
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[CHECK_VFD_PARA_SET_CMD + 16];
+            led_disp_buf[0] = led_table[KEEP_VFD_CONNECT_CMD + 16];
             LEDOE = 0;
         }
     }
@@ -4644,7 +4644,7 @@ void check_vfd_para_callback(void)
         led_disp_buf[3] = led_table['E' - 32];
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[CHECK_VFD_PARA_SET_CMD + 16];
+        led_disp_buf[0] = led_table[KEEP_VFD_CONNECT_CMD + 16];
         LEDOE = 0;
     }
 
@@ -4676,7 +4676,7 @@ bool check_vfd_para(void)
             {
                 if(0 == (i % 20))
                 {
-                    check_vfd_para_callback();
+                    keep_vfd_connect();
                 }
                 
                 crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + i);
@@ -5002,7 +5002,16 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 {
     if(FORM_MSG_DATA == form_msg)
     {
-#if 1   
+        led_disp_buf[0] = ~LED_DP_MASK;
+        led_disp_buf[1] = ~LED_DP_MASK;
+        led_disp_buf[2] = ~LED_DP_MASK;
+        led_disp_buf[3] = led_table['L' - 32];
+        led_disp_buf[4] = led_table['d' - 32];
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_disp_buf[5] &= ~LED_TORQUE_MASK;
+        LEDOE = 0;
+        
+#if 1
         if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
            (TRUE == chang_baudrate(COPY_BAUDRATE))) //更改变频器参数上传、下载的波特率
         {

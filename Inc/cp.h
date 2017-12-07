@@ -190,9 +190,9 @@ typedef enum
 
 typedef enum
 {
-    CHECK_VFD_PARA_SET_CMD = 0,
-    MAX_CHECK_VFD_PARA_CMD,
-} ENUM_CHECK_VFD_PARA_CMD;
+    KEEP_VFD_CONNECT_CMD = 0,
+    MAX_KEEP_VFD_CONNECT_CMD,
+} ENUM_KEEP_VFD_CONNECT_CMD;
 
 typedef struct _cp 
 {
