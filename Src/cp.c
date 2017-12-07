@@ -4792,7 +4792,7 @@ void form_copy_download_all_rate_callback(void)
                     break;
 
                 case COPY_DOWNLOAD_ALL_RATE_CMD:
-                    if((0x01 == UART_RX_BUF[11]) && (0x22 == UART_RX_BUF[12])) //倒数第二帧
+                    if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
                     {
                         frame_num = 0xff;
                     }
@@ -4860,9 +4860,13 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 {
     if(FORM_MSG_DATA == form_msg)
     {
-#if 0        
+#if 1        
+#if 0
         if((TRUE == check_vfd_para()) &&
            (TRUE == chang_baudrate(COPY_BAUDRATE)))
+#else
+        if(TRUE == chang_baudrate(COPY_BAUDRATE))
+#endif
         {
             copy_download_all_rate_init();
         }
