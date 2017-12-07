@@ -4525,7 +4525,7 @@ CODE u8 copy_download_all_rate_cmd[][60] = {
     /* COPY_DOWNLOAD_ALL_RATE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     /* COPY_DOWNLOAD_ALL_RATE_CMD */
-    /* 0     1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34    35    36    37    38    39    40    41    42    43    44    45    46    47    48    49    50    51    52    53    54    55    56 */
+    /* 0     1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34    35    36    37    38    39    40    41    42    43    44    45    46    47    48    49    50    51    52    53    54    55    56    57    58    59 */
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x15, 0x2A, 0x01, 0x42, 0x50, 0x89, 0x00, 0x10, 0x00, 0x00, 0x00, 0x3E, 0x06, 0x22, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x11, 0x01, 0x26, 0x01, 0x6E, 0x00, 0x00, 0x00, 0x00},
 };
 
@@ -4560,14 +4560,12 @@ void form_copy_download_all_rate_callback(void)
                 UART_TX_BUF[16] = 0x03;
                 UART_TX_BUF[17] = 0x01;
                 UART_TX_BUF[18] = 0x03;
-                UART_TX_BUF[19] = 0x00;
-                UART_TX_BUF[20] = 0x00;
 
                 len = UART_TX_BUF[10] + 11;
             
                 g_cp_para.vfd_para_index = 0;
                 g_cp_para.vfd_para_count = 0;
-                g_cp_para.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR);
+                g_cp_para.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
             
                 os_wait(K_TMO, 12, 0); //5ms
             }
@@ -4579,17 +4577,31 @@ void form_copy_download_all_rate_callback(void)
             
                 UART_TX_BUF[9]  = 0x14;
                 UART_TX_BUF[10] = 0x28;
-                UART_TX_BUF[16] = 0x03;
-                UART_TX_BUF[17] = 0x01;
-                UART_TX_BUF[18] = 0x03;
 
                 len = UART_TX_BUF[10] + 11;
             }
             else
             {
-                len = copy_download_all_rate_cmd[i][10] + 11;
-                                
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+                if((g_cp_para.vfd_para_total - g_cp_para.vfd_para_count + 10) < 0x2A)
+                {
+                    frame_num = 0xff;
+                    
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                    
+                    UART_TX_BUF[9]  = 0x06;
+                    UART_TX_BUF[10] = g_cp_para.vfd_para_total - g_cp_para.vfd_para_count + 10;
+                    UART_TX_BUF[12] = 0x22;
+                    
+                    len = UART_TX_BUF[10] + 11;
+                }
+                else
+                {
+                    frame_num = 3;
+                    
+                    len = copy_download_all_rate_cmd[i][10] + 11;
+                                    
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+                }
             }
             
             for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
@@ -4616,7 +4628,7 @@ void form_copy_download_all_rate_callback(void)
                 g_cp_para.vfd_para_count += UART_TX_BUF[10] - 10;
             }
                 
-            if(g_cp_para.vfd_para_count >= g_cp_para.vfd_para_total)
+            if(0xff == frame_num)
             {
                 form_id = FORM_ID_COPY_DOWNLOAD_ALL;
             }
