@@ -3782,19 +3782,34 @@ void copy_upload_rate_init(void)
 }
 
 CODE u8 copy_comm_reset_cmd[][32] = {
-    /* SET_CMD */
+    /* FORM_ID_COPY_UPLOAD_RATE */
+    /* FORM_ID_COPY_DOWNLOAD_ALL_RATE */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0C, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x06, 0xA2, 0x50, 0x82, 0x10, 0x01},
+
+    /* FORM_ID_COPY_DOWNLOAD_ALL_RATE */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00 ,0x04, 00, 00, 00, 0x08, 00, 00, 0x09, 0xC4, 00, 00, 00, 00},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x1D, 0xA1, 0x50, 0x02, 0x00, 0x01},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x05, 0x0A, 0x1D, 0xA1, 0x50, 0x8C, 0x00, 0x03, 0x0F, 0xAA, 0x00, 0x00},
 };
 
 void copy_comm_reset(void)
 {
-    u8 i, len, timeout;
+    u8 i, len, timeout, num;
     unsigned int crc;
+
+
+    if(FORM_ID_COPY_DOWNLOAD_ALL_RATE == form_id)
+    {
+        num = 6;
+    }
+    else
+    {
+        num = 3;
+    }
     
-    
-    for(i = 0; i < 3; i++)
+    for(i = 0; i < num; i++)
     {        
         len = copy_comm_reset_cmd[i][10] + 11;
                         
@@ -3872,6 +3887,18 @@ void copy_comm_reset(void)
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
             break;
 
+        case 3:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        case 4:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        case 5:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
         default:
             break;
         }
@@ -3905,6 +3932,7 @@ void copy_comm_reset(void)
                 switch(i)
                 {
                 case 0:
+                case 3:
                     if((0x44 == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
                     {
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
@@ -3917,7 +3945,10 @@ void copy_comm_reset(void)
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
 
-                        i = 2; //通信正常，跳过复位
+                        if(FORM_ID_COPY_UPLOAD_RATE == form_id)
+                        {
+                            i = num; //跳过复位
+                        }
                     }
                     break;
 
@@ -4781,6 +4812,8 @@ void form_copy_download_all_rate_callback(void)
                         
                         if(TRUE == chang_baudrate(OTHER_BAUDRATE))
                         {
+                            copy_comm_reset();
+                            
                             form_id = FORM_ID_COPY_DOWNLOAD_ALL;
                         }
                     }
@@ -4903,7 +4936,9 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
         case KEY_MSG_EXIT:
             if(TRUE == chang_baudrate(OTHER_BAUDRATE))
-            {                
+            { 
+                copy_comm_reset();
+                
                 form_id = FORM_ID_COPY_DOWNLOAD_ALL;
             }
             break;
