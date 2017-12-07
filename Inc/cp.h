@@ -188,6 +188,12 @@ typedef enum
     MAX_COPY_DOWNLOAD_ALL_RATE_CMD,
 } ENUM_COPY_DOWNLOAD_ALL_RATE_CMD;
 
+typedef enum
+{
+    CHECK_VFD_PARA_SET_CMD = 0,
+    MAX_CHECK_VFD_PARA_CMD,
+} ENUM_CHECK_VFD_PARA_CMD;
+
 typedef struct _cp 
 {
     u8 cmd; //ÃüÁî×Ö

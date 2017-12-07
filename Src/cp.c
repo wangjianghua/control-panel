@@ -3539,7 +3539,7 @@ CODE u8 copy_upload_rate_baudrate_cmd[][32] = {
 
 bool chang_baudrate(u16 baudrate)
 {
-    u8 i, len, timeout, ret = FALSE;
+    u8 len, timeout, ret = FALSE;
     unsigned int crc;
 
 
@@ -3601,7 +3601,7 @@ bool chang_baudrate(u16 baudrate)
             led_disp_buf[3] = led_table['E' - 32];
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
+            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
             LEDOE = 0;
         }
     }
@@ -3611,7 +3611,7 @@ bool chang_baudrate(u16 baudrate)
         led_disp_buf[3] = led_table['E' - 32];
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[i + 16];
+        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
         LEDOE = 0;
     }
 
@@ -4514,6 +4514,143 @@ void copy_download_all_rate_init(void)
     }
 }
 
+CODE u8 check_vfd_para_cmd[][32] = {
+    /* CHECK_VFD_PARA_SET_CMD */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
+};
+
+void check_vfd_para_callback(void)
+{
+    u8 len, timeout;
+    unsigned int crc;
+
+    
+    len = check_vfd_para_cmd[CHECK_VFD_PARA_SET_CMD][10] + 11;
+                    
+    memcpy(UART_TX_BUF, check_vfd_para_cmd[CHECK_VFD_PARA_SET_CMD], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+    if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+    {
+        UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+        UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+        if(TRUE == g_cp_para.reset)
+        {
+            g_cp_para.reset = FALSE;
+            
+            UART_TX_BUF[20] |= 0x10;
+        }
+
+        if(TRUE == g_cp_para.ref_chang)
+        {
+            g_cp_para.ref_chang = FALSE;
+            
+            UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+            UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+        }
+        else
+        {
+            UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+            UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+        }
+
+        if(TRUE == g_cp_para.stop)
+        {
+            g_cp_para.stop = FALSE;
+            
+            UART_TX_BUF[20] |= 0x01;
+        }
+        
+        if(TRUE == g_cp_para.run)
+        {
+            g_cp_para.run = FALSE;
+            
+            UART_TX_BUF[20] |= 0x02;
+        }
+
+        if(VFD_REV == g_cp_para.fr)
+        {
+            UART_TX_BUF[20] |= 0x04;
+        }
+        else
+        {
+            UART_TX_BUF[20] &= ~0x04;
+        }
+        
+        if(VFD_LOC == g_cp_para.lr)
+        {
+            UART_TX_BUF[20] |= 0x08;
+        }
+        else
+        {
+            UART_TX_BUF[20] &= ~0x08;
+        }
+    }
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+    
+    uart_send(len);
+
+    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+     * 华兄 */
+    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+    {
+        /* 2500 = 1s */
+        os_wait(K_TMO, 25, 0);
+
+        if(TRUE == uart_rx_complete) //串口接收数据完毕
+        {
+            break;
+        }
+    }
+    
+    if(TRUE == uart_rx_complete)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {
+            if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+            {
+                g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                g_cp_para.count++;
+
+                if(UART_RX_BUF[11] & 0x80)
+                {
+                    g_cp_para.reset = TRUE;
+                }
+
+                g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+            }           
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[CHECK_VFD_PARA_SET_CMD + 16];
+            LEDOE = 0;
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[CHECK_VFD_PARA_SET_CMD + 16];
+        LEDOE = 0;
+    }
+
+    uart_recv_clear();
+}
+
 bool check_vfd_para(void)
 {
     u8 crc;
@@ -4537,6 +4674,11 @@ bool check_vfd_para(void)
             
             for(i = 0, crc = 0; i < (len + 2); i++)
             {
+                if(0 == (i % 20))
+                {
+                    check_vfd_para_callback();
+                }
+                
                 crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + i);
 
                 os_wait(K_TMO, 12, 0); //5ms
@@ -4860,13 +5002,9 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 {
     if(FORM_MSG_DATA == form_msg)
     {
-#if 1        
-#if 0
-        if((TRUE == check_vfd_para()) &&
-           (TRUE == chang_baudrate(COPY_BAUDRATE)))
-#else
-        if(TRUE == chang_baudrate(COPY_BAUDRATE))
-#endif
+#if 1   
+        if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
+           (TRUE == chang_baudrate(COPY_BAUDRATE))) //更改变频器参数上传、下载的波特率
         {
             copy_download_all_rate_init();
         }
