@@ -258,6 +258,8 @@ void IIC_Test(void)
 
     year = IIC_ReadHalfWord(AT24CXX - 2); 
 
+    os_wait(K_TMO, 12, 0); //5ms
+
     if(YEAR == year)
     {
         led_disp_buf[0] = led_table[year % 10 + 16];
@@ -275,9 +277,13 @@ void IIC_Test(void)
     else
     {
         IIC_WriteHalfWord(AT24CXX - 2, YEAR);
+
+        os_wait(K_TMO, 12, 0); //5ms
     }
     
     month = IIC_ReadByte(AT24CXX - 3);
+
+    os_wait(K_TMO, 12, 0); //5ms
 
     if(MONTH == month)
     {
@@ -288,9 +294,13 @@ void IIC_Test(void)
     else
     {
         IIC_WriteByte(AT24CXX - 3, MONTH);
+
+        os_wait(K_TMO, 12, 0); //5ms
     }
 
     day = IIC_ReadByte(AT24CXX - 4);
+
+    os_wait(K_TMO, 12, 0); //5ms
 
     if(DAY == day)
     {
@@ -306,6 +316,8 @@ void IIC_Test(void)
     else
     {
         IIC_WriteByte(AT24CXX - 4, DAY);
+
+        os_wait(K_TMO, 12, 0); //5ms
     }
 
     led_disp_buf[5] = 0xff;

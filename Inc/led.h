@@ -2,8 +2,6 @@
 #define __LED_H__
 
 
-SBIT RS485 = P3^2;
-
 SBIT LEDOE = P4^6;	
 SBIT LEDX0 = P1^4;    
 SBIT LEDX1 = P1^3;

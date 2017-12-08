@@ -31,6 +31,7 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_msg);
+static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_msg);
 
 CODE unsigned int wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
@@ -441,6 +442,7 @@ static const FORM form_list[MAX_FORM_NUM] =
     {form_copy_download_part},
     {form_copy_upload_rate},
     {form_copy_download_all_rate},
+    {form_copy_download_part_rate},
 };
 
 static unsigned int form_id;
@@ -3508,6 +3510,9 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
+            form_id = FORM_ID_COPY_DOWNLOAD_PART_RATE;
+
+            return (FORM_MSG_DATA);
             break;
 
         case KEY_MSG_EXIT:
@@ -3784,11 +3789,12 @@ void copy_upload_rate_init(void)
 CODE u8 copy_comm_reset_cmd[][32] = {
     /* FORM_ID_COPY_UPLOAD_RATE */
     /* FORM_ID_COPY_DOWNLOAD_ALL_RATE */
+    /* FORM_ID_COPY_DOWNLOAD_PART_RATE */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0C, 0x00, 0x59, 0x00, 0x02, 0x04, 0x12, 0xA1, 0x50, 0x15},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x06, 0xA2, 0x50, 0x82, 0x10, 0x01},
-
     /* FORM_ID_COPY_DOWNLOAD_ALL_RATE */
+    /* FORM_ID_COPY_DOWNLOAD_PART_RATE */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x1D, 0xA1, 0x50, 0x02, 0x00, 0x01},
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x05, 0x0A, 0x1D, 0xA1, 0x50, 0x8C, 0x00, 0x03, 0x0F, 0xAA, 0x00, 0x00},
@@ -3800,7 +3806,8 @@ void copy_comm_reset(void)
     unsigned int crc;
 
 
-    if(FORM_ID_COPY_DOWNLOAD_ALL_RATE == form_id)
+    if((FORM_ID_COPY_DOWNLOAD_ALL_RATE == form_id) ||
+       (FORM_ID_COPY_DOWNLOAD_PART_RATE == form_id))
     {
         num = 6;
     }
@@ -5106,6 +5113,412 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
     }
 
     form_copy_download_all_rate_callback();
+
+    return (FORM_MSG_NONE);
+}
+
+void form_copy_download_part_rate_callback(void)
+{
+    u8 i, j, len, timeout;
+    unsigned int crc;
+    static u8 frame_num = 0;
+    
+    
+    for(i = COPY_DOWNLOAD_ALL_RATE_SET_CMD; i < COPY_DOWNLOAD_ALL_RATE_TAIL_CMD; i++)
+    {            
+        if(COPY_DOWNLOAD_ALL_RATE_SET_CMD == i)
+        {
+            len = copy_download_all_rate_cmd[i][10] + 11;
+                            
+            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+        }
+        else if((0xff == frame_num) && (COPY_DOWNLOAD_ALL_RATE_CMD == i))
+        {
+            i = COPY_DOWNLOAD_ALL_RATE_TAIL_CMD;
+
+            len = copy_download_all_rate_cmd[i][10] + 11;
+                            
+            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+        }
+        else if(COPY_DOWNLOAD_ALL_RATE_CMD == i)
+        {
+            if(0 == frame_num) //头帧
+            {
+                frame_num = 1;
+                
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+            
+                UART_TX_BUF[9]  = 0x16;
+                UART_TX_BUF[10] = 0x2C;
+                UART_TX_BUF[11] = 0x08;
+                UART_TX_BUF[12] = 0x8A;
+                UART_TX_BUF[14] = 0x86;
+                UART_TX_BUF[16] = 0x03;
+                UART_TX_BUF[17] = 0x01;
+                UART_TX_BUF[18] = 0x04; //变频器参数部分下载与全部下载在此有所区别
+
+                len = UART_TX_BUF[10] + 11;
+            
+                g_cp_para.vfd_para_index = 0;
+                g_cp_para.vfd_para_count = 0;
+                g_cp_para.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
+            
+                os_wait(K_TMO, 12, 0); //5ms
+            }
+            else if(1 == frame_num) //第二帧
+            {
+                frame_num = 2;
+            
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+            
+                UART_TX_BUF[9]  = 0x14;
+                UART_TX_BUF[10] = 0x28;
+
+                len = UART_TX_BUF[10] + 11;
+            }
+            else
+            {
+                if((g_cp_para.vfd_para_total - g_cp_para.vfd_para_count + 10) < 0x2A)
+                {
+                    frame_num = 0xfe; //倒数第二帧
+                    
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                    
+                    UART_TX_BUF[9]  = 0x06;
+                    UART_TX_BUF[10] = g_cp_para.vfd_para_total - g_cp_para.vfd_para_count + 10;
+                    UART_TX_BUF[12] = 0x22;
+                    
+                    len = UART_TX_BUF[10] + 11;
+                }
+                else
+                {
+                    frame_num = 3; //第二帧以后的帧
+                    
+                    len = copy_download_all_rate_cmd[i][10] + 11;
+                                    
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+                }
+            }
+            
+            for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
+            {
+                UART_TX_BUF[21 + j] = IIC_ReadByte(VFD_PARA_ADDR + g_cp_para.vfd_para_index + j);
+        
+                os_wait(K_TMO, 12, 0); //5ms
+            }
+        
+            g_cp_para.vfd_para_index += UART_TX_BUF[10] - 10;
+        
+            if(1 == frame_num) //头帧
+            {
+                UART_TX_BUF[19] = (u8)(g_cp_para.vfd_para_count >> 8);
+                UART_TX_BUF[20] = (u8)(g_cp_para.vfd_para_count);
+
+                g_cp_para.vfd_para_count += UART_TX_BUF[10] - 12;
+            }
+            else
+            {
+                UART_TX_BUF[19] = (u8)(g_cp_para.vfd_para_count >> 8);
+                UART_TX_BUF[20] = (u8)(g_cp_para.vfd_para_count);
+                
+                g_cp_para.vfd_para_count += UART_TX_BUF[10] - 10;
+            }
+
+            g_cp_para.rate = (u8)((fp32)g_cp_para.vfd_para_count / (fp32)g_cp_para.vfd_para_total * 100);
+        }
+
+        switch(i)
+        {
+        case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+
+            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            {
+                UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
+                UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
+
+                if(TRUE == g_cp_para.reset)
+                {
+                    g_cp_para.reset = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x10;
+                }
+
+                if(TRUE == g_cp_para.ref_chang)
+                {
+                    g_cp_para.ref_chang = FALSE;
+                    
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref_temp >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref_temp >> 0);
+                }
+                else
+                {
+                    UART_TX_BUF[23] = (u8)(g_cp_para.ref >> 8);
+                    UART_TX_BUF[24] = (u8)(g_cp_para.ref >> 0);
+                }
+
+                if(TRUE == g_cp_para.stop)
+                {
+                    g_cp_para.stop = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x01;
+                }
+                
+                if(TRUE == g_cp_para.run)
+                {
+                    g_cp_para.run = FALSE;
+                    
+                    UART_TX_BUF[20] |= 0x02;
+                }
+
+                if(VFD_REV == g_cp_para.fr)
+                {
+                    UART_TX_BUF[20] |= 0x04;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x04;
+                }
+                
+                if(VFD_LOC == g_cp_para.lr)
+                {
+                    UART_TX_BUF[20] |= 0x08;
+                }
+                else
+                {
+                    UART_TX_BUF[20] &= ~0x08;
+                }
+            }
+            break;
+
+        case COPY_DOWNLOAD_ALL_RATE_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+
+        case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+            break;
+            
+        default:
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+         * 华兄 */
+        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+        {
+            /* 2500 = 1s */
+            os_wait(K_TMO, 25, 0);
+
+            if(TRUE == uart_rx_complete) //串口接收数据完毕
+            {
+                break;
+            }
+        }
+        
+        if(TRUE == uart_rx_complete)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
+                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        g_cp_para.count++;
+
+                        if(UART_RX_BUF[11] & 0x80)
+                        {
+                            g_cp_para.reset = TRUE;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    break;
+
+                case COPY_DOWNLOAD_ALL_RATE_CMD:
+                    if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
+                    {
+                        frame_num = 0xff;
+                    }
+                    break;
+
+                case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
+                    if((0x42 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
+                    {
+                        frame_num = 0;
+                        
+                        g_cp_para.vfd_para_count = 0;
+                        g_cp_para.vfd_para_total = 0;
+                        g_cp_para.rate = 0;
+                        
+                        g_cp_para.vfd_para_index = 0;
+                        g_cp_para.vfd_para_crc = 0;
+                        
+                        if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+                        {
+                            copy_comm_reset();
+                            
+                            form_id = FORM_ID_COPY_DOWNLOAD_PART;
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                led_disp_buf[4] = 0xff;
+                led_disp_buf[3] = led_table['E' - 32];
+                led_disp_buf[2] = led_table['r' - 32];
+                led_disp_buf[1] = led_table['r' - 32];
+                led_disp_buf[0] = led_table[i + 16];
+                LEDOE = 0;
+            }
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+
+        uart_recv_clear();
+    }
+
+    led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
+    led_disp_buf[1] = (g_cp_para.rate > 9) ? (led_table[g_cp_para.rate % 100 / 10 + 16]) : (0xff);
+    led_disp_buf[2] = (g_cp_para.rate > 99) ? (led_table[g_cp_para.rate % 1000 / 100 + 16]) : (0xff);
+    led_disp_buf[3] = led_table['L' - 32];
+    led_disp_buf[4] = led_table['d' - 32];
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[5] &= ~LED_TORQUE_MASK;
+    LEDOE = 0;
+}
+
+static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_msg)
+{
+    if(FORM_MSG_DATA == form_msg)
+    {
+        led_disp_buf[0] = ~LED_DP_MASK;
+        led_disp_buf[1] = ~LED_DP_MASK;
+        led_disp_buf[2] = ~LED_DP_MASK;
+        led_disp_buf[3] = led_table['L' - 32];
+        led_disp_buf[4] = led_table['d' - 32];
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_disp_buf[5] &= ~LED_TORQUE_MASK;
+        LEDOE = 0;
+        
+#if 1
+        if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
+           (TRUE == chang_baudrate(COPY_BAUDRATE))) //更改变频器参数上传、下载的波特率
+        {
+            copy_download_all_rate_init();
+        }
+        else
+        {
+            form_id = FORM_ID_COPY_DOWNLOAD_PART;
+
+            return (FORM_MSG_NONE);
+        }
+#else //调试变频器参数下载
+        UartInit_19200bps();
+#endif        
+    }
+    
+    if(FORM_MSG_KEY == form_msg)
+    {
+        switch(key_msg)
+        {        
+        case KEY_MSG_RUN:
+            g_cp_para.run = TRUE;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_RUN_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_STOP:
+            g_cp_para.stop = TRUE;
+
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LEDOE = 0;
+            break;
+
+        case KEY_MSG_LOC_REM:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
+            g_cp_para.lr = !g_cp_para.lr;
+
+            if(VFD_LOC == g_cp_para.lr)
+            {
+                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_FWD_REV:
+            g_cp_para.fr = !g_cp_para.fr;
+
+            if(VFD_REV == g_cp_para.fr)
+            {
+                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_FWD_REV_MASK;
+                LEDOE = 0;
+            }
+            break;
+
+        case KEY_MSG_ENTER:
+            break;
+
+        case KEY_MSG_EXIT:
+            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            { 
+                copy_comm_reset();
+                
+                form_id = FORM_ID_COPY_DOWNLOAD_PART;
+            }
+            break;
+
+        case KEY_MSG_UP:
+            break;
+
+        case KEY_MSG_DOWN:
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    form_copy_download_part_rate_callback();
 
     return (FORM_MSG_NONE);
 }
