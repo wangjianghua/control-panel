@@ -464,6 +464,17 @@ void MENU_Init(void)
     os_wait(K_TMO, 10, 0);
 }
 
+void err_con(void)
+{
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[4] = 0xff;
+    led_disp_buf[3] = led_table['E' - 32];
+    led_disp_buf[2] = led_table['C' - 32];
+    led_disp_buf[1] = led_table['O' - 32];
+    led_disp_buf[0] = led_table['N' - 32];
+    LEDOE = 0;
+}
+
 CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
     /* FORM_ERR_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
@@ -613,22 +624,12 @@ void form_err_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -823,10 +824,6 @@ CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
     /* FORM_HOME_READ_CMD */
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x0C, 0x00, 0x59, 0x00, 0x02, 0x04, 0x05, 0xAB, 0x50, 0x03},
-    /* FORM_HOME_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_HOME_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_home_callback(void)
@@ -902,14 +899,6 @@ void form_home_callback(void)
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
             break;
 
-        case FORM_HOME_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_HOME_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -948,13 +937,17 @@ void form_home_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304-Bit0£¬±¨¾¯
-                           (UART_RX_BUF[11] & 0x80))   //0303-Bit15£¬¹ÊÕÏ
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
                             form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -979,22 +972,12 @@ void form_home_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
