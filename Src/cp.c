@@ -1666,8 +1666,9 @@ CODE u8 para_group_update_cmd[][32] = {
 
 bool group_update(u8 key_msg)
 {
-    u8 len, timeout, ret = FALSE;
+    u8 len, timeout;
     unsigned int crc;
+    bool ret = FALSE;
 
 
     len = para_group_update_cmd[0][10] + 11;
@@ -1675,7 +1676,8 @@ bool group_update(u8 key_msg)
     memcpy(UART_TX_BUF, para_group_update_cmd[0], len);
 
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-    
+
+    UART_TX_BUF[15] = 0;
     UART_TX_BUF[16] = g_cp_para.group;
 
     crc = CRC16Calculate(UART_TX_BUF, len);
@@ -1983,8 +1985,10 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             }
             break;
 
-        case KEY_MSG_ENTER:
+        case KEY_MSG_ENTER:            
             form_id = FORM_ID_PARA_GRADE;
+
+            return (FORM_MSG_DATA);
             break;
 
         case KEY_MSG_EXIT:
@@ -2012,6 +2016,98 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
     return (FORM_MSG_NONE);
 }
 
+CODE u8 para_grade_update_cmd[][32] = {
+    /* FORM_PARA_GRADE_UPDATE_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x06, 0x00, 0x59, 0x00, 0x03, 0x06, 0x09, 0xA4, 0x50, 0x04, 0x01, 0x00},
+};
+
+bool grade_update(u8 key_msg)
+{
+    u8 len, timeout;
+    unsigned int crc;
+    bool ret = FALSE;
+
+
+    len = para_grade_update_cmd[0][10] + 11;
+                    
+    memcpy(UART_TX_BUF, para_grade_update_cmd[0], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+    
+    UART_TX_BUF[15] = g_cp_para.group;
+    UART_TX_BUF[16] = g_cp_para.grade;
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+
+    uart_send(len);
+
+    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+     * 华兄 */
+    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+    {
+        /* 2500 = 1s */
+        os_wait(K_TMO, 25, 0);
+
+        if(TRUE == uart_rx_complete) //串口接收数据完毕
+        {
+            break;
+        }
+    }
+
+    if(TRUE == uart_rx_complete)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {            
+            memcpy(g_cp_para.grade_nearby, &UART_RX_BUF[7], sizeof(g_cp_para.grade_nearby));
+
+            switch(key_msg)
+            {
+            case KEY_MSG_UP:
+                g_cp_para.group = g_cp_para.grade_nearby[4];
+                g_cp_para.grade = g_cp_para.grade_nearby[5];
+                break;
+            
+            case KEY_MSG_DOWN:
+                g_cp_para.group = g_cp_para.grade_nearby[2];
+                g_cp_para.grade = g_cp_para.grade_nearby[3];
+                break;
+                
+            default:
+                break;
+            }
+            
+            ret = TRUE;
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
+            LEDOE = 0;
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
+        LEDOE = 0;
+    }
+
+    uart_recv_clear();
+
+    return (ret);
+}
+
 CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
     /* FORM_PARA_GRADE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
@@ -2019,8 +2115,6 @@ CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
     /* FORM_PARA_GRADE_FAULT_CMD */
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_GRADE_FUNC_CODE_READ_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x05, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0A, 0xA4, 0x50, 0x08, 0x0E, 0x01},
 };
 
 void form_para_grade_callback(void)
@@ -2190,16 +2284,21 @@ void form_para_grade_callback(void)
     LEDOE = 0;
 }
 
-bool func_CODE_read(void)
+CODE u8 form_para_grade_func_code_read_cmd[][32] = {
+    /* FORM_PARA_GRADE_FUNC_CODE_READ_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x05, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0A, 0xA4, 0x50, 0x08, 0x0E, 0x01},
+};
+
+bool func_code_read(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
     bool ret = FALSE;
     
           
-    len = form_para_grade_cmd[FORM_PARA_GRADE_FUNC_CODE_READ_CMD][10] + 11;
+    len = form_para_grade_func_code_read_cmd[0][10] + 11;
                     
-    memcpy(UART_TX_BUF, form_para_grade_cmd[FORM_PARA_GRADE_FUNC_CODE_READ_CMD], len);
+    memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
 
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
     UART_TX_BUF[15] = g_cp_para.group;
@@ -2264,7 +2363,11 @@ bool func_CODE_read(void)
 
 static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 {
-    if(FORM_MSG_KEY == form_msg)
+    if(FORM_MSG_DATA == form_msg)
+    {
+        grade_update(KEY_MSG_UP);
+    }
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
@@ -2319,27 +2422,21 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
-            func_CODE_read();
+            func_code_read();
             break;
 
         case KEY_MSG_EXIT:
+            g_cp_para.grade = 0;
+            
             form_id = FORM_ID_PARA_GROUP;
             break;
 
         case KEY_MSG_UP:
-            g_cp_para.grade++;
-            g_cp_para.grade %= 100;
+            grade_update(KEY_MSG_UP);
             break;
 
         case KEY_MSG_DOWN:
-            if(g_cp_para.grade)
-            {
-                g_cp_para.grade--;
-            }
-            else
-            {
-                g_cp_para.grade = 99;
-            }
+            grade_update(KEY_MSG_DOWN);
             break;
 
         default:
@@ -2352,6 +2449,83 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
     return (FORM_MSG_NONE);
 }
 
+CODE u8 form_para_val_func_code_write_cmd[][32] = {
+    /* FORM_PARA_VAL_FUNC_CODE_WRITE_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
+};
+
+bool func_code_write(void)
+{
+    u8 i, len, timeout;
+    unsigned int crc;
+    bool ret = FALSE;
+    
+          
+    len = form_para_val_func_code_write_cmd[0][10] + 11;
+                    
+    memcpy(UART_TX_BUF, form_para_val_func_code_write_cmd[0], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+    UART_TX_BUF[15] = g_cp_para.group;
+    UART_TX_BUF[16] = g_cp_para.grade;
+    UART_TX_BUF[17] = (u8)(g_cp_para.vfd_para >> 8);
+    UART_TX_BUF[18] = (u8)g_cp_para.vfd_para;
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+    
+    uart_send(len);
+
+    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+     * 华兄 */
+    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+    {
+        /* 2500 = 1s */
+        os_wait(K_TMO, 25, 0);
+
+        if(TRUE == uart_rx_complete) //串口接收数据完毕
+        {
+            break;
+        }
+    }
+    
+    if(TRUE == uart_rx_complete)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {
+            form_id = FORM_ID_PARA_GRADE;
+
+            ret = TRUE;
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE = 0;
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[i + 16];
+        LEDOE = 0;
+    }
+
+    uart_recv_clear();
+
+    return (ret);
+}
+
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
     /* FORM_PARA_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
@@ -2359,8 +2533,6 @@ CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
     /* FORM_PARA_VAL_FAULT_CMD */
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_VAL_FUNC_CODE_WRITE_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x04, 0x08, 0x04, 0xA4, 0x50, 0x82, 0x0A, 0x01, 0x00, 0x06},
 };
 
 void form_para_val_callback(void)
@@ -2530,78 +2702,6 @@ void form_para_val_callback(void)
     LEDOE = 0;
 }
 
-bool func_CODE_write(void)
-{
-    u8 i, len, timeout;
-    unsigned int crc;
-    bool ret = FALSE;
-    
-          
-    len = form_para_val_cmd[FORM_PARA_GRADE_FUNC_CODE_READ_CMD][10] + 11;
-                    
-    memcpy(UART_TX_BUF, form_para_val_cmd[FORM_PARA_GRADE_FUNC_CODE_READ_CMD], len);
-
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-    UART_TX_BUF[15] = g_cp_para.group;
-    UART_TX_BUF[16] = g_cp_para.grade;
-    UART_TX_BUF[17] = (u8)(g_cp_para.vfd_para >> 8);
-    UART_TX_BUF[18] = (u8)g_cp_para.vfd_para;
-
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc & 0xff);
-    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
-    
-    uart_send(len);
-
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_wait(K_TMO, 25, 0);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
-    
-    if(TRUE == uart_rx_complete)
-    {
-        uart_recv_align();
-        
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
-        {
-            form_id = FORM_ID_PARA_GRADE;
-
-            ret = TRUE;
-        }
-        else
-        {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
-        }
-    }
-    else
-    {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[i + 16];
-        LEDOE = 0;
-    }
-
-    uart_recv_clear();
-
-    return (ret);
-}
-
 static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 {
     if(FORM_MSG_KEY == form_msg)
@@ -2659,7 +2759,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
-            func_CODE_write();
+            func_code_write();
             break;
 
         case KEY_MSG_EXIT:
@@ -3732,8 +3832,9 @@ CODE u8 copy_upload_rate_baudrate_cmd[][32] = {
 
 bool chang_baudrate(u16 baudrate)
 {
-    u8 len, timeout, ret = FALSE;
+    u8 len, timeout;
     unsigned int crc;
+    bool ret = FALSE;
 
 
     len = copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11;
@@ -4713,10 +4814,11 @@ CODE u8 keep_vfd_connect_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
 };
 
-void keep_vfd_connect(void)
+bool keep_vfd_connect(void)
 {
     u8 len, timeout;
     unsigned int crc;
+    bool ret = FALSE;
 
     
     len = keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11;
@@ -4820,6 +4922,8 @@ void keep_vfd_connect(void)
                 }
 
                 g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+
+                ret = TRUE;
             }           
         }
         else
@@ -4843,6 +4947,8 @@ void keep_vfd_connect(void)
     }
 
     uart_recv_clear();
+
+    return (ret);
 }
 
 bool check_vfd_para(void)

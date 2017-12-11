@@ -38,7 +38,7 @@
 #define COPY_BAUDRATE		    19200u
 #define OTHER_BAUDRATE		    9600u
 
-#define VFD_PARA_FLAG           0x5A                        //变频器参数标志
+#define VFD_PARA_FLAG           ('H')                       //变频器参数标志
 
 #define VFD_PARA_FLAG_ADDR      0u                          //1B, 变频器参数标志存储地址
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)   //2B, 变频器参数长度存储地址
@@ -129,7 +129,6 @@ typedef enum
     FORM_PARA_GRADE_SET_CMD = 0,
     FORM_PARA_GRADE_ALARM_CMD,
     FORM_PARA_GRADE_FAULT_CMD,
-    FORM_PARA_GRADE_FUNC_CODE_READ_CMD,
     MAX_FORM_PARA_GRADE_CMD,
 } ENUM_FORM_PARA_GRADE_CMD;
 
