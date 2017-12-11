@@ -87,8 +87,8 @@ typedef enum
 typedef enum
 {
     FORM_ERR_SET_CMD = 0,
-    FORM_ERR_ALARM_CMD,
     FORM_ERR_FAULT_CMD,
+    FORM_ERR_ALARM_CMD,
     MAX_FORM_ERR_CMD,
 } ENUM_FORM_ERR_CMD;
 
@@ -235,6 +235,8 @@ typedef struct _cp
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
     u16 vfd_para_index; //变频器参数存取索引
+    u16 fault_code; //故障码
+    u16 alarm_code; //报警码
 } CP, *PCP;
 
 extern XDATA bool runstatus;
