@@ -44,6 +44,13 @@
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)   //2B, 变频器参数长度存储地址
 #define VFD_PARA_ADDR           (VFD_PARA_LEN_ADDR + 2u)    //nB, 变频器参数存储地址
 
+typedef enum
+{
+    OUTPUT_FREQ = 0x103,
+    TORQUE = 0x105,    
+    DC_BUS_VOLTAGE = 0x107,
+} ENUM_RUN_DATA;
+
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
@@ -216,6 +223,7 @@ typedef struct _cp
     u16 disp_para1; //主界面显示参数1
     u16 disp_para2; //主界面显示参数2
     u16 disp_para3; //主界面显示参数3
+    u16 disp_para_type[3]; //主界面显示参数类型
     u16 vfd_para; //变频器参数
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
