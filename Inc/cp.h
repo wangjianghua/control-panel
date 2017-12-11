@@ -55,8 +55,9 @@ typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
 {
-    FORM_ID_HOME = 0,
-    FORM_ID_HOME1 = 0,
+    FORM_ID_ERR = 0,
+    FORM_ID_HOME = 1,
+    FORM_ID_HOME1 = 1,
     FORM_ID_HOME2,
     FORM_ID_HOME3,
     FORM_ID_REF,
@@ -82,6 +83,14 @@ typedef enum
     FORM_MSG_KEY,
     FORM_MSG_DATA,
 } ENUM_FORM_MSG;
+
+typedef enum
+{
+    FORM_ERR_SET_CMD = 0,
+    FORM_ERR_ALARM_CMD,
+    FORM_ERR_FAULT_CMD,
+    MAX_FORM_ERR_CMD,
+} ENUM_FORM_ERR_CMD;
 
 typedef enum
 {
@@ -137,7 +146,6 @@ typedef enum
     FORM_PARA_VAL_SET_CMD = 0,
     FORM_PARA_VAL_ALARM_CMD,
     FORM_PARA_VAL_FAULT_CMD,
-    FORM_PARA_VAL_FUNC_CODE_WRITE_CMD,
     MAX_FORM_PARA_VAL_CMD,
 } ENUM_FORM_PARA_VAL_CMD;
 
