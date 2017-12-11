@@ -204,19 +204,19 @@ typedef enum
 
 typedef struct _cp 
 {
-    u8 cmd; //命令字
-	u8 group_index; //变频器分组索引
-	u8 group; //变频器分组
-	u8 grade_index; //变频器分级索引
-	u8 grade; //变频器分级
-	u8 rate; //进度
-	u8 vfd_para_crc; //变频器参数存取校验码
     bool reset; //复位
     bool lr; //本地远程操作方式，本地LOC、远程REM
     bool run; //运行
     bool stop; //停止
     bool ref_chang; //给定更改标志
-    bool fr; //旋转状态，正转FWD、反转REV
+    bool fr; //旋转状态，正转FWD、反转REV    
+    u8 cmd; //命令字
+	u8 group; //变频器分组
+	u8 grade; //变频器分级
+	u8 rate; //进度
+	u8 vfd_para_crc; //变频器参数存取校验码
+    u8 group_nearby[4]; //当前附近组号
+    u8 grade_nearby[8]; //当前附近级号
     u16 count; //计数器
     u16 ref_temp; //给定临时值
     u16 ref; //给定值

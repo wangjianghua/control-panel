@@ -1633,6 +1633,8 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_ENTER:
             form_id = FORM_ID_PARA_GROUP;
+
+            return (FORM_MSG_DATA);
             break;
 
         case KEY_MSG_EXIT:
@@ -1655,6 +1657,94 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
     form_para_callback();
 
     return (FORM_MSG_NONE);
+}
+
+CODE u8 para_group_update_cmd[][32] = {
+    /* FORM_PARA_GROUP_UPDATE_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x04, 0x00, 0x59, 0x00, 0x03, 0x06, 0x04, 0xA3, 0x50, 0x07, 0x00, 0x00},
+};
+
+bool group_update(u8 key_msg)
+{
+    u8 len, timeout, ret = FALSE;
+    unsigned int crc;
+
+
+    len = para_group_update_cmd[0][10] + 11;
+                    
+    memcpy(UART_TX_BUF, para_group_update_cmd[0], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
+    
+    UART_TX_BUF[16] = g_cp_para.group;
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+
+    uart_send(len);
+
+    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
+     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
+     * 华兄 */
+    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
+    {
+        /* 2500 = 1s */
+        os_wait(K_TMO, 25, 0);
+
+        if(TRUE == uart_rx_complete) //串口接收数据完毕
+        {
+            break;
+        }
+    }
+
+    if(TRUE == uart_rx_complete)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {            
+            memcpy(g_cp_para.group_nearby, &UART_RX_BUF[7], sizeof(g_cp_para.group_nearby));
+
+            switch(key_msg)
+            {
+            case KEY_MSG_UP:
+                g_cp_para.group = g_cp_para.group_nearby[3];
+                break;
+            
+            case KEY_MSG_DOWN:
+                g_cp_para.group = g_cp_para.group_nearby[1];
+                break;
+                
+            default:
+                break;
+            }
+            
+            ret = TRUE;
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
+            LEDOE = 0;
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
+        LEDOE = 0;
+    }
+
+    uart_recv_clear();
+
+    return (ret);
 }
 
 CODE u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
@@ -1835,7 +1925,11 @@ void form_para_group_callback(void)
 
 static int form_para_group(unsigned int key_msg, unsigned int form_msg)
 {
-    if(FORM_MSG_KEY == form_msg)
+    if(FORM_MSG_DATA == form_msg)
+    {
+        group_update(KEY_MSG_UP);
+    }
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
@@ -1894,23 +1988,18 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_EXIT:
+            g_cp_para.group = 0;
+            g_cp_para.grade = 0;
+            
             form_id = FORM_ID_PARA;
             break;
 
         case KEY_MSG_UP:
-            g_cp_para.group++;
-            g_cp_para.group %= 100;
+            group_update(KEY_MSG_UP);
             break;
 
         case KEY_MSG_DOWN:
-            if(g_cp_para.group)
-            {
-                g_cp_para.group--;
-            }
-            else
-            {
-                g_cp_para.group = 99;
-            }
+            group_update(KEY_MSG_DOWN);
             break;
 
         default:
@@ -4376,8 +4465,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             return (FORM_MSG_NONE);
         }
     }
-    
-    if(FORM_MSG_KEY == form_msg)
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
@@ -5133,8 +5221,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         UartInit_19200bps();
 #endif        
     }
-    
-    if(FORM_MSG_KEY == form_msg)
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
@@ -5539,8 +5626,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         UartInit_19200bps();
 #endif        
     }
-    
-    if(FORM_MSG_KEY == form_msg)
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
