@@ -480,10 +480,33 @@ void form_err_callback(void)
 {
     u8 i, len, timeout;
     unsigned int crc;
+    static bool fault = FALSE, alarm = FALSE;
     
     
-    for(i = 0; i < MAX_FORM_ERR_CMD; i++)
-    {        
+    for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
+    { 
+        if((FORM_ERR_FAULT_CMD == i) && 
+           (FALSE == fault))
+        {
+            i = FORM_ERR_ALARM_CMD;
+        }
+        else if((FORM_ERR_FAULT_CMD == i) && 
+                (TRUE == fault))
+        {
+            fault = FALSE;
+        }
+
+        if((FORM_ERR_ALARM_CMD == i) &&
+           (FALSE == alarm))
+        {
+            return;
+        }
+        else if((FORM_ERR_ALARM_CMD == i) &&
+                (TRUE == alarm))
+        {
+            alarm = FALSE;
+        }
+        
         len = form_err_cmd[i][10] + 11;
                         
         memcpy(UART_TX_BUF, form_err_cmd[i], len);
@@ -598,16 +621,50 @@ void form_err_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
+                        if(UART_RX_BUF[11] & 0x80) //0303.Bit15£¬¹ÊÕÏ
+                        {
+                            fault = TRUE;
+                        }
+
+                        if(UART_RX_BUF[10] & 0x01) //0304.Bit0£¬±¨¾¯
+                        {
+                            alarm = TRUE;
+                        }
+
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     break;
 
                 case FORM_ERR_FAULT_CMD:
                     g_cp_para.fault_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+
+                    if(0 != g_cp_para.fault_code)
+                    {
+                        led_disp_buf[0] = (g_cp_para.fault_code > 0) ? (led_table[g_cp_para.fault_code % 10 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[1] = (g_cp_para.fault_code > 9) ? (led_table[g_cp_para.fault_code % 100 / 10 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[2] = (g_cp_para.fault_code > 99) ? (led_table[g_cp_para.fault_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[3] = (g_cp_para.fault_code > 999) ? (led_table[g_cp_para.fault_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[4] = led_table['F' - 32];
+                        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+                        led_blink_pos = 6;
+                        LEDOE = 0;
+                    }
                     break;
 
                 case FORM_ERR_ALARM_CMD:
                     g_cp_para.alarm_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+
+                    if(0 != g_cp_para.alarm_code)
+                    {
+                        led_disp_buf[0] = (g_cp_para.alarm_code > 0) ? (led_table[g_cp_para.alarm_code % 10 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[1] = (g_cp_para.alarm_code > 9) ? (led_table[g_cp_para.alarm_code % 100 / 10 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[2] = (g_cp_para.alarm_code > 99) ? (led_table[g_cp_para.alarm_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[3] = (g_cp_para.alarm_code > 999) ? (led_table[g_cp_para.alarm_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
+                        led_disp_buf[4] = led_table['A' - 32];
+                        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+                        led_blink_pos = 6;
+                        LEDOE = 0;
+                    }
                     break;
 
                 default:
@@ -626,14 +683,6 @@ void form_err_callback(void)
 
         uart_recv_clear();
     }
-
-    led_disp_buf[0] = (g_cp_para.fault_code > 0) ? (led_table[g_cp_para.fault_code % 10 + 16]) : (0xff);
-    led_disp_buf[1] = (g_cp_para.fault_code > 9) ? (led_table[g_cp_para.fault_code % 100 / 10 + 16]) : (0xff);
-    led_disp_buf[2] = (g_cp_para.fault_code > 99) ? (led_table[g_cp_para.fault_code % 1000 / 100 + 16]) : (0xff);
-    led_disp_buf[3] = (g_cp_para.fault_code > 999) ? (led_table[g_cp_para.fault_code % 10000 / 1000 + 16]) : (0xff);
-    led_disp_buf[4] = (g_cp_para.fault_code > 9999) ? (led_table[g_cp_para.fault_code % 100000 / 10000 + 16]) : (0xff);
-    led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE = 0;
 }
 
 static int form_err(unsigned int key_msg, unsigned int form_msg)
@@ -694,6 +743,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para1 > 9999) ? (led_table[g_cp_para.disp_para1 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_Hz_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
 
@@ -705,6 +755,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para1 > 9999) ? (led_table[g_cp_para.disp_para1 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_TORQUE_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
             
@@ -716,6 +767,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para1 > 9999) ? (led_table[g_cp_para.disp_para1 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_V_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
     
@@ -735,6 +787,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para2 > 9999) ? (led_table[g_cp_para.disp_para2 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_Hz_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
         
@@ -746,6 +799,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para2 > 9999) ? (led_table[g_cp_para.disp_para2 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_TORQUE_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
             
@@ -757,6 +811,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para2 > 9999) ? (led_table[g_cp_para.disp_para2 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_V_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
     
@@ -776,6 +831,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para3 > 9999) ? (led_table[g_cp_para.disp_para3 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_Hz_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
         
@@ -787,6 +843,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para3 > 9999) ? (led_table[g_cp_para.disp_para3 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_TORQUE_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
             
@@ -798,6 +855,7 @@ void form_home_disp(void)
             led_disp_buf[4] = (g_cp_para.disp_para3 > 9999) ? (led_table[g_cp_para.disp_para3 % 100000 / 10000 + 16]) : (0xff);
             led_disp_buf[5] |= LED_V_A_Hz_MASK;
             led_disp_buf[5] &= ~LED_V_MASK;
+            led_blink_pos = 0;
             LEDOE = 0;
             break;
     
