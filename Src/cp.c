@@ -127,6 +127,17 @@ bool uart_recv_align(void)
     }
 }
 
+void err_con(void)
+{
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[4] = 0xff;
+    led_disp_buf[3] = led_table['E' - 32];
+    led_disp_buf[2] = led_table['C' - 32];
+    led_disp_buf[1] = led_table['O' - 32];
+    led_disp_buf[0] = led_table['N' - 32];
+    LEDOE = 0;
+}
+
 CODE u8 con_cmd[][32] = {
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x90, 0x82, 0x00, 0x02},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x01},
@@ -175,9 +186,9 @@ void vfd_con(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-    			if(TRUE == g_cp_para.reset)
+    			if(TRUE == g_cp_para.clr_err)
     			{
-    				g_cp_para.reset = FALSE;
+    				g_cp_para.clr_err = FALSE;
                     
     				UART_TX_BUF[20] |= 0x10;
     			}
@@ -241,9 +252,9 @@ void vfd_con(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-    			if(TRUE == g_cp_para.reset)
+    			if(TRUE == g_cp_para.clr_err)
     			{
-    				g_cp_para.reset = FALSE;
+    				g_cp_para.clr_err = FALSE;
                     
     				UART_TX_BUF[20] |= 0x10;
     			}
@@ -323,9 +334,10 @@ void vfd_con(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            g_cp_para.clr_err = TRUE;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
@@ -358,9 +370,10 @@ void vfd_con(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            g_cp_para.clr_err = TRUE;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
@@ -400,24 +413,14 @@ void vfd_con(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
 
                 i = -1; //Æô¶¯ÖØ¸´·¢ËÍÁ¬½ÓÃüÁî
             }
         }
         else
         { 
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
 
             i = -1; //Æô¶¯ÖØ¸´·¢ËÍÁ¬½ÓÃüÁî
         }
@@ -464,17 +467,6 @@ void MENU_Init(void)
     os_wait(K_TMO, 10, 0);
 }
 
-void err_con(void)
-{
-    led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[4] = 0xff;
-    led_disp_buf[3] = led_table['E' - 32];
-    led_disp_buf[2] = led_table['C' - 32];
-    led_disp_buf[1] = led_table['O' - 32];
-    led_disp_buf[0] = led_table['N' - 32];
-    LEDOE = 0;
-}
-
 CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
     /* FORM_ERR_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
@@ -506,9 +498,9 @@ void form_err_callback(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-                if(TRUE == g_cp_para.reset)
+                if(TRUE == g_cp_para.clr_err)
                 {
-                    g_cp_para.reset = FALSE;
+                    g_cp_para.clr_err = FALSE;
                     
                     UART_TX_BUF[20] |= 0x10;
                 }
@@ -666,7 +658,7 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             break;
             
         case KEY_MSG_EXIT:
-            g_cp_para.reset = TRUE;
+            g_cp_para.clr_err = TRUE;
 
             form_id = FORM_ID_HOME;
             break;
@@ -1073,10 +1065,6 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
     /* FORM_REF_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_REF_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_REF_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_ref_callback(void)
@@ -1085,7 +1073,7 @@ void form_ref_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_REF_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_REF_CMD; i++)
     {        
         len = form_ref_cmd[i][10] + 11;
                         
@@ -1100,13 +1088,6 @@ void form_ref_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -1155,14 +1136,6 @@ void form_ref_callback(void)
             }
             break;
 
-        case FORM_REF_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_REF_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -1201,12 +1174,17 @@ void form_ref_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -1216,22 +1194,12 @@ void form_ref_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -1331,10 +1299,6 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
     /* FORM_REF_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_REF_VAL_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_REF_VAL_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_ref_val_callback(void)
@@ -1344,7 +1308,7 @@ void form_ref_val_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_REF_VAL_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_REF_VAL_CMD; i++)
     {        
         len = form_ref_val_cmd[i][10] + 11;
                         
@@ -1359,13 +1323,6 @@ void form_ref_val_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -1414,14 +1371,6 @@ void form_ref_val_callback(void)
             }
             break;
 
-        case FORM_REF_VAL_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_REF_VAL_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -1460,12 +1409,17 @@ void form_ref_val_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -1475,22 +1429,12 @@ void form_ref_val_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -1603,10 +1547,6 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_para_cmd[MAX_FORM_PARA_CMD][32] = {
     /* FORM_PARA_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_PARA_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_para_callback(void)
@@ -1615,7 +1555,7 @@ void form_para_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_PARA_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_PARA_CMD; i++)
     {        
         len = form_para_cmd[i][10] + 11;
                         
@@ -1630,13 +1570,6 @@ void form_para_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -1685,14 +1618,6 @@ void form_para_callback(void)
             }
             break;
 
-        case FORM_PARA_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_PARA_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -1731,12 +1656,17 @@ void form_para_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -1746,22 +1676,12 @@ void form_para_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -1953,10 +1873,6 @@ bool group_update(u8 key_msg)
 CODE u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
     /* FORM_PARA_GROUP_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_PARA_GROUP_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_GROUP_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_para_group_callback(void)
@@ -1965,7 +1881,7 @@ void form_para_group_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_PARA_GROUP_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_PARA_GROUP_CMD; i++)
     {        
         len = form_para_group_cmd[i][10] + 11;
                         
@@ -1980,13 +1896,6 @@ void form_para_group_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -2035,14 +1944,6 @@ void form_para_group_callback(void)
             }
             break;
 
-        case FORM_PARA_GROUP_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_PARA_GROUP_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -2081,12 +1982,17 @@ void form_para_group_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -2096,22 +2002,12 @@ void form_para_group_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -2312,10 +2208,6 @@ bool grade_update(u8 key_msg)
 CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
     /* FORM_PARA_GRADE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_PARA_GRADE_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_GRADE_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_para_grade_callback(void)
@@ -2324,7 +2216,7 @@ void form_para_grade_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_PARA_GRADE_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_PARA_GRADE_CMD; i++)
     {        
         len = form_para_grade_cmd[i][10] + 11;
                         
@@ -2339,13 +2231,6 @@ void form_para_grade_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -2394,14 +2279,6 @@ void form_para_grade_callback(void)
             }
             break;
 
-        case FORM_PARA_GRADE_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_PARA_GRADE_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -2440,12 +2317,17 @@ void form_para_grade_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -2455,22 +2337,12 @@ void form_para_grade_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -2730,10 +2602,6 @@ bool func_code_write(void)
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
     /* FORM_PARA_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_PARA_VAL_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_PARA_VAL_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_para_val_callback(void)
@@ -2742,7 +2610,7 @@ void form_para_val_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_PARA_VAL_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_PARA_VAL_CMD; i++)
     {        
         len = form_para_val_cmd[i][10] + 11;
                         
@@ -2757,13 +2625,6 @@ void form_para_val_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -2812,14 +2673,6 @@ void form_para_val_callback(void)
             }
             break;
 
-        case FORM_PARA_VAL_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_PARA_VAL_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -2858,12 +2711,17 @@ void form_para_val_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -2873,22 +2731,12 @@ void form_para_val_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -2991,10 +2839,6 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_copy_cmd[MAX_FORM_COPY_CMD][32] = {
     /* FORM_COPY_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_COPY_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_COPY_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_copy_callback(void)
@@ -3003,7 +2847,7 @@ void form_copy_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_COPY_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_COPY_CMD; i++)
     {        
         len = form_copy_cmd[i][10] + 11;
                         
@@ -3018,13 +2862,6 @@ void form_copy_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -3073,14 +2910,6 @@ void form_copy_callback(void)
             }
             break;
 
-        case FORM_COPY_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_COPY_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -3119,12 +2948,17 @@ void form_copy_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -3134,22 +2968,12 @@ void form_copy_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -3249,10 +3073,6 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_copy_upload_cmd[MAX_FORM_COPY_UPLOAD_CMD][32] = {
     /* FORM_COPY_UPLOAD_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_COPY_UPLOAD_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_COPY_UPLOAD_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_copy_upload_callback(void)
@@ -3261,7 +3081,7 @@ void form_copy_upload_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_COPY_UPLOAD_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_COPY_UPLOAD_CMD; i++)
     {        
         len = form_copy_upload_cmd[i][10] + 11;
                         
@@ -3276,13 +3096,6 @@ void form_copy_upload_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -3331,14 +3144,6 @@ void form_copy_upload_callback(void)
             }
             break;
 
-        case FORM_COPY_UPLOAD_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_COPY_UPLOAD_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -3377,12 +3182,17 @@ void form_copy_upload_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -3392,22 +3202,12 @@ void form_copy_upload_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -3509,10 +3309,6 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_copy_download_all_cmd[MAX_FORM_COPY_DOWNLOAD_ALL_CMD][32] = {
     /* FORM_COPY_DOWNLOAD_ALL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_COPY_DOWNLOAD_ALL_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_COPY_DOWNLOAD_ALL_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_copy_download_all_callback(void)
@@ -3521,7 +3317,7 @@ void form_copy_download_all_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_ALL_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_ALL_CMD; i++)
     {        
         len = form_copy_download_all_cmd[i][10] + 11;
                         
@@ -3536,13 +3332,6 @@ void form_copy_download_all_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -3591,14 +3380,6 @@ void form_copy_download_all_callback(void)
             }
             break;
 
-        case FORM_COPY_DOWNLOAD_ALL_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_COPY_DOWNLOAD_ALL_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -3637,12 +3418,17 @@ void form_copy_download_all_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -3652,22 +3438,12 @@ void form_copy_download_all_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -3769,10 +3545,6 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
 CODE u8 form_copy_download_part_cmd[MAX_FORM_COPY_DOWNLOAD_PART_CMD][32] = {
     /* FORM_COPY_DOWNLOAD_PART_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x09, 0xC4, 0x00, 0x00, 0x00, 0x00},
-    /* FORM_COPY_DOWNLOAD_PART_ALARM_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x1C, 0xA1, 0x50, 0x02},
-    /* FORM_COPY_DOWNLOAD_PART_FAULT_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void form_copy_download_part_callback(void)
@@ -3781,7 +3553,7 @@ void form_copy_download_part_callback(void)
     unsigned int crc;
     
     
-    for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_PART_CMD - 2; i++)
+    for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_PART_CMD; i++)
     {        
         len = form_copy_download_part_cmd[i][10] + 11;
                         
@@ -3796,13 +3568,6 @@ void form_copy_download_part_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -3851,14 +3616,6 @@ void form_copy_download_part_callback(void)
             }
             break;
 
-        case FORM_COPY_DOWNLOAD_PART_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
-        case FORM_COPY_DOWNLOAD_PART_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (g_cp_para.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -3897,12 +3654,17 @@ void form_copy_download_part_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -3912,22 +3674,12 @@ void form_copy_download_part_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -4146,13 +3898,6 @@ void copy_upload_rate_init(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
-
                 if(TRUE == g_cp_para.ref_chang)
                 {
                     g_cp_para.ref_chang = FALSE;
@@ -4239,12 +3984,17 @@ void copy_upload_rate_init(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -4254,22 +4004,12 @@ void copy_upload_rate_init(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -4321,13 +4061,6 @@ void copy_comm_reset(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -4435,17 +4168,22 @@ void copy_comm_reset(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
-                        {
-                            g_cp_para.reset = TRUE;
-                        }
-
-                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
-
                         if(FORM_ID_COPY_UPLOAD_RATE == form_id)
                         {
                             i = num; //Ìø¹ý¸´Î»
                         }
+
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
+
+                        g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -4455,22 +4193,12 @@ void copy_comm_reset(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -4515,13 +4243,6 @@ void form_copy_upload_rate_callback(void)
             {
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
 
                 if(TRUE == g_cp_para.ref_chang)
                 {
@@ -4616,12 +4337,17 @@ void form_copy_upload_rate_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -4721,22 +4447,12 @@ void form_copy_upload_rate_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -4880,13 +4596,6 @@ void copy_download_all_rate_init(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
-
                 if(TRUE == g_cp_para.ref_chang)
                 {
                     g_cp_para.ref_chang = FALSE;
@@ -4973,12 +4682,17 @@ void copy_download_all_rate_init(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -4988,22 +4702,12 @@ void copy_download_all_rate_init(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -5032,13 +4736,6 @@ bool keep_vfd_connect(void)
     {
         UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
         UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
-
-        if(TRUE == g_cp_para.reset)
-        {
-            g_cp_para.reset = FALSE;
-            
-            UART_TX_BUF[20] |= 0x10;
-        }
 
         if(TRUE == g_cp_para.ref_chang)
         {
@@ -5117,34 +4814,27 @@ bool keep_vfd_connect(void)
                 g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                 g_cp_para.count++;
 
-                if(UART_RX_BUF[11] & 0x80)
+                if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                   (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                 {
-                    g_cp_para.reset = TRUE;
+                    form_id = FORM_ID_ERR;
                 }
 
                 g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
-
-                ret = TRUE;
+            }
+            else
+            {
+                form_id = FORM_ID_ERR;
             }           
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[KEEP_VFD_CONNECT_CMD + 16];
-            LEDOE = 0;
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[KEEP_VFD_CONNECT_CMD + 16];
-        LEDOE = 0;
+        err_con();
     }
 
     uart_recv_clear();
@@ -5325,13 +5015,6 @@ void form_copy_download_all_rate_callback(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
-
                 if(TRUE == g_cp_para.ref_chang)
                 {
                     g_cp_para.ref_chang = FALSE;
@@ -5425,12 +5108,17 @@ void form_copy_download_all_rate_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -5468,22 +5156,12 @@ void form_copy_download_all_rate_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
@@ -5730,13 +5408,6 @@ void form_copy_download_part_rate_callback(void)
                 UART_TX_BUF[15] = (u8)(g_cp_para.count >> 8);
                 UART_TX_BUF[16] = (u8)(g_cp_para.count & 0xff);
 
-                if(TRUE == g_cp_para.reset)
-                {
-                    g_cp_para.reset = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
-
                 if(TRUE == g_cp_para.ref_chang)
                 {
                     g_cp_para.ref_chang = FALSE;
@@ -5830,12 +5501,17 @@ void form_copy_download_part_rate_callback(void)
                         g_cp_para.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         g_cp_para.count++;
 
-                        if(UART_RX_BUF[11] & 0x80)
+                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
                         {
-                            g_cp_para.reset = TRUE;
+                            form_id = FORM_ID_ERR;
                         }
 
                         g_cp_para.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                    }
+                    else
+                    {
+                        form_id = FORM_ID_ERR;
                     }
                     break;
 
@@ -5873,22 +5549,12 @@ void form_copy_download_part_rate_callback(void)
             }
             else
             {
-                led_disp_buf[4] = 0xff;
-                led_disp_buf[3] = led_table['E' - 32];
-                led_disp_buf[2] = led_table['r' - 32];
-                led_disp_buf[1] = led_table['r' - 32];
-                led_disp_buf[0] = led_table[i + 16];
-                LEDOE = 0;
+                err_con();
             }
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE = 0;
+            err_con();
         }
 
         uart_recv_clear();
