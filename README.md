@@ -1,2 +1,2 @@
 # CP(øÿ÷∆≈Ã)
-Control panel based on STC12C5A60CCP, C51 v9.52
+Control panel based on STM32F103C8T6, MDK-ARM v4.74
