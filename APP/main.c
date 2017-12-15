@@ -57,6 +57,7 @@ void AppEventCreate(void)
 {
     os_sem_init(&key_sem, 0);
     os_sem_init(&cp_sem, 0);
+    os_sem_init(&uart_sem, 0);
 }
 
 void AppTaskCreate(void)

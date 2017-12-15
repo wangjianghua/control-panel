@@ -366,7 +366,7 @@ __task void AppTaskKey(void)
         key_value = ReadKeyVal();	
         
         if(KEY_VAL_NONE != key_value)	
-        {
+        {            
             os_sem_send(&cp_sem);
             
             jump = TRUE; 

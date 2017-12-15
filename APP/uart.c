@@ -1,17 +1,19 @@
 #include "includes.h"
 
 
+OS_SEM uart_sem;
+
 XDATA u8 uart_tx_buf[UART_TX_LEN];
 XDATA u8 uart_rx_buf[UART_RX_LEN];
 XDATA u8 uart_tx_index = 0, uart_tx_count = 0;
 XDATA u8 uart_rx_count = 0;
 XDATA u16 uart_rx_timeout = 0;
-XDATA bool uart_rx_complete = FALSE;
 
 void uart_recv_clear(void)
 {
     uart_rx_count = 0;
-    uart_rx_complete = FALSE;
+
+    while(OS_R_TMO != os_sem_wait(&uart_sem, 0));
 }
 
 void uart_send(u8 len)
@@ -42,7 +44,7 @@ __task void AppTaskUart(void)
             }
             else //串口接收完成
             {                
-                uart_rx_complete = TRUE;
+                os_sem_send(&uart_sem);
             }
         }
         else

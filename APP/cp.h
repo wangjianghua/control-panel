@@ -33,7 +33,7 @@
 #define VFD_REV                 TRUE  //反转
 #define VFD_FWD                 FALSE //正转
 
-#define VFD_REPLY_TIMEOUT       100u //25 * 100 = 1s
+#define VFD_REPLY_TIMEOUT       1000u //1s
 
 #define COPY_BAUDRATE		    19200u
 #define OTHER_BAUDRATE		    9600u

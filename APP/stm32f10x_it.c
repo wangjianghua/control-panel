@@ -128,10 +128,8 @@ void USART1_IRQHandler(void)
         UART_RX_BUF[uart_rx_count++] = USART_ReceiveData(USART1);
 
         uart_rx_count %= UART_RX_LEN;
-
-        uart_rx_complete = FALSE;
         
-        uart_rx_timeout = UART_RX_TIMEOUT; //超时判断串口接收完成
+        uart_rx_timeout = UART_RX_TIMEOUT;
     }
 
     if(RESET != USART_GetITStatus(USART1, USART_IT_TXE))
@@ -143,6 +141,7 @@ void USART1_IRQHandler(void)
         }
         else
         {
+            /* Disable USART1 Transmit interrupts */
             USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
 
             uart_tx_index = 0;

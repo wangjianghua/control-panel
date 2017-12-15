@@ -22,12 +22,12 @@
             uart_send(uart_rx_count);                          \
         }                                                      \
 
+extern OS_SEM uart_sem;
 extern XDATA u8 uart_tx_buf[UART_TX_LEN];
 extern XDATA u8 uart_rx_buf[UART_RX_LEN];
 extern XDATA u8 uart_tx_index, uart_tx_count;
 extern XDATA u8 uart_rx_count;
 extern XDATA u16 uart_rx_timeout;
-extern XDATA bool uart_rx_complete;
 
 void uart_recv_clear(void);
 void uart_send(u8 len);

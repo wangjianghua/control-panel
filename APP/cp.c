@@ -154,8 +154,9 @@ CODE u8 con_cmd[][32] = {
 
 void vfd_con(void)
 {
+    OS_RESULT result;
     s8 i;
-    u8 len, timeout;
+    u8 len;
     unsigned int crc;
     
 
@@ -291,21 +292,9 @@ void vfd_con(void)
 
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
                         
@@ -372,8 +361,6 @@ void vfd_con(void)
 
             i = -1; //启动重复发送连接命令
         }
-        
-        uart_recv_clear();
     }
 }
 
@@ -426,7 +413,8 @@ CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
 
 void form_err_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     static bool fault = FALSE, alarm = FALSE;
     
@@ -541,21 +529,9 @@ void form_err_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -628,8 +604,6 @@ void form_err_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 }
 
@@ -826,7 +800,8 @@ CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
 
 void form_home_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -907,21 +882,9 @@ void form_home_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -977,8 +940,6 @@ void form_home_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 }
 
@@ -1079,7 +1040,8 @@ CODE u8 form_ref_cmd[MAX_FORM_REF_CMD][32] = {
 
 void form_ref_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -1156,21 +1118,9 @@ void form_ref_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -1211,8 +1161,6 @@ void form_ref_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = 0xff;
@@ -1313,7 +1261,8 @@ CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
 
 void form_ref_val_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     u16 temp;
     unsigned int crc;
     
@@ -1391,21 +1340,9 @@ void form_ref_val_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -1446,8 +1383,6 @@ void form_ref_val_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 
     temp = g_cp_para.ref_temp / 100;
@@ -1561,7 +1496,8 @@ CODE u8 form_para_cmd[MAX_FORM_PARA_CMD][32] = {
 
 void form_para_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -1638,21 +1574,9 @@ void form_para_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -1693,8 +1617,6 @@ void form_para_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = 0xff;
@@ -1797,7 +1719,8 @@ CODE u8 para_group_update_cmd[][32] = {
 
 bool group_update(u8 key_msg)
 {
-    u8 len, timeout;
+    OS_RESULT result;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
 
@@ -1817,21 +1740,9 @@ bool group_update(u8 key_msg)
 
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
-
-    if(TRUE == uart_rx_complete)
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+    
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -1875,8 +1786,6 @@ bool group_update(u8 key_msg)
         LEDOE_ENABLE();
     }
 
-    uart_recv_clear();
-
     return (ret);
 }
 
@@ -1887,7 +1796,8 @@ CODE u8 form_para_group_cmd[MAX_FORM_PARA_GROUP_CMD][32] = {
 
 void form_para_group_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -1964,21 +1874,9 @@ void form_para_group_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -2019,8 +1917,6 @@ void form_para_group_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table[g_cp_para.group % 10 + 16];
@@ -2130,7 +2026,8 @@ CODE u8 para_grade_update_cmd[][32] = {
 
 bool grade_update(u8 key_msg)
 {
-    u8 len, timeout;
+    OS_RESULT result;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
 
@@ -2150,21 +2047,9 @@ bool grade_update(u8 key_msg)
 
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
-
-    if(TRUE == uart_rx_complete)
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+    
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -2210,8 +2095,6 @@ bool grade_update(u8 key_msg)
         LEDOE_ENABLE();
     }
 
-    uart_recv_clear();
-
     return (ret);
 }
 
@@ -2222,7 +2105,8 @@ CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
 
 void form_para_grade_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -2299,21 +2183,9 @@ void form_para_grade_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -2354,8 +2226,6 @@ void form_para_grade_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table[g_cp_para.grade % 10 + 16];
@@ -2374,7 +2244,8 @@ CODE u8 form_para_grade_func_code_read_cmd[][32] = {
 
 bool func_code_read(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     bool ret = FALSE;
     
@@ -2393,21 +2264,9 @@ bool func_code_read(void)
     
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
-    if(TRUE == uart_rx_complete)
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -2438,8 +2297,6 @@ bool func_code_read(void)
         led_disp_buf[0] = led_table[i + 16];
         LEDOE_ENABLE();
     }
-
-    uart_recv_clear();
 
     return (ret);
 }
@@ -2539,7 +2396,8 @@ CODE u8 form_para_val_func_code_write_cmd[][32] = {
 
 bool func_code_write(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     bool ret = FALSE;
     
@@ -2560,21 +2418,9 @@ bool func_code_write(void)
     
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
-    if(TRUE == uart_rx_complete)
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -2604,8 +2450,6 @@ bool func_code_write(void)
         LEDOE_ENABLE();
     }
 
-    uart_recv_clear();
-
     return (ret);
 }
 
@@ -2616,7 +2460,8 @@ CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
 
 void form_para_val_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -2693,21 +2538,9 @@ void form_para_val_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -2748,8 +2581,6 @@ void form_para_val_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table[g_cp_para.vfd_para % 10 + 16];
@@ -2853,7 +2684,8 @@ CODE u8 form_copy_cmd[MAX_FORM_COPY_CMD][32] = {
 
 void form_copy_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -2930,21 +2762,9 @@ void form_copy_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -2985,8 +2805,6 @@ void form_copy_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table['y' - 32];
@@ -3087,7 +2905,8 @@ CODE u8 form_copy_upload_cmd[MAX_FORM_COPY_UPLOAD_CMD][32] = {
 
 void form_copy_upload_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -3164,21 +2983,9 @@ void form_copy_upload_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -3219,8 +3026,6 @@ void form_copy_upload_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = 0xff;
@@ -3323,7 +3128,8 @@ CODE u8 form_copy_download_all_cmd[MAX_FORM_COPY_DOWNLOAD_ALL_CMD][32] = {
 
 void form_copy_download_all_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -3400,21 +3206,9 @@ void form_copy_download_all_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -3455,8 +3249,6 @@ void form_copy_download_all_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table['A' - 32];
@@ -3559,7 +3351,8 @@ CODE u8 form_copy_download_part_cmd[MAX_FORM_COPY_DOWNLOAD_PART_CMD][32] = {
 
 void form_copy_download_part_callback(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -3636,21 +3429,9 @@ void form_copy_download_part_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -3691,8 +3472,6 @@ void form_copy_download_part_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
     
     led_disp_buf[0] = led_table['P' - 32];
@@ -3795,7 +3574,8 @@ CODE u8 copy_upload_rate_baudrate_cmd[][32] = {
 
 bool chang_baudrate(u16 baudrate)
 {
-    u8 len, timeout;
+    OS_RESULT result;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
 
@@ -3815,21 +3595,9 @@ bool chang_baudrate(u16 baudrate)
 
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
-
-    if(TRUE == uart_rx_complete)
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+    
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -3859,8 +3627,6 @@ bool chang_baudrate(u16 baudrate)
         LEDOE_ENABLE();
     }
 
-    uart_recv_clear();
-
     return (ret);
 }
 
@@ -3875,7 +3641,8 @@ CODE u8 form_copy_upload_rate_init_cmd[][32] = {
 
 void copy_upload_rate_init(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -3953,21 +3720,9 @@ void copy_upload_rate_init(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -4008,8 +3763,6 @@ void copy_upload_rate_init(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 }
 
@@ -4029,7 +3782,8 @@ CODE u8 copy_comm_reset_cmd[][32] = {
 
 void copy_comm_reset(void)
 {
-    u8 i, len, timeout, num;
+    OS_RESULT result;
+    u8 i, len, num;
     unsigned int crc;
 
 
@@ -4136,21 +3890,9 @@ void copy_comm_reset(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -4197,8 +3939,6 @@ void copy_comm_reset(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 }
 
@@ -4213,7 +3953,8 @@ CODE u8 copy_upload_rate_cmd[][32] = {
 
 void form_copy_upload_rate_callback(void)
 {
-    u8 i, j, len, timeout, size;
+    OS_RESULT result;
+    u8 i, j, len, size;
     unsigned int crc;
     u16 num;
     static bool last_frame = FALSE;
@@ -4306,21 +4047,9 @@ void form_copy_upload_rate_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -4451,8 +4180,6 @@ void form_copy_upload_rate_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 
     led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
@@ -4573,7 +4300,8 @@ CODE u8 form_copy_download_all_rate_init_cmd[][32] = {
 
 void copy_download_all_rate_init(void)
 {
-    u8 i, len, timeout;
+    OS_RESULT result;
+    u8 i, len;
     unsigned int crc;
     
     
@@ -4651,21 +4379,9 @@ void copy_download_all_rate_init(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -4706,8 +4422,6 @@ void copy_download_all_rate_init(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 }
 
@@ -4718,7 +4432,8 @@ CODE u8 keep_vfd_connect_cmd[][32] = {
 
 bool keep_vfd_connect(void)
 {
-    u8 len, timeout;
+    OS_RESULT result;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
 
@@ -4786,21 +4501,9 @@ bool keep_vfd_connect(void)
     
     uart_send(len);
 
-    /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-     * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-     * 华兄 */
-    for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-    {
-        /* 2500 = 1s */
-        os_dly_wait(10);
-
-        if(TRUE == uart_rx_complete) //串口接收数据完毕
-        {
-            break;
-        }
-    }
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
-    if(TRUE == uart_rx_complete)
+    if(OS_R_TMO != result)
     {
         uart_recv_align();
         
@@ -4833,8 +4536,6 @@ bool keep_vfd_connect(void)
     {
         err_con();
     }
-
-    uart_recv_clear();
 
     return (ret);
 }
@@ -4894,7 +4595,8 @@ CODE u8 copy_download_all_rate_cmd[][60] = {
 
 void form_copy_download_all_rate_callback(void)
 {
-    u8 i, j, len, timeout;
+    OS_RESULT result;
+    u8 i, j, len;
     unsigned int crc;
     static u8 frame_num = 0;
     
@@ -5077,21 +4779,9 @@ void form_copy_download_all_rate_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -5160,8 +4850,6 @@ void form_copy_download_all_rate_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 
     led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
@@ -5287,7 +4975,8 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
 void form_copy_download_part_rate_callback(void)
 {
-    u8 i, j, len, timeout;
+    OS_RESULT result;
+    u8 i, j, len;
     unsigned int crc;
     static u8 frame_num = 0;
     
@@ -5470,21 +5159,9 @@ void form_copy_download_part_rate_callback(void)
         
         uart_send(len);
 
-        /* CPTask与KeyTask已经有信号在通信，受限于RTX-51 TINY弱小的功能，
-         * 这里CPTask不能使用同一信号与UartTask进行通信，否则可能产生冲突，导致丢失信号
-         * 华兄 */
-        for(timeout = 0; timeout <= VFD_REPLY_TIMEOUT; timeout++) //等待变频器应答
-        {
-            /* 2500 = 1s */
-            os_dly_wait(10);
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
-            if(TRUE == uart_rx_complete) //串口接收数据完毕
-            {
-                break;
-            }
-        }
-        
-        if(TRUE == uart_rx_complete)
+        if(OS_R_TMO != result)
         {
             uart_recv_align();
             
@@ -5553,8 +5230,6 @@ void form_copy_download_part_rate_callback(void)
         {
             err_con();
         }
-
-        uart_recv_clear();
     }
 
     led_disp_buf[0] = led_table[g_cp_para.rate % 10 + 16];
@@ -5710,6 +5385,7 @@ __task void AppTaskCP(void)
         case OS_R_SEM:
         case OS_R_OK:
             key_msg = KEY_MSG;
+            
             os_sem_send(&key_sem);
             break;
             
