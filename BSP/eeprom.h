@@ -31,11 +31,14 @@
 #define AT_DEV_ADDR_WRITE       0xA0
 #define AT_DEV_ADDR_READ        0xA1
 
-extern u8 IIC_ReadByte(u16 addr);
-extern void IIC_WriteByte(u16 addr, u8 data);
-extern u16 IIC_ReadHalfWord(u16 addr);
-extern void IIC_WriteHalfWord(u16 addr, u16 data);
-extern void IIC_Test(void);
+u8 IIC_ReadByte(u16 addr);
+void IIC_WriteByte(u16 addr, u8 data);
+u16 IIC_ReadHalfWord(u16 addr);
+void IIC_WriteHalfWord(u16 addr, u16 data);
+
+#if (IIC_TEST_EN > 0u)
+void IIC_Test(void);
+#endif
 
 
 #endif

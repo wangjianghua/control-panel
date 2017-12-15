@@ -40,7 +40,7 @@
 
 #define VFD_PARA_FLAG           ('H')                       //变频器参数标志
 
-#define VFD_PARA_FLAG_ADDR      0u                          //1B, 变频器参数标志存储地址
+#define VFD_PARA_FLAG_ADDR      (AT24CXX - (3 * 1024))      //1B, 变频器参数标志存储地址
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)   //2B, 变频器参数长度存储地址
 #define VFD_PARA_ADDR           (VFD_PARA_LEN_ADDR + 2u)    //nB, 变频器参数存储地址
 
@@ -221,7 +221,7 @@ extern OS_SEM cp_sem;
 extern XDATA bool runstatus;
 extern XDATA CP g_cp_para;
 
-extern __task void AppTaskCP(void);
+__task void AppTaskCP(void);
 
 
 #endif

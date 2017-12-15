@@ -142,11 +142,11 @@ extern OS_SEM key_sem;
 extern XDATA u8 key_value;
 extern XDATA u8 key_fsm; 
 
-extern BIT CheckKeyPress(void);
-extern u8 KeyScan(void);
-extern BIT ReadKeyPress(u8 key);
-extern u8 ReadKeyVal(void);
-extern __task void AppTaskKey(void);
+BIT CheckKeyPress(void);
+u8 KeyScan(void);
+BIT ReadKeyPress(u8 key);
+u8 ReadKeyVal(void);
+__task void AppTaskKey(void);
 
 
 #endif

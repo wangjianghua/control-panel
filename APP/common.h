@@ -19,8 +19,6 @@ typedef enum
 
 #define NOP                                 __NOP
 
-#define SYS_TICK_PERIOD                     1000u //1ms
-
 #define YEAR                                ((((__DATE__ [7] - '0') * 10 + (__DATE__ [8] - '0')) * 10 \
                                              + (__DATE__ [9] - '0')) * 10 + (__DATE__ [10] - '0'))  
   

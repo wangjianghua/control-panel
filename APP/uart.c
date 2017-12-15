@@ -8,39 +8,6 @@ XDATA u8 uart_rx_count = 0;
 XDATA u16 uart_rx_timeout = 0;
 XDATA bool uart_rx_complete = FALSE;
 
-/* 【参数】
- * 波特率: 9600bps
- * 数据位: 8位
- * 校验位: 无
- * 停止位: 1位
- * 华兄 */
-void UartInit_9600bps(void) //9600bps@11.0592MHz
-{
-  
-}
-
-/* 【参数】
- * 波特率: 19200bps
- * 数据位: 8位
- * 校验位: 无
- * 停止位: 1位
- * 华兄 */
-void UartInit_19200bps(void) //19200bps@11.0592MHz
-{
-
-}
-
-/* 【参数】
- * 波特率: 57600bps
- * 数据位: 8位
- * 校验位: 无
- * 停止位: 1位
- * 华兄 */
-void UartInit_57600bps(void) //57600bps@11.0592MHz
-{
-
-}
-
 void uart_recv_clear(void)
 {
     uart_rx_count = 0;

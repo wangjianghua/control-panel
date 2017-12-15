@@ -186,6 +186,34 @@ void GPIO_OutputHalfWord(GPIO_TypeDef *GPIOx, uint16_t Data)
     GPIO_ResetBits(GPIOx, ~Data);
 }
 
+/**
+  * @brief  Change the USART BaudRate
+  * @param  None
+  * @retval None
+  */
+void USART_BaudRate(USART_TypeDef *USARTx, uint32_t BaudRate)
+{
+    USART_InitTypeDef USART_InitStructure;
+
+
+    /* USART resources configuration ----*/
+    /* USART configured as follow:
+        - BaudRate = BaudRate baud  
+        - Word Length = 8 Bits
+        - One Stop Bit
+        - No parity
+        - Hardware flow control disabled (RTS and CTS signals)
+        - Receive and transmit enabled
+    */
+    USART_InitStructure.USART_BaudRate = BaudRate;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    USART_Init(USARTx, &USART_InitStructure);  
+}
+
 void IWDG_Init(void)
 {
     /* Enable the LSI OSC */

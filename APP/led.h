@@ -49,7 +49,7 @@ extern XDATA u8 led_disp_buf[LED_DISP_BUF_SIZE];
 extern XDATA u8 led_blink_pos;
 extern XDATA u8 blink_led;
 
-extern __task void AppTaskDisp(void);
+__task void AppTaskDisp(void);
 
 
 #endif          

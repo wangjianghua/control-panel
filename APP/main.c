@@ -23,11 +23,11 @@
 typedef unsigned int OS_STK;
 
 /* Private macro -------------------------------------------------------------*/
-#define APP_CFG_TASK_START_PRIO             0u
-#define APP_CFG_TASK_DISP_PRIO              1u
-#define APP_CFG_TASK_KEY_PRIO               2u
-#define APP_CFG_TASK_UART_PRIO              3u
-#define APP_CFG_TASK_CP_PRIO                4u
+#define APP_CFG_TASK_START_PRIO             1u
+#define APP_CFG_TASK_DISP_PRIO              2u
+#define APP_CFG_TASK_KEY_PRIO               3u
+#define APP_CFG_TASK_UART_PRIO              4u
+#define APP_CFG_TASK_CP_PRIO                5u
 
 #define APP_CFG_TASK_START_STK_SIZE         128u
 #define APP_CFG_TASK_DISP_STK_SIZE          128u

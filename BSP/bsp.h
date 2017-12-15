@@ -72,10 +72,11 @@
 #define USART1_PREEMPT_PRIO          1u
 #define USART1_SUB_PRIO              0u
 
-extern void STM32_SoftReset(void);
-extern void GPIO_OutputByte(GPIO_TypeDef *GPIOx, uint8_t Data);
-extern void GPIO_OutputHalfWord(GPIO_TypeDef *GPIOx, uint16_t Data);
-extern void BSP_Init(void);
+void STM32_SoftReset(void);
+void GPIO_OutputByte(GPIO_TypeDef *GPIOx, uint8_t Data);
+void GPIO_OutputHalfWord(GPIO_TypeDef *GPIOx, uint16_t Data);
+void USART_BaudRate(USART_TypeDef *USARTx, uint32_t BaudRate);
+void BSP_Init(void);
 
 /*
 *********************************************************************************************************

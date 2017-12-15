@@ -24,7 +24,7 @@
 //   <i> Define max. number of tasks that will run at the same time.
 //   <i> Default: 6
 #ifndef OS_TASKCNT
- #define OS_TASKCNT     8
+ #define OS_TASKCNT     9
 #endif
 
 //   <o>Number of tasks with user-provided stack <0-250>
@@ -55,7 +55,7 @@
 // <i> Run all Tasks in privileged mode.
 // <i> Default: Unprivileged
 #ifndef OS_RUNPRIV
- #define OS_RUNPRIV     1
+ #define OS_RUNPRIV     0
 #endif
 
 // </h>

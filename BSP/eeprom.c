@@ -283,13 +283,18 @@ void IIC_WriteHalfWord(u16 addr, u16 data)
 	IIC_Stop();
 }	
 
+#if (IIC_TEST_EN > 0u)
+#define YEAR_ADDR               (AT24CXX - 2)
+#define MONTH_ADDR              (AT24CXX - 3)
+#define DAY_ADDR                (AT24CXX - 4)
+
 void IIC_Test(void)
 {
     u8 month = 0, day = 0;
     u16 year = 0;
 
 
-    year = IIC_ReadHalfWord(AT24CXX - 2); 
+    year = IIC_ReadHalfWord(YEAR_ADDR); 
 
     os_dly_wait(5); //5ms
 
@@ -306,12 +311,12 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteHalfWord(AT24CXX - 2, YEAR);
+        IIC_WriteHalfWord(YEAR_ADDR, YEAR);
 
         os_dly_wait(5); //5ms
     }
     
-    month = IIC_ReadByte(AT24CXX - 3);
+    month = IIC_ReadByte(MONTH_ADDR);
 
     os_dly_wait(5); //5ms
 
@@ -323,12 +328,12 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(AT24CXX - 3, MONTH);
+        IIC_WriteByte(MONTH_ADDR, MONTH);
 
         os_dly_wait(5); //5ms
     }
 
-    day = IIC_ReadByte(AT24CXX - 4);
+    day = IIC_ReadByte(DAY_ADDR);
 
     os_dly_wait(5); //5ms
 
@@ -342,7 +347,7 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(AT24CXX - 4, DAY);
+        IIC_WriteByte(DAY_ADDR, DAY);
 
         os_dly_wait(5); //5ms
     }
@@ -357,4 +362,5 @@ void IIC_Test(void)
 
     os_dly_wait(10);
 }
+#endif
 

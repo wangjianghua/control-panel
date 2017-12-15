@@ -3835,20 +3835,7 @@ bool chang_baudrate(u16 baudrate)
         
         if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
         {
-            switch(baudrate)
-            {
-            case COPY_BAUDRATE:
-                UartInit_19200bps();
-                break;
-
-            case OTHER_BAUDRATE:
-                UartInit_9600bps();
-                break;
-
-            default:
-                UartInit_9600bps();
-                break;
-            }
+            USART_BaudRate(CP_UART, baudrate);
             
             ret = TRUE;
         }
@@ -5213,7 +5200,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             return (FORM_MSG_NONE);
         }
 #else //调试变频器参数下载
-        UartInit_19200bps();
+        USART_BaudRate(CP_UART, COPY_BAUDRATE);
 #endif        
     }
     else if(FORM_MSG_KEY == form_msg)
@@ -5606,7 +5593,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             return (FORM_MSG_NONE);
         }
 #else //调试变频器参数下载
-        UartInit_19200bps();
+        USART_BaudRate(CP_UART, COPY_BAUDRATE);
 #endif        
     }
     else if(FORM_MSG_KEY == form_msg)
