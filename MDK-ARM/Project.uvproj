@@ -210,7 +210,7 @@
             <GenPPlst>0</GenPPlst>
             <AdsCpuType>"Cortex-M3"</AdsCpuType>
             <RvctDeviceName></RvctDeviceName>
-            <mOS>1</mOS>
+            <mOS>0</mOS>
             <uocRom>0</uocRom>
             <uocRam>0</uocRam>
             <hadIROM>1</hadIROM>
@@ -362,7 +362,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER, STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\RTX;..\BSP;..\APP</IncludePath>
+              <IncludePath>..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\RTX\Include;..\RTX\Ports;..\RTX\Source;..\BSP;..\APP</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -845,9 +845,74 @@
           <GroupName>RTX</GroupName>
           <Files>
             <File>
+              <FileName>rt_Event.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Event.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_List.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_List.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Mailbox.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Mailbox.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_MemBox.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_MemBox.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Mutex.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Robin.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Robin.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Semaphore.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Semaphore.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_System.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_System.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Task.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Time.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_Timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Source\rt_Timer.c</FilePath>
+            </File>
+            <File>
               <FileName>RTX_Conf_CM.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\RTX\RTX_Conf_CM.c</FilePath>
+              <FilePath>..\RTX\Source\RTX_Conf_CM.c</FilePath>
+            </File>
+            <File>
+              <FileName>HAL_CM3.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\RTX\Ports\HAL_CM3.c</FilePath>
+            </File>
+            <File>
+              <FileName>SVC_Table.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\RTX\Ports\SVC_Table.s</FilePath>
             </File>
           </Files>
         </Group>
