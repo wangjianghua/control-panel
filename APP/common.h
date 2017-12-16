@@ -19,6 +19,9 @@ typedef enum
 
 #define NOP                                 __NOP
 
+#define OffsetOf(struct_t, member)          ((size_t)((char *)&((struct_t *)0)->member - (char *)(struct_t *)0))
+#define SizeOf(struct_t, member)            (sizeof(((struct_t *)0)->member))
+
 #define YEAR                                ((((__DATE__ [7] - '0') * 10 + (__DATE__ [8] - '0')) * 10 \
                                              + (__DATE__ [9] - '0')) * 10 + (__DATE__ [10] - '0'))  
   

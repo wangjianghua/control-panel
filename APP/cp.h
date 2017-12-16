@@ -40,6 +40,8 @@
 
 #define VFD_PARA_FLAG           ('H')                       //变频器参数标志
 
+#define CP_PARA_ADDR            0u                          //控制盘参数存储地址
+
 #define VFD_PARA_FLAG_ADDR      (AT24CXX - (3u * 1024u))    //1B, 变频器参数标志存储地址
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)   //2B, 变频器参数长度存储地址
 #define VFD_PARA_ADDR           (VFD_PARA_LEN_ADDR + 2u)    //nB, 变频器参数存储地址
@@ -187,7 +189,12 @@ typedef enum
     MAX_KEEP_VFD_CONNECT_CMD,
 } ENUM_KEEP_VFD_CONNECT_CMD;
 
-typedef struct _cp 
+typedef struct _cp_para_rom
+{
+	u16 ref; //给定值
+} CP_PARA_ROM, *P_CP_PARA_ROM;
+
+typedef struct _cp_para_ram 
 {
     bool clr_err; //清除错误
     bool lr; //本地远程操作方式，本地LOC、远程REM
@@ -203,7 +210,6 @@ typedef struct _cp
     u8 group_nearby[4]; //当前附近组号
     u8 grade_nearby[8]; //当前附近级号
     u16 count; //计数器
-    u16 ref_temp; //给定临时值
     u16 ref; //给定值
     u16 disp_para1; //主界面显示参数1
     u16 disp_para2; //主界面显示参数2
@@ -215,11 +221,12 @@ typedef struct _cp
     u16 vfd_para_index; //变频器参数存取索引
     u16 fault_code; //故障码
     u16 alarm_code; //报警码
-} CP, *PCP;
+} CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;
 extern XDATA bool runstatus;
-extern XDATA CP g_cp_para;
+extern XDATA CP_PARA_ROM cp_para_rom;
+extern XDATA CP_PARA_RAM cp_para_ram;
 
 __task void AppTaskCP(void);
 
