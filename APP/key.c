@@ -354,7 +354,6 @@ u8 ReadKeyVal(void)
 __task void AppTaskKey(void)
 {
     OS_RESULT result;
-    bool jump = FALSE;
 
     
     key_value = KEY_VAL_NONE;
@@ -369,24 +368,19 @@ __task void AppTaskKey(void)
         {            
             os_sem_send(&cp_sem);
             
-            jump = TRUE; 
-            
-            while(jump)
-            {
-                result = os_sem_wait(&key_sem, 0xffff);
+            result = os_sem_wait(&key_sem, 0xffff);
 
-                switch(result)
-                {
-                case OS_R_SEM:    
-                case OS_R_OK:
-                    key_value = KEY_VAL_NONE;
-                    os_dly_wait(20);
-                    jump = FALSE;
-                    break;
-                    
-                default:    
-                    break;
-                }
+            switch(result)
+            {
+            case OS_R_SEM:    
+            case OS_R_OK:
+                key_value = KEY_VAL_NONE;
+                
+                os_dly_wait(20);
+                break;
+                
+            default:    
+                break;
             }
         }
     }

@@ -295,7 +295,7 @@ void USART1_Init(void)
 
     /* Configure USART1 Rx as input floating */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOA, &GPIO_InitStructure); 
     
     /* Configure USART1 Tx as alternate function push-pull */

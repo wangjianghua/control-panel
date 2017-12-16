@@ -1,7 +1,7 @@
-#include <RTL.h>                      /* RTX kernel functions & defines      */
-
 #include <stdio.h>
 #include <string.h>
+
+#include "RTL.h"                      /* RTX kernel functions & defines      */
 
 #include "stm32f10x.h"
 #include "stm32f10x_it.h"

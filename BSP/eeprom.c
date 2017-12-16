@@ -20,7 +20,7 @@ void IIC_SDA_Input(void)
       
 
     GPIO_InitStructure.GPIO_Pin = IIC_SDA_PIN;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(IIC_PORT, &GPIO_InitStructure);
 }
 
