@@ -150,6 +150,7 @@ CODE u8 con_cmd[][32] = {
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x07, 0xA2, 0x50, 0x82, 0x00, 0xC9},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x07, 0xA2, 0x50, 0x82, 0x00, 0x65},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void vfd_con(void)
@@ -158,12 +159,22 @@ void vfd_con(void)
     s8 i;
     u8 len;
     unsigned int crc;
+    bool done = FALSE;
     
 
     memset(&cp_para_ram, 0, sizeof(cp_para_ram));
    
     for(i = 0; i < 8; i++)
     {        
+        if((5 == i) && 
+           (TRUE == cp_para_ram.func_code_visible) &&
+           (FALSE == done))
+        {
+            done = TRUE;
+            
+            i = 8;
+        }
+        
         len = con_cmd[i][10] + 11;
                         
         memcpy(UART_TX_BUF, con_cmd[i], len);
@@ -282,6 +293,10 @@ void vfd_con(void)
             }
             break;
 
+        case 8:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            break;
+
         default:
             break;
         }
@@ -302,6 +317,9 @@ void vfd_con(void)
             {
                 switch(i)
                 {
+                case 0:
+                    break;
+                    
                 case 1:
                     cp_para_ram.cmd = UART_RX_BUF[5];
                     break;
@@ -335,6 +353,10 @@ void vfd_con(void)
                             LEDOE_ENABLE();
                         }
                     }
+                    break;
+
+                case 8:
+                    i = 4;
                     break;
                 
                 default:
@@ -2186,6 +2208,13 @@ bool func_code_read(void)
     memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
 
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+
+    if(TRUE == cp_para_ram.func_code_visible)
+    {
+        UART_TX_BUF[5] = 6;
+        UART_TX_BUF[14] = 4;
+    }
+    
     UART_TX_BUF[15] = cp_para_ram.group;
     UART_TX_BUF[16] = cp_para_ram.grade;
 
