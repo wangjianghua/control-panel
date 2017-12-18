@@ -8,13 +8,13 @@ XDATA u8 key_fsm = 0;
 
 BIT CheckKeyPress(void)
 {
-    if((0 == ShiftKey) || 
+    if((0 == EnterKey) || 
        (0 == RunKey) || 
        (0 == StopKey) || 
-       (0 == EnterKey) || 
+       (0 == FwdRevKey) || 
        (0 == DownKey) || 
-       (0 == JogKey) || 
-       (0 == PrgKey) || 
+       (0 == LocRemKey) || 
+       (0 == ExitKey) || 
        (0 == UpKey))
     {
         return (1);
@@ -30,7 +30,7 @@ u8 KeyScan(void)
     u8 temp = 0;
 
     
-    if(0 == ShiftKey)
+    if(0 == EnterKey)
         temp = 1;
     
     if(0 == RunKey)  
@@ -39,16 +39,16 @@ u8 KeyScan(void)
     if(0 == StopKey) 
         temp = 3;
     
-    if(0 == EnterKey)
+    if(0 == FwdRevKey)
         temp = 4;
     
     if(0 == DownKey) 
         temp = 5;
     
-    if(0 == JogKey)  
+    if(0 == LocRemKey)  
         temp = 6;
     
-    if(0 == PrgKey)  
+    if(0 == ExitKey)  
         temp = 7;
     
     if(0 == UpKey)   
@@ -68,7 +68,7 @@ BIT ReadKeyPress(u8 key)
     switch(key)
     {
     	case 1: 
-            temp = ShiftKey; 
+            temp = EnterKey; 
             return (!temp);
             //break;
             
@@ -83,7 +83,7 @@ BIT ReadKeyPress(u8 key)
             //break;
             
     	case 4:	
-            temp = EnterKey; 
+            temp = FwdRevKey; 
             return (!temp);
             //break;
             
@@ -93,12 +93,12 @@ BIT ReadKeyPress(u8 key)
             //break;
             
     	case 6:	
-            temp = JogKey;   
+            temp = LocRemKey;   
             return (!temp);
             //break;   
             
     	case 7:	
-            temp = PrgKey;   
+            temp = ExitKey;   
             return (!temp);
             //break;
             

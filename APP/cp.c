@@ -140,7 +140,7 @@ void err_con(void)
     LEDOE_ENABLE();
 }
 
-CODE u8 con_cmd[][32] = {
+CODE u8 vfd_con_cmd[][32] = {
     /* 0     1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34    35    36    37    38    39    40    41    42    43    44    45    46    47    48    49    50    51    52    53    54    55    56    57    58    59 */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x02},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x01, 0xA2, 0x50, 0x82, 0x00, 0x01},
@@ -175,9 +175,9 @@ void vfd_con(void)
             i = 8;
         }
         
-        len = con_cmd[i][10] + 11;
+        len = vfd_con_cmd[i][10] + 11;
                         
-        memcpy(UART_TX_BUF, con_cmd[i], len);
+        memcpy(UART_TX_BUF, vfd_con_cmd[i], len);
 
         switch(i)
         {
@@ -716,140 +716,52 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
 
 void form_home_disp(void)
 {
-    switch(form_id)
-    {
-    case FORM_ID_HOME1:
-        switch(cp_para_ram.disp_para_type[0])
-        {
-        case OUTPUT_FREQ:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para1 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para1 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para1 > 99) ? (led_table[cp_para_ram.disp_para1 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para1 > 999) ? (led_table[cp_para_ram.disp_para1 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para1 > 9999) ? (led_table[cp_para_ram.disp_para1 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_Hz_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
+    u8 disp_para_unit;
+    u16 disp_para_val, disp_para_type;
+    
 
-        case TORQUE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para1 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para1 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para1 > 99) ? (led_table[cp_para_ram.disp_para1 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para1 > 999) ? (led_table[cp_para_ram.disp_para1 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para1 > 9999) ? (led_table[cp_para_ram.disp_para1 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_TORQUE_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
-            
-        case DC_BUS_VOLTAGE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para1 % 10 + 16];
-            led_disp_buf[1] = (cp_para_ram.disp_para1 > 9) ? (led_table[cp_para_ram.disp_para1 % 100 / 10 + 16]) : (0xff);
-            led_disp_buf[2] = (cp_para_ram.disp_para1 > 99) ? (led_table[cp_para_ram.disp_para1 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para1 > 999) ? (led_table[cp_para_ram.disp_para1 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para1 > 9999) ? (led_table[cp_para_ram.disp_para1 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_V_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
+    disp_para_unit = cp_para_ram.disp_para_unit[form_id - 1];
+    disp_para_val = cp_para_ram.disp_para_val[form_id - 1];
+    disp_para_type = cp_para_ram.disp_para_type[form_id - 1];
     
-        default:
-            break;
-        }
+    switch(disp_para_type)
+    {
+    case OUTPUT_FREQ:
+        led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16] & led_table['.' - 32];
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_blink_pos = 0;
+        LEDOE_ENABLE();
         break;
-    
-    case FORM_ID_HOME2:
-        switch(cp_para_ram.disp_para_type[1])
-        {
-        case OUTPUT_FREQ:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para2 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para2 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para2 > 99) ? (led_table[cp_para_ram.disp_para2 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para2 > 999) ? (led_table[cp_para_ram.disp_para2 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para2 > 9999) ? (led_table[cp_para_ram.disp_para2 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_Hz_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
         
-        case TORQUE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para2 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para2 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para2 > 99) ? (led_table[cp_para_ram.disp_para2 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para2 > 999) ? (led_table[cp_para_ram.disp_para2 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para2 > 9999) ? (led_table[cp_para_ram.disp_para2 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_TORQUE_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
-            
-        case DC_BUS_VOLTAGE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para2 % 10 + 16];
-            led_disp_buf[1] = (cp_para_ram.disp_para2 > 9) ? (led_table[cp_para_ram.disp_para2 % 100 / 10 + 16]) : (0xff);
-            led_disp_buf[2] = (cp_para_ram.disp_para2 > 99) ? (led_table[cp_para_ram.disp_para2 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para2 > 999) ? (led_table[cp_para_ram.disp_para2 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para2 > 9999) ? (led_table[cp_para_ram.disp_para2 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_V_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
-    
-        default:
-            break;
-        }
+    case TORQUE:
+        led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16] & led_table['.' - 32];
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_blink_pos = 0;
+        LEDOE_ENABLE();
         break;
-    
-    case FORM_ID_HOME3:
-        switch(cp_para_ram.disp_para_type[2])
-        {
-        case OUTPUT_FREQ:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para3 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para3 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para3 > 99) ? (led_table[cp_para_ram.disp_para3 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para3 > 999) ? (led_table[cp_para_ram.disp_para3 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para3 > 9999) ? (led_table[cp_para_ram.disp_para3 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_Hz_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
         
-        case TORQUE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para3 % 10 + 16];
-            led_disp_buf[1] = led_table[cp_para_ram.disp_para3 % 100 / 10 + 16] & led_table['.' - 32];
-            led_disp_buf[2] = (cp_para_ram.disp_para3 > 99) ? (led_table[cp_para_ram.disp_para3 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para3 > 999) ? (led_table[cp_para_ram.disp_para3 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para3 > 9999) ? (led_table[cp_para_ram.disp_para3 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_TORQUE_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
-            
-        case DC_BUS_VOLTAGE:
-            led_disp_buf[0] = led_table[cp_para_ram.disp_para3 % 10 + 16];
-            led_disp_buf[1] = (cp_para_ram.disp_para3 > 9) ? (led_table[cp_para_ram.disp_para3 % 100 / 10 + 16]) : (0xff);
-            led_disp_buf[2] = (cp_para_ram.disp_para3 > 99) ? (led_table[cp_para_ram.disp_para3 % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (cp_para_ram.disp_para3 > 999) ? (led_table[cp_para_ram.disp_para3 % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (cp_para_ram.disp_para3 > 9999) ? (led_table[cp_para_ram.disp_para3 % 100000 / 10000 + 16]) : (0xff);
-            led_disp_buf[5] |= LED_V_A_Hz_MASK;
-            led_disp_buf[5] &= ~LED_V_MASK;
-            led_blink_pos = 0;
-            LEDOE_ENABLE();
-            break;
-    
-        default:
-            break;
-        }
+    case DC_BUS_VOLTAGE:
+        led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
+        led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_blink_pos = 0;
+        LEDOE_ENABLE();
         break;
-    
+
     default:
         break;
     }
@@ -979,13 +891,17 @@ void form_home_callback(void)
                 case FORM_HOME_READ_CMD:
                     if((0x45 == UART_RX_BUF[3]) && (0xab == UART_RX_BUF[4]))
                     {
+                        cp_para_ram.disp_para_val[0] = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.disp_para_val[1] = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+                        cp_para_ram.disp_para_val[2] = ((u16)UART_RX_BUF[21] << 8) | ((u16)UART_RX_BUF[22]);
+
                         cp_para_ram.disp_para_type[0] = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
                         cp_para_ram.disp_para_type[1] = ((u16)UART_RX_BUF[17] << 8) | ((u16)UART_RX_BUF[18]);
                         cp_para_ram.disp_para_type[2] = ((u16)UART_RX_BUF[23] << 8) | ((u16)UART_RX_BUF[24]);
-                        
-                        cp_para_ram.disp_para1 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
-                        cp_para_ram.disp_para2 = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
-                        cp_para_ram.disp_para3 = ((u16)UART_RX_BUF[21] << 8) | ((u16)UART_RX_BUF[22]);
+
+                        cp_para_ram.disp_para_unit[0] = (UART_RX_BUF[13] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[13]) : (0x00);
+                        cp_para_ram.disp_para_unit[1] = (UART_RX_BUF[19] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[19]) : (0x00);
+                        cp_para_ram.disp_para_unit[2] = (UART_RX_BUF[25] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[25]) : (0x00);
 
                         form_home_disp();
                     }
@@ -2234,6 +2150,8 @@ bool func_code_read(void)
         {
             cp_para_ram.vfd_para = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
 
+            cp_para_ram.unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
+
             form_id = FORM_ID_PARA_VAL;
 
             ret = TRUE;
@@ -2787,6 +2705,7 @@ void form_para_val_callback(void)
     led_disp_buf[3] = (cp_para_ram.vfd_para > 999) ? (led_table[cp_para_ram.vfd_para % 10000 / 1000 + 16]) : (0xff);
     led_disp_buf[4] = (cp_para_ram.vfd_para > 9999) ? (led_table[cp_para_ram.vfd_para % 100000 / 10000 + 16]) : (0xff);
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[cp_para_ram.unit]) ? (func_code_unit[cp_para_ram.unit]) : (0x00));
     LEDOE_ENABLE();
 }
 

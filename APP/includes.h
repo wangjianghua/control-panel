@@ -8,9 +8,10 @@
 
 #include "common.h"
 #include "bsp.h"
-#include "led.h"
-#include "key.h"
-#include "uart.h"
-#include "cp.h"
 #include "eeprom.h"
+#include "key.h"
+#include "led.h"
+#include "uart.h"
+#include "func_code.h"
+#include "cp.h"
 
