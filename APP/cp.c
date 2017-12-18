@@ -1979,9 +1979,17 @@ void form_para_group_callback(void)
         }
     }
     
-    led_disp_buf[0] = led_table[cp_para_ram.group % 10 + 16];
+    if(TRUE == cp_para_ram.func_code_visible)
+    {
+        led_disp_buf[0] = led_table[cp_para_ram.group % 10 + 16] & led_table['.' - 32];
+    }
+    else
+    {
+        led_disp_buf[0] = led_table[cp_para_ram.group % 10 + 16];
+    }
+
     led_disp_buf[1] = led_table[cp_para_ram.group % 100 / 10 + 16];
-    led_disp_buf[2] = 0xff;
+    led_disp_buf[2] = (cp_para_ram.group > 99) ? (led_table[cp_para_ram.group % 1000 / 100 + 16]) : (0xff);
     led_disp_buf[3] = 0xff;
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
@@ -2160,6 +2168,151 @@ bool grade_update(u8 key_msg)
     return (ret);
 }
 
+CODE u8 form_para_grade_func_code_read_cmd[][32] = {
+    /* FORM_PARA_GRADE_FUNC_CODE_READ_CMD */
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x05, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0A, 0xA4, 0x50, 0x08, 0x0E, 0x01},
+};
+
+bool func_code_read(void)
+{
+    OS_RESULT result;
+    u8 i, len;
+    unsigned int crc;
+    bool ret = FALSE;
+    
+          
+    len = form_para_grade_func_code_read_cmd[0][10] + 11;
+                    
+    memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    UART_TX_BUF[15] = cp_para_ram.group;
+    UART_TX_BUF[16] = cp_para_ram.grade;
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+    
+    uart_send(len);
+
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+    
+    if(OS_R_TMO != result)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {
+            cp_para_ram.vfd_para = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+            form_id = FORM_ID_PARA_VAL;
+
+            ret = TRUE;
+        }
+        else
+        {
+            led_disp_buf[4] = 0xff;
+            led_disp_buf[3] = led_table['E' - 32];
+            led_disp_buf[2] = led_table['r' - 32];
+            led_disp_buf[1] = led_table['r' - 32];
+            led_disp_buf[0] = led_table[i + 16];
+            LEDOE_ENABLE();
+        }
+    }
+    else
+    {
+        led_disp_buf[4] = 0xff;
+        led_disp_buf[3] = led_table['E' - 32];
+        led_disp_buf[2] = led_table['r' - 32];
+        led_disp_buf[1] = led_table['r' - 32];
+        led_disp_buf[0] = led_table[i + 16];
+        LEDOE_ENABLE();
+    }
+
+    return (ret);
+}
+
+CODE u8 func_code_visible_init_cmd[][32] = {
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0F, 0xA1, 0x50, 0x02, 0x00, 0x00},
+    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0F, 0xA1, 0x50, 0x82, 0x56, 0x72},
+};
+
+bool func_code_visible_init(void)
+{
+    OS_RESULT result;
+    u8 i, len;
+    unsigned int crc;
+    bool ret = FALSE;
+    
+    
+    for(i = 0; i < 2; i++)
+    {        
+        len = func_code_visible_init_cmd[i][10] + 11;
+                        
+        memcpy(UART_TX_BUF, func_code_visible_init_cmd[i], len);
+
+        switch(i)
+        {
+        case 0:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            break;
+
+        case 1:
+            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            break;
+
+        default:
+            break;
+        }
+
+        crc = CRC16Calculate(UART_TX_BUF, len);
+        UART_TX_BUF[len++] = (u8)(crc & 0xff);
+        UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+        
+        uart_send(len);
+
+        result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+
+        if(OS_R_TMO != result)
+        {
+            uart_recv_align();
+            
+            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            {
+                switch(i)
+                {
+                case 0:
+                    if((0x4f == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        ret = TRUE;
+                    }
+                    break;
+
+                case 1:
+                    if((0x4f == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
+                    {
+                        ret = TRUE;
+                    }
+                    break;
+
+                default:
+                    break;
+                }             
+            }
+            else
+            {
+                err_con();
+            }
+        }
+        else
+        {
+            err_con();
+        }
+    }
+
+    return (ret);
+}
+
 CODE u8 form_para_grade_cmd[MAX_FORM_PARA_GRADE_CMD][32] = {
     /* FORM_PARA_GRADE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -2292,75 +2445,20 @@ void form_para_grade_callback(void)
     
     led_disp_buf[0] = led_table[cp_para_ram.grade % 10 + 16];
     led_disp_buf[1] = led_table[cp_para_ram.grade % 100 / 10 + 16];
-    led_disp_buf[2] = led_table[cp_para_ram.group % 10 + 16];
-    led_disp_buf[3] = led_table[cp_para_ram.group % 100 / 10 + 16];
-    led_disp_buf[4] = 0xff;
-    led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
-}
 
-CODE u8 form_para_grade_func_code_read_cmd[][32] = {
-    /* FORM_PARA_GRADE_FUNC_CODE_READ_CMD */
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x05, 0x00, 0x59, 0x00, 0x03, 0x06, 0x0A, 0xA4, 0x50, 0x08, 0x0E, 0x01},
-};
-
-bool func_code_read(void)
-{
-    OS_RESULT result;
-    u8 i, len;
-    unsigned int crc;
-    bool ret = FALSE;
-    
-          
-    len = form_para_grade_func_code_read_cmd[0][10] + 11;
-                    
-    memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
-
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
-    UART_TX_BUF[15] = cp_para_ram.group;
-    UART_TX_BUF[16] = cp_para_ram.grade;
-
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc & 0xff);
-    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
-    
-    uart_send(len);
-
-    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
-    
-    if(OS_R_TMO != result)
+    if(TRUE == cp_para_ram.func_code_visible)
     {
-        uart_recv_align();
-        
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
-        {
-            cp_para_ram.vfd_para = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
-
-            form_id = FORM_ID_PARA_VAL;
-
-            ret = TRUE;
-        }
-        else
-        {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LEDOE_ENABLE();
-        }
+        led_disp_buf[2] = led_table[cp_para_ram.group % 10 + 16] & led_table['.' - 32];
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[i + 16];
-        LEDOE_ENABLE();
+        led_disp_buf[2] = led_table[cp_para_ram.group % 10 + 16];
     }
-
-    return (ret);
+    
+    led_disp_buf[3] = led_table[cp_para_ram.group % 100 / 10 + 16];
+    led_disp_buf[4] = (cp_para_ram.group > 99) ? (led_table[cp_para_ram.group % 1000 / 100 + 16]) : (0xff);
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    LEDOE_ENABLE();
 }
 
 static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
@@ -2441,6 +2539,13 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_DOWN:
             grade_update(KEY_MSG_DOWN);
+            break;
+
+        case KEY_MSG_FUNC_CODE:
+            if(cp_para_ram.group >= 51)
+            {
+                cp_para_ram.func_code_visible = func_code_visible_init();
+            }
             break;
 
         default:

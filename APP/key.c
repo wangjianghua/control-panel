@@ -54,7 +54,7 @@ u8 KeyScan(void)
     if(0 == UpKey)   
         temp = 8;
 
-    if((0 == UpKey) && (0 == DownKey) && (0 == PrgKey))	 
+    if(0 == FuncCodeKey)	 
         temp = 9;
 
     return (temp);
@@ -108,11 +108,7 @@ BIT ReadKeyPress(u8 key)
             //break;    
             
     	case 9: 
-            if((0 == UpKey) && 
-               (0 == DownKey) && 
-               (0 == PrgKey)) 
-                temp = 0;   
-            
+            temp = FuncCodeKey;         
             return (!temp);
             //break;
             

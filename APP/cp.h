@@ -202,7 +202,8 @@ typedef struct _cp_para_ram
     bool run; //运行
     bool stop; //停止
     bool ref_chang; //给定更改标志
-    bool fr; //旋转状态，正转FWD、反转REV    
+    bool fr; //旋转状态，正转FWD、反转REV  
+    bool func_code_visible; //99组以后功能码可视标志
     u8 cmd; //命令字
 	u8 group; //变频器分组
 	u8 grade; //变频器分级

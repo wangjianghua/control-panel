@@ -10,6 +10,7 @@
 #define JogKey                      GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_3)
 #define PrgKey                      GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_8)
 #define UpKey                       GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1)
+#define FuncCodeKey                 (GPIO_ReadInputData(GPIOB) & (GPIO_Pin_1 | GPIO_Pin_5))
 
 #define ERRORCOUNT                  20
 
