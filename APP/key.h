@@ -6,10 +6,10 @@
 #define RunKey                      GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_0)
 #define StopKey                     GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_2)
 #define EnterKey                    GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_4)
-#define DownKey                     GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1)
+#define DownKey                     GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)
 #define JogKey                      GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_3)
 #define PrgKey                      GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_8)
-#define UpKey                       GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)
+#define UpKey                       GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1)
 
 #define ERRORCOUNT                  20
 

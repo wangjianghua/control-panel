@@ -5,14 +5,15 @@
 #define KEY_MSG_NONE            KEY_VAL_NONE
 #define KEY_MSG                 key_value
 
-#define KEY_MSG_UP              0x05
-#define KEY_MSG_DOWN            0x08
+#define KEY_MSG_UP              0x08
+#define KEY_MSG_DOWN            0x05
 #define KEY_MSG_EXIT            0x07
 #define KEY_MSG_RUN             0x02
 #define KEY_MSG_STOP            0x03
 #define KEY_MSG_FWD_REV         0x04
 #define KEY_MSG_LOC_REM         0x06
 #define KEY_MSG_ENTER           0x01
+#define KEY_MSG_FUNC_CODE       0x09
 
 #define LED_DP_MASK             0x01
 #define LED_LOC_REM_MASK        0x10
@@ -224,7 +225,6 @@ typedef struct _cp_para_ram
 } CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;
-extern XDATA bool runstatus;
 extern XDATA CP_PARA_ROM cp_para_rom;
 extern XDATA CP_PARA_RAM cp_para_ram;
 

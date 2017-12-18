@@ -17,7 +17,6 @@
 
 OS_SEM cp_sem;
 
-XDATA bool runstatus = FALSE;
 XDATA CP_PARA_ROM cp_para_rom;
 XDATA CP_PARA_RAM cp_para_ram;
 

@@ -54,11 +54,8 @@ u8 KeyScan(void)
     if(0 == UpKey)   
         temp = 8;
 
-    if(runstatus)
-    {
-        if((0 == RunKey) && (0 == StopKey))	 
-            temp = 9;
-    }
+    if((0 == UpKey) && (0 == DownKey) && (0 == PrgKey))	 
+        temp = 9;
 
     return (temp);
 }
@@ -111,9 +108,9 @@ BIT ReadKeyPress(u8 key)
             //break;    
             
     	case 9: 
-            if((0 == RunKey) && 
-               (0 == StopKey) && 
-               (runstatus)) 
+            if((0 == UpKey) && 
+               (0 == DownKey) && 
+               (0 == PrgKey)) 
                 temp = 0;   
             
             return (!temp);
@@ -130,30 +127,9 @@ u8 ReadKeyVal(void)
     u8 key_val = 0;
     static u8 key = 0;
     static u8 count = 0;
-    static u8 free_run_status = 0;
 
 
     key_val = KEY_VAL_NONE;
-
-    if(0 == free_run_status)
-    {
-        if(CheckKeyPress())
-        {
-            if(FreeRunKey == KeyScan())
-            {
-                os_dly_wait(10);
-                
-                if(FreeRunKey == KeyScan())
-                {
-                    key = FreeRunKey;
-                    key_fsm = 2;
-                    free_run_status = 1;
-                    
-                    return (FreeRunKey);
-                }
-            }
-        }
-    }
 
     switch(key_fsm)
     {
@@ -196,27 +172,6 @@ u8 ReadKeyVal(void)
         break;
         
     case 2:
-        if(FreeRunKey == key)
-        {
-            if(!CheckKeyPress())
-            {
-                os_dly_wait(10);
-                
-                if(!CheckKeyPress())
-                {
-                    key_val = key + 45;
-                    free_run_status = 0;
-                    key_fsm = 0;
-                }
-            }
-            else
-            {
-                key_val = FreeRunKey;
-            }
-            
-            break;
-        }
-
         if(count > 66)
         {
             count = 0;
