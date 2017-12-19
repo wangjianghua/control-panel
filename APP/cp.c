@@ -175,7 +175,7 @@ void vfd_con(void)
             i = 8;
         }
         
-        len = vfd_con_cmd[i][10] + 11;
+        len = (vfd_con_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, vfd_con_cmd[i], len);
 
@@ -506,7 +506,7 @@ void form_err_callback(void)
             alarm = FALSE;
         }
         
-        len = form_err_cmd[i][10] + 11;
+        len = (form_err_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_err_cmd[i], len);
 
@@ -786,7 +786,7 @@ void form_home_callback(void)
     
     for(i = 0; i < MAX_FORM_HOME_CMD; i++)
     {        
-        len = form_home_cmd[i][10] + 11;
+        len = (form_home_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_home_cmd[i], len);
 
@@ -1032,7 +1032,7 @@ void form_ref_callback(void)
     
     for(i = 0; i < MAX_FORM_REF_CMD; i++)
     {        
-        len = form_ref_cmd[i][10] + 11;
+        len = (form_ref_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_ref_cmd[i], len);
 
@@ -1256,7 +1256,7 @@ void form_ref_val_callback(void)
     
     for(i = 0; i < MAX_FORM_REF_VAL_CMD; i++)
     {        
-        len = form_ref_val_cmd[i][10] + 11;
+        len = (form_ref_val_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_ref_val_cmd[i], len);
 
@@ -1502,7 +1502,7 @@ void form_para_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_CMD; i++)
     {        
-        len = form_para_cmd[i][10] + 11;
+        len = (form_para_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_para_cmd[i], len);
 
@@ -1726,7 +1726,7 @@ bool group_update(u8 key_msg)
     bool ret = FALSE;
 
 
-    len = para_group_update_cmd[0][10] + 11;
+    len = (para_group_update_cmd[0][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, para_group_update_cmd[0], len);
 
@@ -1804,7 +1804,7 @@ void form_para_group_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_GROUP_CMD; i++)
     {        
-        len = form_para_group_cmd[i][10] + 11;
+        len = (form_para_group_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_para_group_cmd[i], len);
 
@@ -2043,7 +2043,7 @@ bool grade_update(u8 key_msg)
     bool ret = FALSE;
 
 
-    len = para_grade_update_cmd[0][10] + 11;
+    len = (para_grade_update_cmd[0][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, para_grade_update_cmd[0], len);
 
@@ -2122,7 +2122,7 @@ bool func_code_read(void)
     bool ret = FALSE;
     
           
-    len = form_para_grade_func_code_read_cmd[0][10] + 11;
+    len = (form_para_grade_func_code_read_cmd[0][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
 
@@ -2197,7 +2197,7 @@ bool func_code_visible_init(void)
     
     for(i = 0; i < 2; i++)
     {        
-        len = func_code_visible_init_cmd[i][10] + 11;
+        len = (func_code_visible_init_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, func_code_visible_init_cmd[i], len);
 
@@ -2277,7 +2277,7 @@ void form_para_grade_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_GRADE_CMD; i++)
     {        
-        len = form_para_grade_cmd[i][10] + 11;
+        len = (form_para_grade_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_para_grade_cmd[i], len);
 
@@ -2521,7 +2521,7 @@ bool func_code_write(void)
     bool ret = FALSE;
     
           
-    len = form_para_val_func_code_write_cmd[0][10] + 11;
+    len = (form_para_val_func_code_write_cmd[0][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, form_para_val_func_code_write_cmd[0], len);
 
@@ -2586,7 +2586,7 @@ void form_para_val_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_VAL_CMD; i++)
     {        
-        len = form_para_val_cmd[i][10] + 11;
+        len = (form_para_val_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_para_val_cmd[i], len);
 
@@ -2815,7 +2815,7 @@ void form_copy_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_CMD; i++)
     {        
-        len = form_copy_cmd[i][10] + 11;
+        len = (form_copy_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_cmd[i], len);
 
@@ -3038,7 +3038,7 @@ void form_copy_upload_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_UPLOAD_CMD; i++)
     {        
-        len = form_copy_upload_cmd[i][10] + 11;
+        len = (form_copy_upload_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_upload_cmd[i], len);
 
@@ -3263,7 +3263,7 @@ void form_copy_download_all_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_ALL_CMD; i++)
     {        
-        len = form_copy_download_all_cmd[i][10] + 11;
+        len = (form_copy_download_all_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_download_all_cmd[i], len);
 
@@ -3488,7 +3488,7 @@ void form_copy_download_part_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_PART_CMD; i++)
     {        
-        len = form_copy_download_part_cmd[i][10] + 11;
+        len = (form_copy_download_part_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_download_part_cmd[i], len);
 
@@ -3712,7 +3712,7 @@ bool chang_baudrate(u16 baudrate)
     bool ret = FALSE;
 
 
-    len = copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11;
+    len = (copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE], len);
 
@@ -3780,7 +3780,7 @@ void copy_upload_rate_init(void)
     
     for(i = 0; i < 5; i++)
     {        
-        len = form_copy_upload_rate_init_cmd[i][10] + 11;
+        len = (form_copy_upload_rate_init_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_upload_rate_init_cmd[i], len);
 
@@ -3931,7 +3931,7 @@ void copy_comm_reset(void)
     
     for(i = 0; i < num; i++)
     {        
-        len = copy_comm_reset_cmd[i][10] + 11;
+        len = (copy_comm_reset_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, copy_comm_reset_cmd[i], len);
 
@@ -4100,7 +4100,7 @@ void form_copy_upload_rate_callback(void)
             i = COPY_UPLOAD_RATE_TAIL_CMD;
         }
         
-        len = copy_upload_rate_cmd[i][10] + 11;
+        len = (copy_upload_rate_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, copy_upload_rate_cmd[i], len);
 
@@ -4441,7 +4441,7 @@ void copy_download_all_rate_init(void)
     
     for(i = 0; i < 4; i++)
     {        
-        len = form_copy_download_all_rate_init_cmd[i][10] + 11;
+        len = (form_copy_download_all_rate_init_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_copy_download_all_rate_init_cmd[i], len);
 
@@ -4572,7 +4572,7 @@ bool keep_vfd_connect(void)
     bool ret = FALSE;
 
     
-    len = keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11;
+    len = (keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11) % UART_TX_LEN;
                     
     memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
 
@@ -4739,7 +4739,7 @@ void form_copy_download_all_rate_callback(void)
     {            
         if(COPY_DOWNLOAD_ALL_RATE_SET_CMD == i)
         {
-            len = copy_download_all_rate_cmd[i][10] + 11;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
         }
@@ -4747,7 +4747,7 @@ void form_copy_download_all_rate_callback(void)
         {
             i = COPY_DOWNLOAD_ALL_RATE_TAIL_CMD;
 
-            len = copy_download_all_rate_cmd[i][10] + 11;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
         }
@@ -4768,7 +4768,7 @@ void form_copy_download_all_rate_callback(void)
                 UART_TX_BUF[17] = 0x01;
                 UART_TX_BUF[18] = 0x03;
 
-                len = UART_TX_BUF[10] + 11;
+                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
@@ -4785,7 +4785,7 @@ void form_copy_download_all_rate_callback(void)
                 UART_TX_BUF[9]  = 0x14;
                 UART_TX_BUF[10] = 0x28;
 
-                len = UART_TX_BUF[10] + 11;
+                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
             }
             else
             {
@@ -4799,13 +4799,13 @@ void form_copy_download_all_rate_callback(void)
                     UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
                     UART_TX_BUF[12] = 0x22;
                     
-                    len = UART_TX_BUF[10] + 11;
+                    len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
                 }
                 else
                 {
                     frame_num = 3; //第二帧以后的帧
                     
-                    len = copy_download_all_rate_cmd[i][10] + 11;
+                    len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                                     
                     memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
                 }
@@ -5121,7 +5121,7 @@ void form_copy_download_part_rate_callback(void)
     {            
         if(COPY_DOWNLOAD_ALL_RATE_SET_CMD == i)
         {
-            len = copy_download_all_rate_cmd[i][10] + 11;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
         }
@@ -5129,7 +5129,7 @@ void form_copy_download_part_rate_callback(void)
         {
             i = COPY_DOWNLOAD_ALL_RATE_TAIL_CMD;
 
-            len = copy_download_all_rate_cmd[i][10] + 11;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
         }
@@ -5150,7 +5150,7 @@ void form_copy_download_part_rate_callback(void)
                 UART_TX_BUF[17] = 0x01;
                 UART_TX_BUF[18] = 0x04; //变频器参数部分下载与全部下载在此有所区别
 
-                len = UART_TX_BUF[10] + 11;
+                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
@@ -5167,7 +5167,7 @@ void form_copy_download_part_rate_callback(void)
                 UART_TX_BUF[9]  = 0x14;
                 UART_TX_BUF[10] = 0x28;
 
-                len = UART_TX_BUF[10] + 11;
+                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
             }
             else
             {
@@ -5181,13 +5181,13 @@ void form_copy_download_part_rate_callback(void)
                     UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
                     UART_TX_BUF[12] = 0x22;
                     
-                    len = UART_TX_BUF[10] + 11;
+                    len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
                 }
                 else
                 {
                     frame_num = 3; //第二帧以后的帧
                     
-                    len = copy_download_all_rate_cmd[i][10] + 11;
+                    len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                                     
                     memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
                 }
