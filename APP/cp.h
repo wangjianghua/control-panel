@@ -179,7 +179,7 @@ typedef struct _cp_para_ram
     bool stop; //停止
     bool ref_chang; //给定更改标志
     bool fr; //旋转状态，正转FWD、反转REV  
-    bool func_code_visible; //99组以后功能码可视标志
+    bool func_code_visible; //隐藏功能码可视标志
     u8 cmd; //命令字
 	u8 group; //变频器分组
 	u8 grade; //变频器分级
@@ -187,13 +187,14 @@ typedef struct _cp_para_ram
 	u8 vfd_para_crc; //变频器参数存取校验码
     u8 group_nearby[4]; //当前附近组号
     u8 grade_nearby[8]; //当前附近级号
-    u8 unit; //变频器参数单位
+    u8 vfd_para_unit; //变频器参数单位
     u8 disp_para_unit[3]; //主界面显示参数单位
+    u8 vfd_para_shift; //变频器参数位切换
     u16 count; //计数器
     u16 ref; //给定值
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型
-    u16 vfd_para; //变频器参数
+    u16 vfd_para_val; //变频器参数值
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
     u16 vfd_para_index; //变频器参数存取索引

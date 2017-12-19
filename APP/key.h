@@ -21,6 +21,7 @@
 #define KEY_MSG_RUN                 0x02
 #define KEY_MSG_STOP                0x03
 #define KEY_MSG_FWD_REV             0x04
+#define KEY_MSG_SHIFT               0x04
 #define KEY_MSG_DOWN                0x05
 #define KEY_MSG_LOC_REM             0x06
 #define KEY_MSG_EXIT                0x07

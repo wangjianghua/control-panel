@@ -735,6 +735,7 @@ void form_home_disp(void)
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
         led_blink_pos = 0;
+        blink_led = 0;
         LEDOE_ENABLE();
         break;
         
@@ -747,6 +748,7 @@ void form_home_disp(void)
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
         led_blink_pos = 0;
+        blink_led = 0;
         LEDOE_ENABLE();
         break;
         
@@ -759,6 +761,7 @@ void form_home_disp(void)
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
         led_blink_pos = 0;
+        blink_led = 0;
         LEDOE_ENABLE();
         break;
 
@@ -2148,9 +2151,9 @@ bool func_code_read(void)
         
         if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
         {
-            cp_para_ram.vfd_para = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+            cp_para_ram.vfd_para_val = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
 
-            cp_para_ram.unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
+            cp_para_ram.vfd_para_unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
 
             form_id = FORM_ID_PARA_VAL;
 
@@ -2525,8 +2528,8 @@ bool func_code_write(void)
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
     UART_TX_BUF[15] = cp_para_ram.group;
     UART_TX_BUF[16] = cp_para_ram.grade;
-    UART_TX_BUF[17] = (u8)(cp_para_ram.vfd_para >> 8);
-    UART_TX_BUF[18] = (u8)cp_para_ram.vfd_para;
+    UART_TX_BUF[17] = (u8)(cp_para_ram.vfd_para_val >> 8);
+    UART_TX_BUF[18] = (u8)cp_para_ram.vfd_para_val;
 
     crc = CRC16Calculate(UART_TX_BUF, len);
     UART_TX_BUF[len++] = (u8)(crc & 0xff);
@@ -2699,13 +2702,14 @@ void form_para_val_callback(void)
         }
     }
     
-    led_disp_buf[0] = led_table[cp_para_ram.vfd_para % 10 + 16];
-    led_disp_buf[1] = (cp_para_ram.vfd_para > 9) ? (led_table[cp_para_ram.vfd_para % 100 / 10 + 16]) : (0xff);
-    led_disp_buf[2] = (cp_para_ram.vfd_para > 99) ? (led_table[cp_para_ram.vfd_para % 1000 / 100 + 16]) : (0xff);
-    led_disp_buf[3] = (cp_para_ram.vfd_para > 999) ? (led_table[cp_para_ram.vfd_para % 10000 / 1000 + 16]) : (0xff);
-    led_disp_buf[4] = (cp_para_ram.vfd_para > 9999) ? (led_table[cp_para_ram.vfd_para % 100000 / 10000 + 16]) : (0xff);
+    led_disp_buf[0] = led_table[cp_para_ram.vfd_para_val % 10 + 16];
+    led_disp_buf[1] = (cp_para_ram.vfd_para_val > 9) ? (led_table[cp_para_ram.vfd_para_val % 100 / 10 + 16]) : (0xff);
+    led_disp_buf[2] = (cp_para_ram.vfd_para_val > 99) ? (led_table[cp_para_ram.vfd_para_val % 1000 / 100 + 16]) : (0xff);
+    led_disp_buf[3] = (cp_para_ram.vfd_para_val > 999) ? (led_table[cp_para_ram.vfd_para_val % 10000 / 1000 + 16]) : (0xff);
+    led_disp_buf[4] = (cp_para_ram.vfd_para_val > 9999) ? (led_table[cp_para_ram.vfd_para_val % 100000 / 10000 + 16]) : (0xff);
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[cp_para_ram.unit]) ? (func_code_unit[cp_para_ram.unit]) : (0x00));
+    led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[cp_para_ram.vfd_para_unit]) ? (func_code_unit[cp_para_ram.vfd_para_unit]) : (0x00));
+    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
     LEDOE_ENABLE();
 }
 
@@ -2752,37 +2756,38 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             form_key_callback(KEY_MSG_LOC_REM);
             break;
 
-        case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
-            {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
-            }
+        case KEY_MSG_SHIFT:
+            cp_para_ram.vfd_para_shift++;
+            
+            cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.vfd_para_val);
             break;
 
         case KEY_MSG_ENTER:
+            led_blink_pos = 0;
+            cp_para_ram.vfd_para_shift = 0;
+            
             func_code_write();
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_EXIT:
+            led_blink_pos = 0;
+            cp_para_ram.vfd_para_shift = 0;
+            
             form_id = FORM_ID_PARA_GRADE;
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
-            cp_para_ram.vfd_para++;
+            cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
             break;
 
         case KEY_MSG_DOWN:
-            if(cp_para_ram.vfd_para)
+            if(cp_para_ram.vfd_para_val >= pow(10, cp_para_ram.vfd_para_shift))
             {
-                cp_para_ram.vfd_para--;
+                cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
             }
             break;
 

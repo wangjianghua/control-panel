@@ -969,6 +969,11 @@
               <FileType>1</FileType>
               <FilePath>..\APP\func_code.c</FilePath>
             </File>
+            <File>
+              <FileName>common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\common.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

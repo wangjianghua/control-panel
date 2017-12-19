@@ -964,6 +964,11 @@
               <FileType>1</FileType>
               <FilePath>..\APP\uart.c</FilePath>
             </File>
+            <File>
+              <FileName>func_code.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\func_code.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

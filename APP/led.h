@@ -26,7 +26,7 @@
 #define LEDX5_DISABLE()         GPIO_SetBits(GPIOB, GPIO_Pin_11)
 
 #define LED_DISP_TIME           2u
-#define LED_BLINK_TIME          50u
+#define LED_BLINK_TIME          30u
 
 #define LED_DISP_BUF_SIZE       6u
 

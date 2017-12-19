@@ -41,5 +41,7 @@ typedef enum
   
 #define DATE_AS_INT                         (((YEAR - 2000) * 12 + MONTH - 1) * 31 + DAY)
 
+u8 get_data_length(u32 data);
+
 
 #endif
