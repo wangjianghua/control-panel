@@ -734,18 +734,48 @@ void form_home_disp(void)
 
     memset(led_disp_buf, 0xff, LED_DISP_BUF_SIZE - 1);
     
-    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
-    led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16];
-    led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
-    led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
-    led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];    
+
+    switch(cp_para_ram.disp_para_dcl[form_id - 1])
+    {
+    case 0:
+        led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    case 1:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16] & led_table['.' - 32];
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff); 
+        break;
+
+    case 2:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16];
+        led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16] & led_table['.' - 32];
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    case 3:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16];
+        led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16];
+        led_disp_buf[3] = led_table[disp_para_val % 10000 / 1000 + 16] & led_table['.' - 32];
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    default:
+        led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+    }
+    
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
-
-    if(cp_para_ram.disp_para_dcl[form_id - 1] > 0)
-    {
-        led_disp_buf[cp_para_ram.disp_para_dcl[form_id - 1]] &= led_table['.' - 32]; 
-    }
 
     if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
        (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //¸ºÊý
