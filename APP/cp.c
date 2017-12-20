@@ -344,7 +344,7 @@ void vfd_con(void)
 
                         if(VFD_LOC == cp_para_ram.lr) //±¾µØ
                         {
-                            led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                            led_disp_buf[5] &= LED_LOC_REM;
                             LEDOE_ENABLE();
                         }
                         else //Ô¶³Ì
@@ -972,7 +972,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -992,7 +992,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -1009,7 +1009,7 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -1203,7 +1203,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -1223,7 +1223,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -1240,7 +1240,7 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -1276,6 +1276,25 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
     return (FORM_MSG_NONE);
 }
 
+void form_ref_val_disp(void)
+{
+    u16 disp_para_val;
+
+
+    disp_para_val = cp_para_ram.ref_mod / 100;
+    
+    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
+    led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16] & led_table['.' - 32];
+    led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+    led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+    led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[5] &= LED_Hz;
+    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+    blink_led = 0;
+    LEDOE_ENABLE();
+}
+
 CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
     /* FORM_REF_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -1285,7 +1304,6 @@ void form_ref_val_callback(void)
 {
     OS_RESULT result;
     u8 i, len;
-    u16 temp;
     unsigned int crc;
     
     
@@ -1407,16 +1425,7 @@ void form_ref_val_callback(void)
         }
     }
 
-    temp = cp_para_ram.ref_mod / 100;
-    
-    led_disp_buf[0] = led_table[temp % 10 + 16];
-    led_disp_buf[1] = led_table[temp % 100 / 10 + 16] & led_table['.' - 32];
-    led_disp_buf[2] = (temp > 99) ? (led_table[temp % 1000 / 100 + 16]) : (0xff);
-    led_disp_buf[3] = (temp > 999) ? (led_table[temp % 10000 / 1000 + 16]) : (0xff);
-    led_disp_buf[4] = (temp > 9999) ? (led_table[temp % 100000 / 10000 + 16]) : (0xff);
-    led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~LED_Hz_MASK;
-    LEDOE_ENABLE();
+    form_ref_val_disp();
 }
 
 static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
@@ -1430,7 +1439,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -1450,7 +1459,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -1462,47 +1471,42 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             form_key_callback(KEY_MSG_LOC_REM);
             break;
 
-        case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
-            {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
-            }
+        case KEY_MSG_SHIFT:
+            cp_para_ram.vfd_para_shift++;
+            
+            cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.ref_mod / 100);
             break;
 
         case KEY_MSG_ENTER:
+            led_blink_pos = 0;
+            cp_para_ram.vfd_para_shift = 0;
+            
             cp_para_ram.ref_chang = TRUE;
             
             form_id = FORM_ID_REF;
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
             
         case KEY_MSG_EXIT:       
+            led_blink_pos = 0;
+            cp_para_ram.vfd_para_shift = 0;
+            
             cp_para_ram.ref_mod = cp_para_ram.ref;
             
             form_id = FORM_ID_REF;
-            break;
+            
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
-            cp_para_ram.ref_mod += 100;
+            cp_para_ram.ref_mod += pow(10, cp_para_ram.vfd_para_shift) * 100;
+
             cp_para_ram.ref_mod %= MAX_REF_VAL;
             break;
 
         case KEY_MSG_DOWN:
-            if(cp_para_ram.ref_mod > 100)
-            {
-                cp_para_ram.ref_mod -= 100;
-            }
-            else
-            {
-                cp_para_ram.ref_mod = MAX_REF_VAL;
-            }
+            cp_para_ram.ref_mod -= pow(10, cp_para_ram.vfd_para_shift) * 100;
             break;
 
         default:
@@ -1665,7 +1669,7 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -1685,7 +1689,7 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -1702,7 +1706,7 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -1979,7 +1983,7 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -1999,7 +2003,7 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -2016,7 +2020,7 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -2457,7 +2461,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -2477,7 +2481,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -2494,7 +2498,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -2840,7 +2844,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -2860,7 +2864,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -3089,7 +3093,7 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -3109,7 +3113,7 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -3126,7 +3130,7 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -3312,7 +3316,7 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -3332,7 +3336,7 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -3349,7 +3353,7 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -3537,7 +3541,7 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -3557,7 +3561,7 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -3574,7 +3578,7 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -3762,7 +3766,7 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -3782,7 +3786,7 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -3799,7 +3803,7 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -4458,7 +4462,7 @@ void form_copy_upload_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['u' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~LED_TORQUE_MASK;
+    led_disp_buf[5] &= LED_TORQUE;
     LEDOE_ENABLE();
 }
 
@@ -4486,7 +4490,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -4506,7 +4510,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -4523,7 +4527,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -5130,7 +5134,7 @@ void form_copy_download_all_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~LED_TORQUE_MASK;
+    led_disp_buf[5] &= LED_TORQUE;
     LEDOE_ENABLE();
 }
 
@@ -5144,7 +5148,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         led_disp_buf[3] = led_table['L' - 32];
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= ~LED_TORQUE_MASK;
+        led_disp_buf[5] &= LED_TORQUE;
         LEDOE_ENABLE();
         
 #if 1
@@ -5172,7 +5176,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -5192,7 +5196,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -5209,7 +5213,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
@@ -5512,7 +5516,7 @@ void form_copy_download_part_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~LED_TORQUE_MASK;
+    led_disp_buf[5] &= LED_TORQUE;
     LEDOE_ENABLE();
 }
 
@@ -5526,7 +5530,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         led_disp_buf[3] = led_table['L' - 32];
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= ~LED_TORQUE_MASK;
+        led_disp_buf[5] &= LED_TORQUE;
         LEDOE_ENABLE();
         
 #if 1
@@ -5554,7 +5558,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_RUN_MASK;
+                led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
             break;
@@ -5574,7 +5578,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
 
             if(VFD_LOC == cp_para_ram.lr)
             {
-                led_disp_buf[5] &= ~LED_LOC_REM_MASK;
+                led_disp_buf[5] &= LED_LOC_REM;
                 LEDOE_ENABLE();
             }
             else
@@ -5591,7 +5595,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                led_disp_buf[5] &= ~LED_FWD_REV_MASK;
+                led_disp_buf[5] &= LED_FWD_REV;
                 LEDOE_ENABLE();
             }
             else
