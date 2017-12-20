@@ -725,7 +725,7 @@ void form_home_disp(void)
     {
         disp_para_val = cp_para_ram.disp_para_val[form_id - 1] & 0x7fff; //去掉符号位
 
-        len = get_data_length(disp_para_val);
+        len = get_data_length(disp_para_val) % (LED_DISP_BUF_SIZE - 1);
     }
     else
     {
@@ -780,7 +780,7 @@ void form_home_disp(void)
     if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
        (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
     {
-        led_disp_buf[len] &= led_table['-' - 32];
+        led_disp_buf[len] = led_table['-' - 32];
     }
 
     led_blink_pos = 0;
@@ -2180,6 +2180,10 @@ bool func_code_read(void)
         {
             cp_para_ram.vfd_para_val = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
 
+            cp_para_ram.vfd_para_sign = UART_RX_BUF[11] & 0x01;
+            cp_para_ram.vfd_para_enum = UART_RX_BUF[11] & 0x80;
+            cp_para_ram.vfd_para_dcl = (UART_RX_BUF[11] & 0x0f) >> 1;
+            
             cp_para_ram.vfd_para_unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
 
             form_id = FORM_ID_PARA_VAL;
@@ -2501,7 +2505,10 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
-            func_code_read();
+            if(TRUE == func_code_read())
+            {
+                return (FORM_MSG_DATA);
+            }
             break;
 
         case KEY_MSG_EXIT:
@@ -2597,6 +2604,82 @@ bool func_code_write(void)
     }
 
     return (ret);
+}
+
+void form_para_val_disp(void)
+{
+    u8 disp_para_unit, len;
+    u16 disp_para_val;
+    
+
+    disp_para_unit = cp_para_ram.vfd_para_unit;
+
+    if(TRUE == cp_para_ram.vfd_para_sign)
+    {
+        disp_para_val = cp_para_ram.vfd_para_val & 0x7fff; //去掉符号位
+
+        len = get_data_length(disp_para_val) % (LED_DISP_BUF_SIZE - 1);
+    }
+    else
+    {
+        disp_para_val = cp_para_ram.vfd_para_val;
+    }
+
+    memset(led_disp_buf, 0xff, LED_DISP_BUF_SIZE - 1);
+    
+    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];    
+
+    switch(cp_para_ram.vfd_para_dcl)
+    {
+    case 0:
+        led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    case 1:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16] & led_table['.' - 32];
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff); 
+        break;
+
+    case 2:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16];
+        led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16] & led_table['.' - 32];
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    case 3:
+        led_disp_buf[1] = led_table[disp_para_val % 100 / 10 + 16];
+        led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16];
+        led_disp_buf[3] = led_table[disp_para_val % 10000 / 1000 + 16] & led_table['.' - 32];
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+
+    default:
+        led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+        led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+        led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+        led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        break;
+    }
+    
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
+
+    if((TRUE == cp_para_ram.vfd_para_sign) &&
+       (cp_para_ram.vfd_para_val & 0x8000)) //负数
+    {
+        led_disp_buf[len] = led_table['-' - 32];
+    }
+
+    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+    blink_led = 0;
+    
+    LEDOE_ENABLE();
 }
 
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
@@ -2729,20 +2812,26 @@ void form_para_val_callback(void)
         }
     }
     
-    led_disp_buf[0] = led_table[cp_para_ram.vfd_para_val % 10 + 16];
-    led_disp_buf[1] = (cp_para_ram.vfd_para_val > 9) ? (led_table[cp_para_ram.vfd_para_val % 100 / 10 + 16]) : (0xff);
-    led_disp_buf[2] = (cp_para_ram.vfd_para_val > 99) ? (led_table[cp_para_ram.vfd_para_val % 1000 / 100 + 16]) : (0xff);
-    led_disp_buf[3] = (cp_para_ram.vfd_para_val > 999) ? (led_table[cp_para_ram.vfd_para_val % 10000 / 1000 + 16]) : (0xff);
-    led_disp_buf[4] = (cp_para_ram.vfd_para_val > 9999) ? (led_table[cp_para_ram.vfd_para_val % 100000 / 10000 + 16]) : (0xff);
-    led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[cp_para_ram.vfd_para_unit]) ? (func_code_unit[cp_para_ram.vfd_para_unit]) : (0xff);
-    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
-    LEDOE_ENABLE();
+    form_para_val_disp();
 }
 
 static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 {
-    if(FORM_MSG_KEY == form_msg)
+    static s16 vfd_para_val;
+
+
+    if(FORM_MSG_DATA == form_msg)
+    {
+        if(TRUE == cp_para_ram.vfd_para_sign)
+        {
+            vfd_para_val = (s16)cp_para_ram.vfd_para_val;
+        }
+        else
+        {
+            vfd_para_val = 0;
+        }
+    }
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {        
@@ -2786,7 +2875,14 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_SHIFT:
             cp_para_ram.vfd_para_shift++;
             
-            cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.vfd_para_val);
+            if(TRUE == cp_para_ram.vfd_para_sign)
+            {
+            	cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.vfd_para_val % 0x7fff);
+            }
+            else
+            {
+            	cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.vfd_para_val);
+            }
             break;
 
         case KEY_MSG_ENTER:
@@ -2808,13 +2904,28 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             //break;
 
         case KEY_MSG_UP:
-            cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+        	if(TRUE == cp_para_ram.vfd_para_sign)
+        	{
+            	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+            	
+            	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+            }
+            else
+            {
+            	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+            }
             break;
 
         case KEY_MSG_DOWN:
-            if(cp_para_ram.vfd_para_val >= pow(10, cp_para_ram.vfd_para_shift))
+        	if(TRUE == cp_para_ram.vfd_para_sign)
+        	{
+            	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
+            	
+            	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+            }
+            else
             {
-                cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
+	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
             }
             break;
 

@@ -179,6 +179,8 @@ typedef struct _cp_para_ram
     bool func_code_visible; //隐藏功能码可视标志
     bool disp_para_sign[3]; //主界面显示参数符号位
     bool disp_para_enum[3]; //主界面显示参数枚举位
+    bool vfd_para_sign; //变频器参数符号位
+    bool vfd_para_enum; //变频器参数枚举位
     u8 cmd; //命令字
 	u8 group; //变频器分组
 	u8 grade; //变频器分级
@@ -190,6 +192,7 @@ typedef struct _cp_para_ram
     u8 disp_para_unit[3]; //主界面显示参数单位
     u8 disp_para_dcl[3]; //主界面显示参数小数位
     u8 vfd_para_shift; //变频器参数位切换
+    u8 vfd_para_dcl; //变频器参数小数位
     u16 count; //计数器
     u16 ref; //变频器给定值
     u16 ref_mod; //给定更改值
