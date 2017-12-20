@@ -1060,8 +1060,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>2750</TopLine>
-      <CurrentLine>2770</CurrentLine>
+      <TopLine>731</TopLine>
+      <CurrentLine>735</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\APP\cp.c</PathWithFileName>
       <FilenameWithoutPath>cp.c</FilenameWithoutPath>
@@ -1108,7 +1108,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>83</TopLine>
+      <TopLine>81</TopLine>
       <CurrentLine>101</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\APP\main.c</PathWithFileName>

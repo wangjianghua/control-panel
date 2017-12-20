@@ -12,9 +12,6 @@
 
 #define VFD_REPLY_TIMEOUT       1000u //1s
 
-#define COPY_BAUDRATE		    19200u
-#define OTHER_BAUDRATE		    9600u
-
 #define VFD_PARA_FLAG           ('H')                       //变频器参数标志
 
 #define CP_PARA_ADDR            0u                          //控制盘参数存储地址
@@ -191,7 +188,8 @@ typedef struct _cp_para_ram
     u8 disp_para_unit[3]; //主界面显示参数单位
     u8 vfd_para_shift; //变频器参数位切换
     u16 count; //计数器
-    u16 ref; //给定值
+    u16 ref; //变频器给定值
+    u16 ref_mod; //给定更改值
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型
     u16 vfd_para_val; //变频器参数值

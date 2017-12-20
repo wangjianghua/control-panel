@@ -201,8 +201,8 @@ void vfd_con(void)
     			{
     				cp_para_ram.ref_chang = FALSE;
                     
-    				UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
     			}
                 else
     			{
@@ -264,8 +264,8 @@ void vfd_con(void)
     			{
     				cp_para_ram.ref_chang = FALSE;
                     
-    				UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
     			}
                 else
     			{
@@ -384,6 +384,8 @@ void vfd_con(void)
             i = -1; //启动重复发送连接命令
         }
     }
+
+    cp_para_ram.ref_mod = cp_para_ram.ref;
 }
 
 static const FORM form_list[MAX_FORM_NUM] =
@@ -448,12 +450,9 @@ bool form_key_callback(unsigned int key_msg)
     switch(key_msg)
     {
     case KEY_MSG_LOC_REM:
-        cp_para_rom.ref = 0;
+        cp_para_ram.ref_mod = 0;
 
-        /* 指定位置，存储指定参数
-         * 华兄 */
-        IIC_WriteHalfWord(CP_PARA_ADDR + OffsetOf(CP_PARA_ROM, ref), cp_para_rom.ref);
-        os_dly_wait(5);
+        cp_para_ram.ref_chang = TRUE;
 
         ret = TRUE;
         break;
@@ -531,8 +530,8 @@ void form_err_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -733,7 +732,7 @@ void form_home_disp(void)
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
         led_blink_pos = 0;
         blink_led = 0;
         LEDOE_ENABLE();
@@ -746,7 +745,7 @@ void form_home_disp(void)
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
         led_blink_pos = 0;
         blink_led = 0;
         LEDOE_ENABLE();
@@ -759,7 +758,7 @@ void form_home_disp(void)
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0x00));
+        led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
         led_blink_pos = 0;
         blink_led = 0;
         LEDOE_ENABLE();
@@ -804,8 +803,8 @@ void form_home_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -880,6 +879,8 @@ void form_home_callback(void)
                         if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
                            (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
                         {
+                            i = FORM_HOME_READ_CMD;
+                            
                             form_id = FORM_ID_ERR;
                         }
 
@@ -887,6 +888,8 @@ void form_home_callback(void)
                     }
                     else
                     {
+                        i = FORM_HOME_READ_CMD;
+                        
                         form_id = FORM_ID_ERR;
                     }
                     break;
@@ -1050,8 +1053,8 @@ void form_ref_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -1274,8 +1277,8 @@ void form_ref_val_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -1372,7 +1375,7 @@ void form_ref_val_callback(void)
         }
     }
 
-    temp = cp_para_rom.ref / 100;
+    temp = cp_para_ram.ref_mod / 100;
     
     led_disp_buf[0] = led_table[temp % 10 + 16];
     led_disp_buf[1] = led_table[temp % 100 / 10 + 16] & led_table['.' - 32];
@@ -1443,38 +1446,30 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
-            /* 指定位置，存储指定参数
-             * 华兄 */
-            IIC_WriteHalfWord(CP_PARA_ADDR + OffsetOf(CP_PARA_ROM, ref), cp_para_rom.ref);
-            os_dly_wait(5);
-            
             cp_para_ram.ref_chang = TRUE;
             
             form_id = FORM_ID_REF;
             break;
             
-        case KEY_MSG_EXIT:
-            /* 指定位置，读取指定参数
-             * 华兄 */
-            cp_para_rom.ref = IIC_ReadHalfWord(CP_PARA_ADDR + OffsetOf(CP_PARA_ROM, ref));
-            os_dly_wait(5);
+        case KEY_MSG_EXIT:       
+            cp_para_ram.ref_mod = cp_para_ram.ref;
             
             form_id = FORM_ID_REF;
             break;
 
         case KEY_MSG_UP:
-            cp_para_rom.ref += 100;
-            cp_para_rom.ref %= MAX_REF_VAL;
+            cp_para_ram.ref_mod += 100;
+            cp_para_ram.ref_mod %= MAX_REF_VAL;
             break;
 
         case KEY_MSG_DOWN:
-            if(cp_para_rom.ref > 100)
+            if(cp_para_ram.ref_mod > 100)
             {
-                cp_para_rom.ref -= 100;
+                cp_para_ram.ref_mod -= 100;
             }
             else
             {
-                cp_para_rom.ref = MAX_REF_VAL;
+                cp_para_ram.ref_mod = MAX_REF_VAL;
             }
             break;
 
@@ -1520,8 +1515,8 @@ void form_para_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -1822,8 +1817,8 @@ void form_para_group_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -2295,8 +2290,8 @@ void form_para_grade_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -2604,8 +2599,8 @@ void form_para_val_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -2708,7 +2703,7 @@ void form_para_val_callback(void)
     led_disp_buf[3] = (cp_para_ram.vfd_para_val > 999) ? (led_table[cp_para_ram.vfd_para_val % 10000 / 1000 + 16]) : (0xff);
     led_disp_buf[4] = (cp_para_ram.vfd_para_val > 9999) ? (led_table[cp_para_ram.vfd_para_val % 100000 / 10000 + 16]) : (0xff);
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= ~((LED_V_A_Hz_MASK != func_code_unit[cp_para_ram.vfd_para_unit]) ? (func_code_unit[cp_para_ram.vfd_para_unit]) : (0x00));
+    led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[cp_para_ram.vfd_para_unit]) ? (func_code_unit[cp_para_ram.vfd_para_unit]) : (0xff);
     led_blink_pos = cp_para_ram.vfd_para_shift + 1;
     LEDOE_ENABLE();
 }
@@ -2833,8 +2828,8 @@ void form_copy_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -3056,8 +3051,8 @@ void form_copy_upload_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -3281,8 +3276,8 @@ void form_copy_download_all_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -3506,8 +3501,8 @@ void form_copy_download_part_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -3798,8 +3793,8 @@ void copy_upload_rate_init(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -3949,8 +3944,8 @@ void copy_comm_reset(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -4118,8 +4113,8 @@ void form_copy_upload_rate_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -4290,7 +4285,7 @@ void form_copy_upload_rate_callback(void)
                         cp_para_ram.vfd_para_index = 0;
                         cp_para_ram.vfd_para_crc = 0;
                         
-                        if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
                         {
                             copy_comm_reset();
                             
@@ -4328,7 +4323,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
 {
     if(FORM_MSG_DATA == form_msg)
     {
-        if(TRUE == chang_baudrate(COPY_BAUDRATE))
+        if(TRUE == chang_baudrate(BAUD_RATE_19200))
         {
             copy_upload_rate_init();
         }
@@ -4399,7 +4394,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            if(TRUE == chang_baudrate(BAUD_RATE_9600))
             {
                 copy_comm_reset();
                 
@@ -4459,8 +4454,8 @@ void copy_download_all_rate_init(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -4587,8 +4582,8 @@ bool keep_vfd_connect(void)
         {
             cp_para_ram.ref_chang = FALSE;
             
-            UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-            UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+            UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+            UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
         }
         else
         {
@@ -4757,7 +4752,7 @@ void form_copy_download_all_rate_callback(void)
             {
                 frame_num = 1;
                 
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
             
                 UART_TX_BUF[9]  = 0x16;
                 UART_TX_BUF[10] = 0x2C;
@@ -4780,7 +4775,7 @@ void form_copy_download_all_rate_callback(void)
             {
                 frame_num = 2;
             
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
             
                 UART_TX_BUF[9]  = 0x14;
                 UART_TX_BUF[10] = 0x28;
@@ -4793,7 +4788,7 @@ void form_copy_download_all_rate_callback(void)
                 {
                     frame_num = 0xfe; //倒数第二帧
                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
                     
                     UART_TX_BUF[9]  = 0x06;
                     UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
@@ -4852,8 +4847,8 @@ void form_copy_download_all_rate_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -4962,7 +4957,7 @@ void form_copy_download_all_rate_callback(void)
                         cp_para_ram.vfd_para_index = 0;
                         cp_para_ram.vfd_para_crc = 0;
                         
-                        if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
                         {
                             copy_comm_reset();
                             
@@ -5011,7 +5006,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         
 #if 1
         if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
-           (TRUE == chang_baudrate(COPY_BAUDRATE))) //更改变频器参数上传、下载的波特率
+           (TRUE == chang_baudrate(BAUD_RATE_19200))) //更改变频器参数上传、下载的波特率
         {
             copy_download_all_rate_init();
         }
@@ -5022,7 +5017,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             return (FORM_MSG_NONE);
         }
 #else //调试变频器参数下载
-        USART_BaudRate(CP_UART, COPY_BAUDRATE);
+        USART_BaudRate(CP_UART, BAUD_RATE_19200);
 #endif        
     }
     else if(FORM_MSG_KEY == form_msg)
@@ -5085,7 +5080,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            if(TRUE == chang_baudrate(BAUD_RATE_9600))
             { 
                 copy_comm_reset();
                 
@@ -5139,7 +5134,7 @@ void form_copy_download_part_rate_callback(void)
             {
                 frame_num = 1;
                 
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
             
                 UART_TX_BUF[9]  = 0x16;
                 UART_TX_BUF[10] = 0x2C;
@@ -5162,7 +5157,7 @@ void form_copy_download_part_rate_callback(void)
             {
                 frame_num = 2;
             
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
             
                 UART_TX_BUF[9]  = 0x14;
                 UART_TX_BUF[10] = 0x28;
@@ -5175,7 +5170,7 @@ void form_copy_download_part_rate_callback(void)
                 {
                     frame_num = 0xfe; //倒数第二帧
                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60);
+                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
                     
                     UART_TX_BUF[9]  = 0x06;
                     UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
@@ -5234,8 +5229,8 @@ void form_copy_download_part_rate_callback(void)
                 {
                     cp_para_ram.ref_chang = FALSE;
                     
-                    UART_TX_BUF[23] = (u8)(cp_para_rom.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_rom.ref >> 0);
+                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
                 }
                 else
                 {
@@ -5344,7 +5339,7 @@ void form_copy_download_part_rate_callback(void)
                         cp_para_ram.vfd_para_index = 0;
                         cp_para_ram.vfd_para_crc = 0;
                         
-                        if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
                         {
                             copy_comm_reset();
                             
@@ -5393,7 +5388,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         
 #if 1
         if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
-           (TRUE == chang_baudrate(COPY_BAUDRATE))) //更改变频器参数上传、下载的波特率
+           (TRUE == chang_baudrate(BAUD_RATE_19200))) //更改变频器参数上传、下载的波特率
         {
             copy_download_all_rate_init();
         }
@@ -5404,7 +5399,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             return (FORM_MSG_NONE);
         }
 #else //调试变频器参数下载
-        USART_BaudRate(CP_UART, COPY_BAUDRATE);
+        USART_BaudRate(CP_UART, BAUD_RATE_19200);
 #endif        
     }
     else if(FORM_MSG_KEY == form_msg)
@@ -5467,7 +5462,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(OTHER_BAUDRATE))
+            if(TRUE == chang_baudrate(BAUD_RATE_9600))
             { 
                 copy_comm_reset();
                 

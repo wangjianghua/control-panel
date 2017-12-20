@@ -41,6 +41,17 @@
 #define LED_TORQUE_MASK         (LED_V_MASK | LED_A_MASK)
 #define LED_V_A_Hz_MASK         (LED_V_MASK | LED_A_MASK | LED_Hz_MASK)
 
+#define LED_DP                  ~LED_DP_MASK
+#define LED_LOC_REM             ~LED_LOC_REM_MASK
+#define LED_RUN                 ~LED_RUN_MASK
+#define LED_V                   ~LED_V_MASK
+#define LED_A                   ~LED_A_MASK
+#define LED_Hz                  ~LED_Hz_MASK
+#define LED_FWD_REV             ~LED_FWD_REV_MASK
+#define LED_SPEED               ~LED_SPEED_MASK
+#define LED_TORQUE              ~LED_TORQUE_MASK
+#define LED_V_A_Hz              ~LED_V_A_Hz_MASK
+
 extern CODE u8 led_table[];
 extern XDATA u8 led_disp_buf[LED_DISP_BUF_SIZE];
 extern XDATA u8 led_blink_pos;
