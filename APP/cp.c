@@ -2907,7 +2907,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             
             if(TRUE == cp_para_ram.vfd_para_sign)
             {
-            	cp_para_ram.vfd_para_shift %= get_data_length(cp_para_ram.vfd_para_val % 0x7fff);
+            	cp_para_ram.vfd_para_shift %= get_data_length(abs(vfd_para_val));
             }
             else
             {
