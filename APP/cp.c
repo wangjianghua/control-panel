@@ -682,7 +682,6 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            form_key_callback(KEY_MSG_LOC_REM);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -723,7 +722,7 @@ void form_home_disp(void)
 
     if(TRUE == cp_para_ram.disp_para_sign[form_id - 1])
     {
-        disp_para_val = cp_para_ram.disp_para_val[form_id - 1] & 0x7fff; //去掉符号位
+        disp_para_val = abs((s16)cp_para_ram.disp_para_val[form_id - 1]);
 
         len = get_data_length(disp_para_val) % (LED_DISP_BUF_SIZE - 1);
     }
@@ -731,8 +730,6 @@ void form_home_disp(void)
     {
         disp_para_val = cp_para_ram.disp_para_val[form_id - 1];
     }
-
-    memset(led_disp_buf, 0xff, LED_DISP_BUF_SIZE - 1);
     
     led_disp_buf[0] = led_table[disp_para_val % 10 + 16];    
 
@@ -779,8 +776,15 @@ void form_home_disp(void)
 
     if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
        (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
-    {
-        led_disp_buf[len] = led_table['-' - 32];
+    {   
+        if(disp_para_val > 9)
+        {
+            led_disp_buf[len] = led_table['-' - 32]; //-1.1
+        }
+        else
+        {
+            led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
+        }
     }
 
     led_blink_pos = 0;
@@ -1500,13 +1504,27 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             //break;
 
         case KEY_MSG_UP:
+        case KEY_MSG_UP_LONG:    
             cp_para_ram.ref_mod += pow(10, cp_para_ram.vfd_para_shift) * 100;
 
-            cp_para_ram.ref_mod %= MAX_REF_VAL;
+            if(cp_para_ram.ref_mod > MAX_REF_VAL)
+            {
+                cp_para_ram.ref_mod = MAX_REF_VAL;
+            }
             break;
 
         case KEY_MSG_DOWN:
-            cp_para_ram.ref_mod -= pow(10, cp_para_ram.vfd_para_shift) * 100;
+        case KEY_MSG_DOWN_LONG:    
+            if(cp_para_ram.ref_mod >= (pow(10, cp_para_ram.vfd_para_shift) * 100))
+            {
+                cp_para_ram.ref_mod -= pow(10, cp_para_ram.vfd_para_shift) * 100;
+            }
+            else
+            {
+                cp_para_ram.ref_mod = 0;
+
+                cp_para_ram.vfd_para_shift = 0;
+            }
             break;
 
         default:
@@ -2583,9 +2601,12 @@ bool func_code_write(void)
         
         if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
         {
-            form_id = FORM_ID_PARA_GRADE;
+            if(0x40 == (UART_RX_BUF[3] & 0xf0))
+            {
+                form_id = FORM_ID_PARA_GRADE;
 
-            ret = TRUE;
+                ret = TRUE;
+            }
         }
         else
         {
@@ -2620,7 +2641,7 @@ void form_para_val_disp(void)
 
     if(TRUE == cp_para_ram.vfd_para_sign)
     {
-        disp_para_val = cp_para_ram.vfd_para_val & 0x7fff; //去掉符号位
+        disp_para_val = abs((s16)cp_para_ram.vfd_para_val);
 
         len = get_data_length(disp_para_val) % (LED_DISP_BUF_SIZE - 1);
     }
@@ -2628,10 +2649,8 @@ void form_para_val_disp(void)
     {
         disp_para_val = cp_para_ram.vfd_para_val;
     }
-
-    memset(led_disp_buf, 0xff, LED_DISP_BUF_SIZE - 1);
     
-    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];    
+    led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
 
     switch(cp_para_ram.vfd_para_dcl)
     {
@@ -2677,7 +2696,14 @@ void form_para_val_disp(void)
     if((TRUE == cp_para_ram.vfd_para_sign) &&
        (cp_para_ram.vfd_para_val & 0x8000)) //负数
     {
-        led_disp_buf[len] = led_table['-' - 32];
+        if(disp_para_val > 9)
+        {
+            led_disp_buf[len] = led_table['-' - 32]; //-1.1
+        }
+        else
+        {
+            led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
+        }
     }
 
     led_blink_pos = cp_para_ram.vfd_para_shift + 1;
@@ -2889,14 +2915,15 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             }
             break;
 
-        case KEY_MSG_ENTER:
-            led_blink_pos = 0;
-            cp_para_ram.vfd_para_shift = 0;
-            
-            func_code_write();
-
-            return (FORM_MSG_NONE);
-            //break;
+        case KEY_MSG_ENTER:            
+            if(TRUE == func_code_write())
+            {
+                led_blink_pos = 0;
+                cp_para_ram.vfd_para_shift = 0;
+                
+                return (FORM_MSG_NONE);
+            }
+            break;
 
         case KEY_MSG_EXIT:
             led_blink_pos = 0;
@@ -2908,6 +2935,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             //break;
 
         case KEY_MSG_UP:
+        case KEY_MSG_UP_LONG:    
         	if(TRUE == cp_para_ram.vfd_para_sign)
         	{
             	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
@@ -2921,6 +2949,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_DOWN:
+        case KEY_MSG_DOWN_LONG:
         	if(TRUE == cp_para_ram.vfd_para_sign)
         	{
             	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
@@ -4462,7 +4491,7 @@ void form_copy_upload_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['u' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= LED_TORQUE;
+    led_disp_buf[5] &= LED_PER_CENT;
     LEDOE_ENABLE();
 }
 
@@ -5134,7 +5163,7 @@ void form_copy_download_all_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= LED_TORQUE;
+    led_disp_buf[5] &= LED_PER_CENT;
     LEDOE_ENABLE();
 }
 
@@ -5148,7 +5177,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         led_disp_buf[3] = led_table['L' - 32];
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= LED_TORQUE;
+        led_disp_buf[5] &= LED_PER_CENT;
         LEDOE_ENABLE();
         
 #if 1
@@ -5516,7 +5545,7 @@ void form_copy_download_part_rate_callback(void)
     led_disp_buf[3] = led_table['L' - 32];
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    led_disp_buf[5] &= LED_TORQUE;
+    led_disp_buf[5] &= LED_PER_CENT;
     LEDOE_ENABLE();
 }
 
@@ -5530,7 +5559,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         led_disp_buf[3] = led_table['L' - 32];
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
-        led_disp_buf[5] &= LED_TORQUE;
+        led_disp_buf[5] &= LED_PER_CENT;
         LEDOE_ENABLE();
         
 #if 1

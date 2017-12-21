@@ -26,7 +26,7 @@
 #define LEDX5_DISABLE()         GPIO_SetBits(GPIOB, GPIO_Pin_11)
 
 #define LED_DISP_TIME           2u
-#define LED_BLINK_TIME          30u
+#define LED_BLINK_TIME          20u
 
 #define LED_DISP_BUF_SIZE       6u
 
@@ -38,7 +38,7 @@
 #define LED_Hz_MASK             0x08
 #define LED_FWD_REV_MASK        0x80
 #define LED_SPEED_MASK          (LED_A_MASK | LED_Hz_MASK)
-#define LED_TORQUE_MASK         (LED_V_MASK | LED_A_MASK)
+#define LED_PER_CENT_MASK       (LED_V_MASK | LED_A_MASK)
 #define LED_V_A_Hz_MASK         (LED_V_MASK | LED_A_MASK | LED_Hz_MASK)
 
 #define LED_DP                  ~LED_DP_MASK
@@ -49,7 +49,7 @@
 #define LED_Hz                  ~LED_Hz_MASK
 #define LED_FWD_REV             ~LED_FWD_REV_MASK
 #define LED_SPEED               ~LED_SPEED_MASK
-#define LED_TORQUE              ~LED_TORQUE_MASK
+#define LED_PER_CENT            ~LED_PER_CENT_MASK
 #define LED_V_A_Hz              ~LED_V_A_Hz_MASK
 
 extern CODE u8 led_table[];
