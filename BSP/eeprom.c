@@ -14,28 +14,28 @@
 #include "includes.h"
 
 
-void IIC_SDA_Input(void)
+void EEPROM_SDA_Input(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
       
 
-    GPIO_InitStructure.GPIO_Pin = IIC_SDA_PIN;
+    GPIO_InitStructure.GPIO_Pin = EEPROM_SDA_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_Init(IIC_PORT, &GPIO_InitStructure);
+    GPIO_Init(EEPROM_PORT, &GPIO_InitStructure);
 }
 
-void IIC_SDA_Output(void)
+void EEPROM_SDA_Output(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
       
 
-    GPIO_InitStructure.GPIO_Pin = IIC_SDA_PIN;
+    GPIO_InitStructure.GPIO_Pin = EEPROM_SDA_PIN;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_Init(IIC_PORT, &GPIO_InitStructure);
+    GPIO_Init(EEPROM_PORT, &GPIO_InitStructure);
 }
 
-void IIC_Delay(u16 dly)
+void EEPROM_Delay(u16 dly)
 {
     u16 i;
 
@@ -46,62 +46,62 @@ void IIC_Delay(u16 dly)
 	}
 }
 
-void IIC_Start(void) 
+void EEPROM_Start(void) 
 {
-	IIC_SDA_HIGH();
-	IIC_SCL_HIGH();
-	IIC_Delay(50); 		 
-	IIC_SDA_LOW();
-	IIC_Delay(50); 
-	IIC_SCL_LOW();
-	IIC_Delay(50);
+	EEPROM_SDA_HIGH();
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(50); 		 
+	EEPROM_SDA_LOW();
+	EEPROM_Delay(50); 
+	EEPROM_SCL_LOW();
+	EEPROM_Delay(50);
 }
 
-void IIC_Stop(void) 
+void EEPROM_Stop(void) 
 {
-	IIC_SDA_LOW();
-	IIC_SCL_HIGH();
-	IIC_Delay(50); 
-	IIC_SDA_HIGH();
-	IIC_Delay(50);
-	IIC_SCL_LOW();
-	IIC_Delay(50);    
+	EEPROM_SDA_LOW();
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(50); 
+	EEPROM_SDA_HIGH();
+	EEPROM_Delay(50);
+	EEPROM_SCL_LOW();
+	EEPROM_Delay(50);    
 }
 
-u8 IIC_RecvByte(void) 
+u8 EEPROM_RecvByte(void) 
 {
 	u8 i, data = 0;
 
 
-    IIC_SDA_Input();
-    IIC_Delay(20);
+    EEPROM_SDA_Input();
+    EEPROM_Delay(20);
 
 	for(i = 0; i < 8; i++)
 	{
 		data <<= 1;
         
-		IIC_SCL_HIGH();
-		IIC_Delay(50);
+		EEPROM_SCL_HIGH();
+		EEPROM_Delay(50);
         
-		if(IIC_SDA) 
+		if(EEPROM_SDA) 
 		{
             data |= 1;
 		}
         
-		IIC_SCL_LOW();
-		IIC_Delay(50); 
+		EEPROM_SCL_LOW();
+		EEPROM_Delay(50); 
 	}
 
-    IIC_SDA_Output();
-    IIC_Delay(20);
+    EEPROM_SDA_Output();
+    EEPROM_Delay(20);
 
-	IIC_SDA_HIGH();
-	IIC_Delay(50);
+	EEPROM_SDA_HIGH();
+	EEPROM_Delay(50);
 
 	return (data);
 }
 
-void IIC_SendByte(u8 data) 
+void EEPROM_SendByte(u8 data) 
 {
 	s8 i;
 
@@ -110,37 +110,37 @@ void IIC_SendByte(u8 data)
 	{
 		if((data >> i) & 0x01)
 		{
-			IIC_SDA_HIGH();
+			EEPROM_SDA_HIGH();
 		}
 		else	
 		{
-			IIC_SDA_LOW();
+			EEPROM_SDA_LOW();
 		}
         
-		IIC_SCL_HIGH();
-		IIC_Delay(50); 
-		IIC_SCL_LOW();
-		IIC_Delay(50); 
+		EEPROM_SCL_HIGH();
+		EEPROM_Delay(50); 
+		EEPROM_SCL_LOW();
+		EEPROM_Delay(50); 
 	}
 
-	IIC_SDA_HIGH();
-	IIC_Delay(50);    
+	EEPROM_SDA_HIGH();
+	EEPROM_Delay(50);    
 }
 
-void IIC_WaitAck(void)
+void EEPROM_WaitAck(void)
 {
     u16 timeout = 0;
 
     
-    IIC_SDA_HIGH(); 
-    IIC_Delay(20);
-	IIC_SCL_HIGH();
-	IIC_Delay(50); 
+    EEPROM_SDA_HIGH(); 
+    EEPROM_Delay(20);
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(50); 
 
-    IIC_SDA_Input();
-    IIC_Delay(20);
+    EEPROM_SDA_Input();
+    EEPROM_Delay(20);
     
-	while(IIC_SDA)
+	while(EEPROM_SDA)
 	{
         timeout++;
 
@@ -150,151 +150,151 @@ void IIC_WaitAck(void)
         }
     }
 
-    IIC_SDA_Output();
-    IIC_Delay(20);
+    EEPROM_SDA_Output();
+    EEPROM_Delay(20);
     
-	IIC_SCL_LOW();
-	IIC_Delay(50);
+	EEPROM_SCL_LOW();
+	EEPROM_Delay(50);
 }
 
-void IIC_Ack(void)
+void EEPROM_Ack(void)
 {
-	IIC_SDA_LOW();
-	IIC_Delay(20);
-	IIC_SCL_HIGH();
-	IIC_Delay(50);
-	IIC_SCL_LOW();
-	IIC_Delay(50);
+	EEPROM_SDA_LOW();
+	EEPROM_Delay(20);
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(50);
+	EEPROM_SCL_LOW();
+	EEPROM_Delay(50);
 }
 
-u8 IIC_ReadByte(u16 addr) 
+u8 EEPROM_ReadByte(u16 addr) 
 {      
     u8 data;
 
     
-	IIC_Start();
+	EEPROM_Start();
 
     if(AT24CXX > AT24C16)
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE);
-        IIC_WaitAck();
-        IIC_SendByte(addr / 256);
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE);
+        EEPROM_WaitAck();
+        EEPROM_SendByte(addr / 256);
     }
     else
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
     }
 
-	IIC_WaitAck();
-	IIC_SendByte(addr % 256);
-	IIC_WaitAck();
-	IIC_Start();
-	IIC_SendByte(AT_DEV_ADDR_READ);
-	IIC_WaitAck();
-	data = IIC_RecvByte();
-	IIC_Stop();
+	EEPROM_WaitAck();
+	EEPROM_SendByte(addr % 256);
+	EEPROM_WaitAck();
+	EEPROM_Start();
+	EEPROM_SendByte(AT_DEV_ADDR_READ);
+	EEPROM_WaitAck();
+	data = EEPROM_RecvByte();
+	EEPROM_Stop();
     
  	return (data); 
 }  
 
-void IIC_WriteByte(u16 addr, u8 data)
+void EEPROM_WriteByte(u16 addr, u8 data)
 {      
-	IIC_Start();
+	EEPROM_Start();
 
     if(AT24CXX > AT24C16)
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE);
-        IIC_WaitAck();
-        IIC_SendByte(addr / 256);
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE);
+        EEPROM_WaitAck();
+        EEPROM_SendByte(addr / 256);
     }
     else
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
     }
 
-	IIC_WaitAck();
-	IIC_SendByte(addr % 256);
-	IIC_WaitAck();
-	IIC_SendByte(data);
-	IIC_WaitAck();
-	IIC_Stop();
+	EEPROM_WaitAck();
+	EEPROM_SendByte(addr % 256);
+	EEPROM_WaitAck();
+	EEPROM_SendByte(data);
+	EEPROM_WaitAck();
+	EEPROM_Stop();
 }
 
-u16 IIC_ReadHalfWord(u16 addr)
+u16 EEPROM_ReadHalfWord(u16 addr)
 {
     u8 data1, data2;
 	u16 data;
 
 
-	IIC_Start();
+	EEPROM_Start();
 
     if(AT24CXX > AT24C16)
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE);
-        IIC_WaitAck();
-        IIC_SendByte(addr / 256);
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE);
+        EEPROM_WaitAck();
+        EEPROM_SendByte(addr / 256);
     }
     else
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
     }
 
-	IIC_WaitAck();
-	IIC_SendByte(addr % 256);
-	IIC_WaitAck();
-	IIC_Start();
-	IIC_SendByte(AT_DEV_ADDR_READ);
-	IIC_WaitAck();
-	data1 = IIC_RecvByte();
-	IIC_Stop();
-	IIC_Start();
-	IIC_SendByte(AT_DEV_ADDR_READ);
-	IIC_WaitAck();
-	data2 = IIC_RecvByte();
-	IIC_Stop();
+	EEPROM_WaitAck();
+	EEPROM_SendByte(addr % 256);
+	EEPROM_WaitAck();
+	EEPROM_Start();
+	EEPROM_SendByte(AT_DEV_ADDR_READ);
+	EEPROM_WaitAck();
+	data1 = EEPROM_RecvByte();
+	EEPROM_Stop();
+	EEPROM_Start();
+	EEPROM_SendByte(AT_DEV_ADDR_READ);
+	EEPROM_WaitAck();
+	data2 = EEPROM_RecvByte();
+	EEPROM_Stop();
     
 	data = data1 + (data2 << 8);	
     
 	return (data);
 }
 
-void IIC_WriteHalfWord(u16 addr, u16 data)
+void EEPROM_WriteHalfWord(u16 addr, u16 data)
 {
-	IIC_Start();
+	EEPROM_Start();
 
     if(AT24CXX > AT24C16)
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE);
-        IIC_WaitAck();
-        IIC_SendByte(addr / 256);
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE);
+        EEPROM_WaitAck();
+        EEPROM_SendByte(addr / 256);
     }
     else
     {
-        IIC_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
+        EEPROM_SendByte(AT_DEV_ADDR_WRITE + ((addr / 256) << 1));
     }
 
-	IIC_WaitAck();
-	IIC_SendByte(addr % 256);
-	IIC_WaitAck();
-	IIC_SendByte(data);
-	IIC_WaitAck();
-	IIC_SendByte((data >> 8) & 0xff);
-	IIC_WaitAck();
-	IIC_Stop();
+	EEPROM_WaitAck();
+	EEPROM_SendByte(addr % 256);
+	EEPROM_WaitAck();
+	EEPROM_SendByte(data);
+	EEPROM_WaitAck();
+	EEPROM_SendByte((data >> 8) & 0xff);
+	EEPROM_WaitAck();
+	EEPROM_Stop();
 }	
 
-#if (IIC_TEST_EN > 0u)
+#if (EEPROM_TEST_EN > 0u)
 #define YEAR_ADDR               (AT24CXX - 2)
 #define MONTH_ADDR              (AT24CXX - 3)
 #define DAY_ADDR                (AT24CXX - 4)
 
-void IIC_Test(void)
+void EEPROM_Test(void)
 {
     u8 month = 0, day = 0;
     u16 year = 0;
 
 
-    year = IIC_ReadHalfWord(YEAR_ADDR); 
+    year = EEPROM_ReadHalfWord(YEAR_ADDR); 
 
     os_dly_wait(5); //5ms
 
@@ -311,12 +311,12 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteHalfWord(YEAR_ADDR, YEAR);
+        EEPROM_WriteHalfWord(YEAR_ADDR, YEAR);
 
         os_dly_wait(5); //5ms
     }
     
-    month = IIC_ReadByte(MONTH_ADDR);
+    month = EEPROM_ReadByte(MONTH_ADDR);
 
     os_dly_wait(5); //5ms
 
@@ -328,12 +328,12 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(MONTH_ADDR, MONTH);
+        EEPROM_WriteByte(MONTH_ADDR, MONTH);
 
         os_dly_wait(5); //5ms
     }
 
-    day = IIC_ReadByte(DAY_ADDR);
+    day = EEPROM_ReadByte(DAY_ADDR);
 
     os_dly_wait(5); //5ms
 
@@ -347,7 +347,7 @@ void IIC_Test(void)
     }
     else
     {
-        IIC_WriteByte(DAY_ADDR, DAY);
+        EEPROM_WriteByte(DAY_ADDR, DAY);
 
         os_dly_wait(5); //5ms
     }

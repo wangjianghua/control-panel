@@ -30,6 +30,7 @@
 
 #define KEY_MSG_DOWN_LONG           (KEY_MSG_DOWN + 36u)
 #define KEY_MSG_UP_LONG             (KEY_MSG_UP + 36u)
+#define KEY_MSG_FUNC_CODE_LONG      (KEY_MSG_FUNC_CODE + 36u)
 
 extern OS_SEM key_sem;
 extern XDATA u8 key_value;

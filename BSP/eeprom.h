@@ -2,19 +2,19 @@
 #define __EEPROM_H__
 
 
-#define IIC_PORT                GPIOB
-#define IIC_SCL_PIN             GPIO_Pin_6
-#define IIC_SDA_PIN             GPIO_Pin_7
+#define EEPROM_PORT             GPIOB
+#define EEPROM_SCL_PIN          GPIO_Pin_6
+#define EEPROM_SDA_PIN          GPIO_Pin_7
 
-#define IIC_SDA                 GPIO_ReadInputDataBit(IIC_PORT, IIC_SDA_PIN)
+#define EEPROM_SDA              GPIO_ReadInputDataBit(EEPROM_PORT, EEPROM_SDA_PIN)
 
-#define IIC_SCL_LOW()           GPIO_ResetBits(IIC_PORT, IIC_SCL_PIN)
-#define IIC_SCL_HIGH()	        GPIO_SetBits(IIC_PORT, IIC_SCL_PIN)
+#define EEPROM_SCL_LOW()        GPIO_ResetBits(EEPROM_PORT, EEPROM_SCL_PIN)
+#define EEPROM_SCL_HIGH()	    GPIO_SetBits(EEPROM_PORT, EEPROM_SCL_PIN)
 
-#define	IIC_SDA_LOW()		    GPIO_ResetBits(IIC_PORT, IIC_SDA_PIN)
-#define	IIC_SDA_HIGH()	        GPIO_SetBits(IIC_PORT, IIC_SDA_PIN)
+#define	EEPROM_SDA_LOW()	    GPIO_ResetBits(EEPROM_PORT, EEPROM_SDA_PIN)
+#define	EEPROM_SDA_HIGH()	    GPIO_SetBits(EEPROM_PORT, EEPROM_SDA_PIN)
 
-#define IIC_TEST_EN             1u
+#define EEPROM_TEST_EN          1u
 
 #define AT24C01                 128u  
 #define AT24C02                 256u  
@@ -31,13 +31,13 @@
 #define AT_DEV_ADDR_WRITE       0xA0
 #define AT_DEV_ADDR_READ        0xA1
 
-u8 IIC_ReadByte(u16 addr);
-void IIC_WriteByte(u16 addr, u8 data);
-u16 IIC_ReadHalfWord(u16 addr);
-void IIC_WriteHalfWord(u16 addr, u16 data);
+u8 EEPROM_ReadByte(u16 addr);
+void EEPROM_WriteByte(u16 addr, u8 data);
+u16 EEPROM_ReadHalfWord(u16 addr);
+void EEPROM_WriteHalfWord(u16 addr, u16 data);
 
-#if (IIC_TEST_EN > 0u)
-void IIC_Test(void);
+#if (EEPROM_TEST_EN > 0u)
+void EEPROM_Test(void);
 #endif
 
 

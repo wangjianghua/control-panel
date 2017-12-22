@@ -435,7 +435,7 @@ void MEM_Init(void)
 
     for(i = 0; i < (sizeof(cp_para_rom) / 2); i++)
     {
-        *p_cp_para = IIC_ReadHalfWord(CP_PARA_ADDR + i * 2);
+        *p_cp_para = EEPROM_ReadHalfWord(CP_PARA_ADDR + i * 2);
         os_dly_wait(5);
 
         p_cp_para++;
@@ -740,6 +740,12 @@ void form_home_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
+           (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
+        {   
+            led_disp_buf[len] = led_table['-' - 32]; //-1
+        }
         break;
 
     case 1:
@@ -747,6 +753,19 @@ void form_home_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff); 
+
+        if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
+           (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
+        {   
+            if(disp_para_val > 9)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.0
+            }
+            else
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
+            }
+        }
         break;
 
     case 2:
@@ -754,6 +773,23 @@ void form_home_disp(void)
         led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16] & led_table['.' - 32];
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
+           (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
+        {   
+            if(disp_para_val > 99)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.00
+            }
+            else if(disp_para_val > 9)
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.10
+            }
+            else
+            {
+                led_disp_buf[len + 2] = led_table['-' - 32]; //-0.01    
+            }
+        }
         break;
 
     case 3:
@@ -761,6 +797,27 @@ void form_home_disp(void)
         led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16];
         led_disp_buf[3] = led_table[disp_para_val % 10000 / 1000 + 16] & led_table['.' - 32];
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
+           (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
+        {   
+            if(disp_para_val > 999)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.000
+            }
+            else if(disp_para_val > 99)
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.100
+            }
+            else if(disp_para_val > 9)
+            {
+                led_disp_buf[len + 2] = led_table['-' - 32]; //-0.010
+            }
+            else
+            {
+                led_disp_buf[len + 3] = led_table['-' - 32]; //-0.001
+            }
+        }
         break;
 
     default:
@@ -768,24 +825,17 @@ void form_home_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
+           (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
+        {   
+            led_disp_buf[len] = led_table['-' - 32]; //-1
+        }
         break;
     }
     
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
-
-    if((TRUE == cp_para_ram.disp_para_sign[form_id - 1]) &&
-       (cp_para_ram.disp_para_val[form_id - 1] & 0x8000)) //负数
-    {   
-        if(disp_para_val > 9)
-        {
-            led_disp_buf[len] = led_table['-' - 32]; //-1.1
-        }
-        else
-        {
-            led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
-        }
-    }
 
     led_blink_pos = 0;
     blink_led = 0;
@@ -2062,10 +2112,12 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_UP:
+        case KEY_MSG_UP_LONG:
             group_update(KEY_MSG_UP);
             break;
 
         case KEY_MSG_DOWN:
+        case KEY_MSG_DOWN_LONG:
             group_update(KEY_MSG_DOWN);
             break;
 
@@ -2540,14 +2592,16 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_UP:
+        case KEY_MSG_UP_LONG:
             grade_update(KEY_MSG_UP);
             break;
 
         case KEY_MSG_DOWN:
+        case KEY_MSG_DOWN_LONG:
             grade_update(KEY_MSG_DOWN);
             break;
 
-        case KEY_MSG_FUNC_CODE:
+        case KEY_MSG_FUNC_CODE_LONG:
             if(cp_para_ram.group >= 51)
             {
                 cp_para_ram.func_code_visible = func_code_visible_init();
@@ -2659,6 +2713,12 @@ void form_para_val_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.vfd_para_sign) &&
+           (cp_para_ram.vfd_para_val & 0x8000)) //负数
+        {   
+            led_disp_buf[len] = led_table['-' - 32]; //-1
+        }
         break;
 
     case 1:
@@ -2666,6 +2726,19 @@ void form_para_val_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff); 
+
+        if((TRUE == cp_para_ram.vfd_para_sign) &&
+           (cp_para_ram.vfd_para_val & 0x8000)) //负数
+        {   
+            if(disp_para_val > 9)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.0
+            }
+            else
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
+            }
+        }
         break;
 
     case 2:
@@ -2673,6 +2746,23 @@ void form_para_val_disp(void)
         led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16] & led_table['.' - 32];
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.vfd_para_sign) &&
+           (cp_para_ram.vfd_para_val & 0x8000)) //负数
+        {   
+            if(disp_para_val > 99)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.00
+            }
+            else if(disp_para_val > 9)
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.10
+            }
+            else
+            {
+                led_disp_buf[len + 2] = led_table['-' - 32]; //-0.01    
+            }
+        }
         break;
 
     case 3:
@@ -2680,6 +2770,27 @@ void form_para_val_disp(void)
         led_disp_buf[2] = led_table[disp_para_val % 1000 / 100 + 16];
         led_disp_buf[3] = led_table[disp_para_val % 10000 / 1000 + 16] & led_table['.' - 32];
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.vfd_para_sign) &&
+           (cp_para_ram.vfd_para_val & 0x8000)) //负数
+        {   
+            if(disp_para_val > 999)
+            {
+                led_disp_buf[len] = led_table['-' - 32]; //-1.000
+            }
+            else if(disp_para_val > 99)
+            {
+                led_disp_buf[len + 1] = led_table['-' - 32]; //-0.100
+            }
+            else if(disp_para_val > 9)
+            {
+                led_disp_buf[len + 2] = led_table['-' - 32]; //-0.010
+            }
+            else
+            {
+                led_disp_buf[len + 3] = led_table['-' - 32]; //-0.001
+            }
+        }
         break;
 
     default:
@@ -2687,24 +2798,17 @@ void form_para_val_disp(void)
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+
+        if((TRUE == cp_para_ram.vfd_para_sign) &&
+           (cp_para_ram.vfd_para_val & 0x8000)) //负数
+        {   
+            led_disp_buf[len] = led_table['-' - 32]; //-1
+        }
         break;
     }
     
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
-
-    if((TRUE == cp_para_ram.vfd_para_sign) &&
-       (cp_para_ram.vfd_para_val & 0x8000)) //负数
-    {
-        if(disp_para_val > 9)
-        {
-            led_disp_buf[len] = led_table['-' - 32]; //-1.1
-        }
-        else
-        {
-            led_disp_buf[len + 1] = led_table['-' - 32]; //-0.1
-        }
-    }
 
     led_blink_pos = cp_para_ram.vfd_para_shift + 1;
     blink_led = 0;
@@ -4388,25 +4492,25 @@ void form_copy_upload_rate_callback(void)
                     {                        
                         cp_para_ram.vfd_para_total = num;
 
-                        IIC_WriteByte(VFD_PARA_FLAG_ADDR, ~VFD_PARA_FLAG); //禁能变频器参数标志
+                        EEPROM_WriteByte(VFD_PARA_FLAG_ADDR, ~VFD_PARA_FLAG); //禁能变频器参数标志
 
                         os_dly_wait(5); //5ms
                         
-                        IIC_WriteHalfWord(VFD_PARA_LEN_ADDR, cp_para_ram.vfd_para_total + 2); //存储变频器参数长度
+                        EEPROM_WriteHalfWord(VFD_PARA_LEN_ADDR, cp_para_ram.vfd_para_total + 2); //存储变频器参数长度
                         
                         os_dly_wait(5); //5ms
 
-                        cp_para_ram.vfd_para_crc = IIC_ReadByte(VFD_PARA_LEN_ADDR); //变频器参数长度和变频器参数一起校验
+                        cp_para_ram.vfd_para_crc = EEPROM_ReadByte(VFD_PARA_LEN_ADDR); //变频器参数长度和变频器参数一起校验
 
                         os_dly_wait(5); //5ms
                         
-                        cp_para_ram.vfd_para_crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + 1);
+                        cp_para_ram.vfd_para_crc += EEPROM_ReadByte(VFD_PARA_LEN_ADDR + 1);
 
                         os_dly_wait(5); //5ms
 
                         for(j = 0; j < (size + 2); j++)
                         {
-                            IIC_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[9 + j]);
+                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[9 + j]);
 
                             cp_para_ram.vfd_para_index++;
 
@@ -4421,7 +4525,7 @@ void form_copy_upload_rate_callback(void)
 
                         for(j = 0; j < size; j++)
                         {
-                            IIC_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[11 + j]);
+                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[11 + j]);
 
                             cp_para_ram.vfd_para_index++;
 
@@ -4437,11 +4541,11 @@ void form_copy_upload_rate_callback(void)
                         
                         last_frame = TRUE;
 
-                        IIC_WriteByte(VFD_PARA_ADDR + (cp_para_ram.vfd_para_total + 2), cp_para_ram.vfd_para_crc);
+                        EEPROM_WriteByte(VFD_PARA_ADDR + (cp_para_ram.vfd_para_total + 2), cp_para_ram.vfd_para_crc);
 
                         os_dly_wait(5); //5ms
                         
-                        IIC_WriteByte(VFD_PARA_FLAG_ADDR, VFD_PARA_FLAG); //使能变频器参数标志
+                        EEPROM_WriteByte(VFD_PARA_FLAG_ADDR, VFD_PARA_FLAG); //使能变频器参数标志
                         
                         os_dly_wait(5); //5ms
                     }
@@ -4852,17 +4956,17 @@ bool check_vfd_para(void)
     bool ret = FALSE;
 
 
-    if(VFD_PARA_FLAG == IIC_ReadByte(VFD_PARA_FLAG_ADDR))
+    if(VFD_PARA_FLAG == EEPROM_ReadByte(VFD_PARA_FLAG_ADDR))
     {
         os_dly_wait(5); //5ms
         
-        len = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR);
+        len = EEPROM_ReadHalfWord(VFD_PARA_LEN_ADDR);
 
         os_dly_wait(5); //5ms
 
         if((len + 3) < AT24CXX)
         {
-            cp_para_ram.vfd_para_crc = IIC_ReadByte(VFD_PARA_ADDR + len);
+            cp_para_ram.vfd_para_crc = EEPROM_ReadByte(VFD_PARA_ADDR + len);
 
             os_dly_wait(5); //5ms
             
@@ -4873,7 +4977,7 @@ bool check_vfd_para(void)
                     keep_vfd_connect();
                 }
                 
-                crc += IIC_ReadByte(VFD_PARA_LEN_ADDR + i);
+                crc += EEPROM_ReadByte(VFD_PARA_LEN_ADDR + i);
 
                 os_dly_wait(5); //5ms
             }
@@ -4943,7 +5047,7 @@ void form_copy_download_all_rate_callback(void)
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
-                cp_para_ram.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
+                cp_para_ram.vfd_para_total = EEPROM_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
             
                 os_dly_wait(5); //5ms
             }
@@ -4984,7 +5088,7 @@ void form_copy_download_all_rate_callback(void)
             
             for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
             {
-                UART_TX_BUF[21 + j] = IIC_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
+                UART_TX_BUF[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
         
                 os_dly_wait(5); //5ms
             }
@@ -5325,7 +5429,7 @@ void form_copy_download_part_rate_callback(void)
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
-                cp_para_ram.vfd_para_total = IIC_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
+                cp_para_ram.vfd_para_total = EEPROM_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
             
                 os_dly_wait(5); //5ms
             }
@@ -5366,7 +5470,7 @@ void form_copy_download_part_rate_callback(void)
             
             for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
             {
-                UART_TX_BUF[21 + j] = IIC_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
+                UART_TX_BUF[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
         
                 os_dly_wait(5); //5ms
             }
@@ -5673,8 +5777,8 @@ __task void AppTaskCP(void)
     
     os_sem_send(&key_sem);
     
-#if (IIC_TEST_EN > 0u)
-    IIC_Test();
+#if (EEPROM_TEST_EN > 0u)
+    EEPROM_Test();
 #endif
 
     MEM_Init();
