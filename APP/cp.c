@@ -451,8 +451,11 @@ bool form_key_callback(unsigned int key_msg)
     {
     case KEY_MSG_LOC_REM:
         cp_para_ram.ref_mod = 0;
-
         cp_para_ram.ref_chang = TRUE;
+
+        cp_para_ram.stop = TRUE;
+        led_disp_buf[5] |= LED_RUN_MASK;
+        LEDOE_ENABLE();
 
         ret = TRUE;
         break;
@@ -1022,10 +1025,10 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -1039,26 +1042,27 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
+            break;
 
         case KEY_MSG_FWD_REV:
+            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+             * 逻辑非(!x)的等价式: !x = (0 == x)
+             * 华兄 */
             cp_para_ram.fr = !cp_para_ram.fr;
 
             if(VFD_REV == cp_para_ram.fr)
@@ -1095,7 +1099,9 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_ENTER:
             form_id = FORM_ID_REF;
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
             
         default:
             break;
@@ -1253,10 +1259,10 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -1270,23 +1276,21 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -1489,10 +1493,10 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -1506,23 +1510,21 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_SHIFT:
@@ -1568,6 +1570,11 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             if(cp_para_ram.ref_mod >= (pow(10, cp_para_ram.vfd_para_shift) * 100))
             {
                 cp_para_ram.ref_mod -= pow(10, cp_para_ram.vfd_para_shift) * 100;
+
+                if(cp_para_ram.ref_mod < (pow(10, cp_para_ram.vfd_para_shift) * 100))
+                {
+                    cp_para_ram.vfd_para_shift = 0;
+                }
             }
             else
             {
@@ -1733,10 +1740,10 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -1750,23 +1757,21 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -2047,10 +2052,10 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -2064,23 +2069,21 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -2109,7 +2112,9 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.grade = 0;
             
             form_id = FORM_ID_PARA;
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
         case KEY_MSG_UP_LONG:
@@ -2527,10 +2532,10 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -2544,23 +2549,21 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -2589,7 +2592,9 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.grade = 0;
             
             form_id = FORM_ID_PARA_GROUP;
-            break;
+
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
         case KEY_MSG_UP_LONG:
@@ -2970,10 +2975,10 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -2987,23 +2992,21 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_SHIFT:
@@ -3222,10 +3225,10 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -3239,23 +3242,21 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -3445,10 +3446,10 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -3462,23 +3463,21 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -3670,10 +3669,10 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -3687,23 +3686,21 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -3895,10 +3892,10 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -3912,23 +3909,21 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -4619,10 +4614,10 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -4636,23 +4631,21 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -4679,6 +4672,8 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_UPLOAD;
+
+                return (FORM_MSG_NONE);
             }
             break;
 
@@ -5305,10 +5300,10 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -5322,23 +5317,21 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -5365,6 +5358,8 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+
+                return (FORM_MSG_NONE);
             }
             break;
 
@@ -5687,10 +5682,10 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         switch(key_msg)
         {        
         case KEY_MSG_RUN:
-            cp_para_ram.run = TRUE;
-
             if(VFD_LOC == cp_para_ram.lr)
             {
+                cp_para_ram.run = TRUE;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
@@ -5704,23 +5699,21 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             break;
 
         case KEY_MSG_LOC_REM:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.lr = !cp_para_ram.lr;
-
-            if(VFD_LOC == cp_para_ram.lr)
-            {
-                led_disp_buf[5] &= LED_LOC_REM;
-                LEDOE_ENABLE();
-            }
-            else
-            {
-                led_disp_buf[5] |= LED_LOC_REM_MASK;
-                LEDOE_ENABLE();
-            }
+            cp_para_ram.lr = VFD_REM;      
+        
+            led_disp_buf[5] |= LED_LOC_REM_MASK;
+            LEDOE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
+            break;
+            
+        case KEY_MSG_LOC_REM_LONG:
+            cp_para_ram.lr = VFD_LOC;           
+        
+            led_disp_buf[5] &= LED_LOC_REM;
+            LEDOE_ENABLE();
+
+            form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
@@ -5747,6 +5740,8 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_DOWNLOAD_PART;
+
+                return (FORM_MSG_NONE);
             }
             break;
 

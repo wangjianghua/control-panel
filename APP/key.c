@@ -141,7 +141,7 @@ u8 ReadKeyVal(void)
         }
         else
         {
-            os_dly_wait(5);
+            os_dly_wait(10);
         }
         break;
         

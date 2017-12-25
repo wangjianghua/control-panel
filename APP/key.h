@@ -29,6 +29,7 @@
 #define KEY_MSG_FUNC_CODE           0x09
 
 #define KEY_MSG_DOWN_LONG           (KEY_MSG_DOWN + 36u)
+#define KEY_MSG_LOC_REM_LONG        (KEY_MSG_LOC_REM + 36u)
 #define KEY_MSG_UP_LONG             (KEY_MSG_UP + 36u)
 #define KEY_MSG_FUNC_CODE_LONG      (KEY_MSG_FUNC_CODE + 36u)
 

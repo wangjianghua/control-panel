@@ -20,13 +20,6 @@
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)   //2B, 变频器参数长度存储地址
 #define VFD_PARA_ADDR           (VFD_PARA_LEN_ADDR + 2u)    //nB, 变频器参数存储地址
 
-typedef enum
-{
-    OUTPUT_FREQ = 0x103,
-    TORQUE = 0x105,    
-    DC_BUS_VOLTAGE = 0x107,
-} ENUM_RUN_DATA;
-
 typedef int (*FORM)(unsigned int key_msg, unsigned int form_msg);
 
 typedef enum
