@@ -35,7 +35,6 @@
 
 extern OS_SEM key_sem;
 extern XDATA u8 key_value;
-extern XDATA u8 key_fsm; 
 
 BIT CheckKeyPress(void);
 u8 KeyScan(void);

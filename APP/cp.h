@@ -10,6 +10,9 @@
 #define VFD_REV                 TRUE  //反转
 #define VFD_FWD                 FALSE //正转
 
+#define VFD_RUN                 TRUE  //运行
+#define VFD_STOP                FALSE //停止
+
 #define VFD_REPLY_TIMEOUT       1000u //1s
 
 #define VFD_PARA_FLAG           ('H')                       //变频器参数标志
@@ -174,6 +177,7 @@ typedef struct _cp_para_ram
     bool disp_para_enum[3]; //主界面显示参数枚举位
     bool vfd_para_sign; //变频器参数符号位
     bool vfd_para_enum; //变频器参数枚举位
+    bool vfd_state; //变频器状态
     u8 cmd; //命令字
 	u8 group; //变频器分组
 	u8 grade; //变频器分级
@@ -192,6 +196,7 @@ typedef struct _cp_para_ram
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型
     u16 vfd_para_val; //变频器参数值
+    u16 vfd_para_attr; //变频器参数属性
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
     u16 vfd_para_index; //变频器参数存取索引

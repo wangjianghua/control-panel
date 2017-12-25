@@ -2,9 +2,7 @@
 
 
 OS_SEM key_sem;
-
 XDATA u8 key_value = KEY_VAL_NONE;
-XDATA u8 key_fsm = 0;  
 
 BIT CheckKeyPress(void)
 {
@@ -121,6 +119,7 @@ BIT ReadKeyPress(u8 key)
 u8 ReadKeyVal(void)
 {
     u8 key_val = 0;
+    static u8 key_fsm = 0;
     static u8 key = 0;
     static u8 count = 0;
 

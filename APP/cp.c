@@ -467,6 +467,147 @@ bool form_key_callback(unsigned int key_msg)
     return (ret);
 }
 
+CODE u8 keep_vfd_connect_cmd[][32] = {
+    /* KEEP_VFD_CONNECT_CMD */
+	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+};
+
+bool keep_vfd_connect(void)
+{
+    OS_RESULT result;
+    u8 len;
+    unsigned int crc;
+    bool ret = FALSE;
+
+    
+    len = (keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11) % UART_TX_LEN;
+                    
+    memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
+
+    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+    UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+    if(TRUE == cp_para_ram.ref_chang)
+    {
+        cp_para_ram.ref_chang = FALSE;
+        
+        UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+        UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+    }
+    else
+    {
+        UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+        UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+    }
+
+    if(TRUE == cp_para_ram.stop)
+    {
+        cp_para_ram.stop = FALSE;
+        
+        UART_TX_BUF[20] |= 0x01;
+    }
+    
+    if(TRUE == cp_para_ram.run)
+    {
+        cp_para_ram.run = FALSE;
+        
+        UART_TX_BUF[20] |= 0x02;
+    }
+
+    if(VFD_REV == cp_para_ram.fr)
+    {
+        UART_TX_BUF[20] |= 0x04;
+    }
+    else
+    {
+        UART_TX_BUF[20] &= ~0x04;
+    }
+    
+    if(VFD_LOC == cp_para_ram.lr)
+    {
+        UART_TX_BUF[20] |= 0x08;
+    }
+    else
+    {
+        UART_TX_BUF[20] &= ~0x08;
+    }
+
+    crc = CRC16Calculate(UART_TX_BUF, len);
+    UART_TX_BUF[len++] = (u8)(crc & 0xff);
+    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
+    
+    uart_send(len);
+
+    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
+    
+    if(OS_R_TMO != result)
+    {
+        uart_recv_align();
+        
+        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        {
+            if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+            {
+                cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                cp_para_ram.count++;
+
+                if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
+                   (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
+                {
+                    form_id = FORM_ID_ERR;
+                }
+
+                cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
+            }
+            else
+            {
+                form_id = FORM_ID_ERR;
+            }           
+        }
+        else
+        {
+            err_con();
+        }
+    }
+    else
+    {
+        err_con();
+    }
+
+    return (ret);
+}
+
+bool cp_alarm(u16 alarm_code)
+{
+	u8 i;
+	
+	
+	if(CP_NORMAL == alarm_code)
+	{
+		return (FALSE);
+	}
+	
+	for(i = 0; i < 10; i++)
+	{
+		keep_vfd_connect();
+
+        led_disp_buf[0] = (alarm_code > 0) ? (led_table[alarm_code % 10 + 16]) : (led_table['0' - 32]);
+        led_disp_buf[1] = (alarm_code > 9) ? (led_table[alarm_code % 100 / 10 + 16]) : (led_table['0' - 32]);
+        led_disp_buf[2] = (alarm_code > 99) ? (led_table[alarm_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
+        led_disp_buf[3] = (alarm_code > 999) ? (led_table[alarm_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
+        led_disp_buf[4] = led_table['A' - 32];
+        led_disp_buf[5] |= LED_V_A_Hz_MASK;
+        led_blink_pos = 0;
+        blink_led = 0;
+        LEDOE_ENABLE();
+
+        os_dly_wait(100);
+	}
+	
+	return (TRUE);
+}
+
 CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
     /* FORM_ERR_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -1029,14 +1170,22 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -1263,14 +1412,22 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -1497,18 +1654,26 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
-
+                
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
@@ -1744,14 +1909,22 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -2056,14 +2229,22 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -2257,6 +2438,8 @@ bool func_code_read(void)
         
         if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
         {
+            cp_para_ram.vfd_para_attr = UART_RX_BUF[7];
+            
             cp_para_ram.vfd_para_val = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
 
             cp_para_ram.vfd_para_sign = UART_RX_BUF[11] & 0x01;
@@ -2536,14 +2719,22 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -2821,6 +3012,53 @@ void form_para_val_disp(void)
     LEDOE_ENABLE();
 }
 
+bool check_vfd_para_attr(void)
+{
+    u16 alarm_code = CP_NORMAL;
+    
+    
+    switch(cp_para_ram.vfd_para_attr)
+    {
+    case 0x08:
+    case 0x88:    
+        if(VFD_RUN == cp_para_ram.vfd_state)
+        {
+            alarm_code = CP_VFD_RUN;
+            
+            cp_alarm(alarm_code);
+        }
+        else
+        {
+            alarm_code = CP_NORMAL;
+        }
+        break;
+    
+    case 0x60:
+        alarm_code = CP_READ_ONLY;
+        
+        cp_alarm(alarm_code);
+        break;
+        
+    case 0x90:
+        alarm_code = CP_NON_ZERO;
+        
+        cp_alarm(alarm_code);
+        break;  
+        
+    case 0xA0:
+        alarm_code = CP_READ_ONLY;
+        
+        cp_alarm(alarm_code);
+        break;
+        
+    default:
+        alarm_code = CP_NORMAL;
+        break;  
+    }
+
+    return (alarm_code);
+}
+
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
     /* FORM_PARA_VAL_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -2979,14 +3217,22 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -3042,30 +3288,36 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             //break;
 
         case KEY_MSG_UP:
-        case KEY_MSG_UP_LONG:    
-        	if(TRUE == cp_para_ram.vfd_para_sign)
-        	{
-            	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
-            	
-            	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
-            }
-            else
+        case KEY_MSG_UP_LONG:            
+            if(CP_NORMAL == check_vfd_para_attr())
             {
-            	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+            	if(TRUE == cp_para_ram.vfd_para_sign)
+            	{
+                	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+                	
+                	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+                }
+                else
+                {
+                	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+                }
             }
             break;
 
         case KEY_MSG_DOWN:
-        case KEY_MSG_DOWN_LONG:
-        	if(TRUE == cp_para_ram.vfd_para_sign)
-        	{
-            	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
-            	
-            	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
-            }
-            else
+        case KEY_MSG_DOWN_LONG:            
+            if(CP_NORMAL == check_vfd_para_attr())
             {
-	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
+            	if(TRUE == cp_para_ram.vfd_para_sign)
+            	{
+                	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
+                	
+                	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+                }
+                else
+                {
+    	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
+                }
             }
             break;
 
@@ -3229,14 +3481,22 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -3450,14 +3710,22 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -3673,14 +3941,22 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -3896,14 +4172,22 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -4618,14 +4902,22 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -4827,121 +5119,6 @@ void copy_download_all_rate_init(void)
             err_con();
         }
     }
-}
-
-CODE u8 keep_vfd_connect_cmd[][32] = {
-    /* KEEP_VFD_CONNECT_CMD */
-	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-};
-
-bool keep_vfd_connect(void)
-{
-    OS_RESULT result;
-    u8 len;
-    unsigned int crc;
-    bool ret = FALSE;
-
-    
-    len = (keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11) % UART_TX_LEN;
-                    
-    memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
-
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
-
-    if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
-    {
-        UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-        UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-        if(TRUE == cp_para_ram.ref_chang)
-        {
-            cp_para_ram.ref_chang = FALSE;
-            
-            UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-            UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-        }
-        else
-        {
-            UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-            UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-        }
-
-        if(TRUE == cp_para_ram.stop)
-        {
-            cp_para_ram.stop = FALSE;
-            
-            UART_TX_BUF[20] |= 0x01;
-        }
-        
-        if(TRUE == cp_para_ram.run)
-        {
-            cp_para_ram.run = FALSE;
-            
-            UART_TX_BUF[20] |= 0x02;
-        }
-
-        if(VFD_REV == cp_para_ram.fr)
-        {
-            UART_TX_BUF[20] |= 0x04;
-        }
-        else
-        {
-            UART_TX_BUF[20] &= ~0x04;
-        }
-        
-        if(VFD_LOC == cp_para_ram.lr)
-        {
-            UART_TX_BUF[20] |= 0x08;
-        }
-        else
-        {
-            UART_TX_BUF[20] &= ~0x08;
-        }
-    }
-
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc & 0xff);
-    UART_TX_BUF[len++] = (u8)((crc & 0xff00) >> 8);
-    
-    uart_send(len);
-
-    result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
-    
-    if(OS_R_TMO != result)
-    {
-        uart_recv_align();
-        
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
-        {
-            if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
-            {
-                cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
-                cp_para_ram.count++;
-
-                if((UART_RX_BUF[10] & 0x01) || //0304.Bit0£¬±¨¾¯
-                   (UART_RX_BUF[11] & 0x80))   //0303.Bit15£¬¹ÊÕÏ
-                {
-                    form_id = FORM_ID_ERR;
-                }
-
-                cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
-            }
-            else
-            {
-                form_id = FORM_ID_ERR;
-            }           
-        }
-        else
-        {
-            err_con();
-        }
-    }
-    else
-    {
-        err_con();
-    }
-
-    return (ret);
 }
 
 bool check_vfd_para(void)
@@ -5304,14 +5481,22 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
@@ -5686,14 +5871,22 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             {
                 cp_para_ram.run = TRUE;
                 
+                cp_para_ram.vfd_state = VFD_RUN;
+                
                 led_disp_buf[5] &= LED_RUN;
                 LEDOE_ENABLE();
             }
+            else
+            {
+                cp_alarm(CP_VFD_REM);
+            }
             break;
-
+            
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
-
+            
+            cp_para_ram.vfd_state = VFD_STOP;
+        
             led_disp_buf[5] |= LED_RUN_MASK;
             LEDOE_ENABLE();
             break;
