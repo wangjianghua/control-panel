@@ -119,14 +119,14 @@ BIT ReadKeyPress(u8 key)
 u8 ReadKeyVal(void)
 {
     u8 key_val = 0;
-    static u8 key_fsm = 0;
+    static u8 fsm = 0;
     static u8 key = 0;
     static u8 count = 0;
 
 
     key_val = KEY_VAL_NONE;
 
-    switch(key_fsm)
+    switch(fsm)
     {
     case 0:
         if(CheckKeyPress())
@@ -135,7 +135,7 @@ u8 ReadKeyVal(void)
             
             if(key)
             {
-                key_fsm = 1;
+                fsm = 1;
             }
         }
         else
@@ -152,25 +152,25 @@ u8 ReadKeyVal(void)
             if(ReadKeyPress(key))
             {
                 key_val = key;
-                key_fsm = 2;
+                fsm = 2;
                 count = 0;
             }
             else
             {
-                key_fsm = 0;
+                fsm = 0;
             }
         }
         else
         {
-            key_fsm = 0;
+            fsm = 0;
         }
         break;
         
     case 2:
-        if(count > 66)
+        if(count > 60)
         {
             count = 0;
-            key_fsm = 3;
+            fsm = 3;
             key_val = key + 9;
             
             break;
@@ -185,7 +185,7 @@ u8 ReadKeyVal(void)
             if(!ReadKeyPress(key))
             {
                 key_val = key + 45;
-                key_fsm = 0;
+                fsm = 0;
             }
             else
             {
@@ -202,7 +202,7 @@ u8 ReadKeyVal(void)
         if(count > 20)
         {
             count = 0;
-            key_fsm = 4;
+            fsm = 4;
             key_val = key + 18;
             
             break;
@@ -217,7 +217,7 @@ u8 ReadKeyVal(void)
             if(!ReadKeyPress(key))
             {
                 key_val = key + 45;
-                key_fsm = 0;
+                fsm = 0;
             }
             else
             {
@@ -234,7 +234,7 @@ u8 ReadKeyVal(void)
         if(count > 20)
         {
             count = 0;
-            key_fsm = 5;
+            fsm = 5;
             key_val = key + 27;
             
             break;
@@ -249,7 +249,7 @@ u8 ReadKeyVal(void)
             if(!ReadKeyPress(key))
             {
                 key_val = key + 45;
-                key_fsm = 0;
+                fsm = 0;
             }
             else
             {
@@ -280,7 +280,7 @@ u8 ReadKeyVal(void)
             if(!ReadKeyPress(key))
             {
                 key_val = key + 45;
-                key_fsm = 0;
+                fsm = 0;
             }
             else
             {
@@ -294,7 +294,7 @@ u8 ReadKeyVal(void)
         break;
 
     default:
-        key_fsm = 0;
+        fsm = 0;
         break; 
    }
     

@@ -3020,7 +3020,6 @@ bool check_vfd_para_attr(void)
     switch(cp_para_ram.vfd_para_attr)
     {
     case 0x08:
-    case 0x88:    
         if(VFD_RUN == cp_para_ram.vfd_state)
         {
             alarm_code = CP_VFD_RUN;
@@ -3037,6 +3036,23 @@ bool check_vfd_para_attr(void)
         alarm_code = CP_READ_ONLY;
         
         cp_alarm(alarm_code);
+        break;
+
+    case 0x80:
+        alarm_code = CP_NORMAL;
+        break;
+
+    case 0x88:    
+        if(VFD_RUN == cp_para_ram.vfd_state)
+        {
+            alarm_code = CP_VFD_RUN;
+            
+            cp_alarm(alarm_code);
+        }
+        else
+        {
+            alarm_code = CP_NORMAL;
+        }
         break;
         
     case 0x90:
@@ -4771,6 +4787,15 @@ void form_copy_upload_rate_callback(void)
                     {                        
                         cp_para_ram.vfd_para_total = num;
 
+                        if(cp_para_ram.vfd_para_total > MAX_VFD_PARA_LEN)
+                        {
+                            form_id = FORM_ID_COPY_UPLOAD;
+                            
+                            cp_alarm(CP_VFD_PARA_UPLOAD_FAIL);
+                            
+                            break;
+                        }
+
                         EEPROM_WriteByte(VFD_PARA_FLAG_ADDR, ~VFD_PARA_FLAG); //禁能变频器参数标志
 
                         os_dly_wait(5); //5ms
@@ -4890,6 +4915,8 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
         {
             form_id = FORM_ID_COPY_UPLOAD;
 
+            cp_alarm(CP_VFD_PARA_UPLOAD_FAIL);
+
             return (FORM_MSG_NONE);
         }
     }
@@ -4964,6 +4991,8 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_UPLOAD;
+
+                cp_alarm(CP_VFD_PARA_UPLOAD_GIVE_UP);
 
                 return (FORM_MSG_NONE);
             }
@@ -5457,14 +5486,26 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         LEDOE_ENABLE();
         
 #if 1
-        if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
-           (TRUE == chang_baudrate(BAUD_RATE_19200))) //更改变频器参数上传、下载的波特率
+        if(TRUE == check_vfd_para()) //校验存储的变频器参数
         {
-            copy_download_all_rate_init();
+            if(TRUE == chang_baudrate(BAUD_RATE_19200)) //更改变频器参数上传、下载的波特率
+            {
+                copy_download_all_rate_init();
+            }
+            else
+            {
+                form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+                
+                cp_alarm(CP_VFD_PARA_DOWNLOAD_FAIL);
+                
+                return (FORM_MSG_NONE);
+            }
         }
         else
         {
             form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+
+            cp_alarm(CP_VFD_PARA_CRC_ERR);
 
             return (FORM_MSG_NONE);
         }
@@ -5543,6 +5584,8 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+
+                cp_alarm(CP_VFD_PARA_DOWNLOAD_GIVE_UP);
 
                 return (FORM_MSG_NONE);
             }
@@ -5847,14 +5890,26 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         LEDOE_ENABLE();
         
 #if 1
-        if((TRUE == check_vfd_para()) &&            //校验存储的变频器参数
-           (TRUE == chang_baudrate(BAUD_RATE_19200))) //更改变频器参数上传、下载的波特率
+        if(TRUE == check_vfd_para()) //校验存储的变频器参数
         {
-            copy_download_all_rate_init();
+            if(TRUE == chang_baudrate(BAUD_RATE_19200)) //更改变频器参数上传、下载的波特率
+            {
+                copy_download_all_rate_init();
+            }
+            else
+            {
+                form_id = FORM_ID_COPY_DOWNLOAD_PART;
+                
+                cp_alarm(CP_VFD_PARA_DOWNLOAD_FAIL);
+                
+                return (FORM_MSG_NONE);
+            }
         }
         else
         {
             form_id = FORM_ID_COPY_DOWNLOAD_PART;
+
+            cp_alarm(CP_VFD_PARA_CRC_ERR);
 
             return (FORM_MSG_NONE);
         }
@@ -5933,6 +5988,8 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
                 copy_comm_reset();
                 
                 form_id = FORM_ID_COPY_DOWNLOAD_PART;
+
+                cp_alarm(CP_VFD_PARA_DOWNLOAD_GIVE_UP);
 
                 return (FORM_MSG_NONE);
             }
