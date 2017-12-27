@@ -305,7 +305,7 @@ void EEPROM_Test(void)
         led_disp_buf[2] = (year > 99) ? (led_table[year % 1000 / 100 + 16]) : (0xff);
         led_disp_buf[3] = (year > 999) ? (led_table[year % 10000 / 1000 + 16]) : (0xff);
         led_disp_buf[4] = (year > 9999) ? (led_table[year % 100000 / 10000 + 16]) : (0xff);
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
 
         os_dly_wait(500);
     }
@@ -341,7 +341,7 @@ void EEPROM_Test(void)
     {
         led_disp_buf[1] = led_table[day % 100 / 10 + 16];
         led_disp_buf[0] = led_table[day % 10 + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
 
         os_dly_wait(500);
     }
@@ -358,7 +358,7 @@ void EEPROM_Test(void)
     led_disp_buf[2] = 0xff;
     led_disp_buf[1] = 0xff;
     led_disp_buf[0] = 0xff;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 
     os_dly_wait(10);
 }

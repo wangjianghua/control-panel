@@ -137,7 +137,7 @@ void err_con(void)
     led_disp_buf[2] = led_table['C' - 32];
     led_disp_buf[1] = led_table['O' - 32];
     led_disp_buf[0] = led_table['N' - 32];
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 CODE u8 vfd_con_cmd[][32] = {
@@ -191,57 +191,54 @@ void vfd_con(void)
 
         case 4:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
-            {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-    			if(TRUE == cp_para_ram.ref_chang)
-    			{
-    				cp_para_ram.ref_chang = FALSE;
-                    
-    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-    			}
-                else
-    			{
-    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-    			}
-
-    			if(TRUE == cp_para_ram.stop)
-    			{
-    				cp_para_ram.stop = FALSE;
-                    
-    				UART_TX_BUF[20] |= 0x01;
-    			}
+			if(TRUE == cp_para_ram.ref_chang)
+			{
+				cp_para_ram.ref_chang = FALSE;
                 
-    			if(TRUE == cp_para_ram.run)
-    			{
-    				cp_para_ram.run = FALSE;
-                    
-    				UART_TX_BUF[20] |= 0x02;
-    			}
+				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+			}
+            else
+			{
+				UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+				UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+			}
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+			if(TRUE == cp_para_ram.stop)
+			{
+				cp_para_ram.stop = FALSE;
+                
+				UART_TX_BUF[20] |= 0x01;
+			}
+            
+			if(TRUE == cp_para_ram.run)
+			{
+				cp_para_ram.run = FALSE;
+                
+				UART_TX_BUF[20] |= 0x02;
+			}
 
-    			if(VFD_LOC == cp_para_ram.lr)
-    			{
-    				UART_TX_BUF[20] |= 0x08;
-    			}
-                else
-    			{
-    				UART_TX_BUF[20] &= ~0x08;
-    			}               
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
             }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+
+			if(VFD_LOC == cp_para_ram.lr)
+			{
+				UART_TX_BUF[20] |= 0x08;
+			}
+            else
+			{
+				UART_TX_BUF[20] &= ~0x08;
+			}               
             break;
 
         case 5:
@@ -254,43 +251,40 @@ void vfd_con(void)
 
         case 7:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
-            {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-    			if(TRUE == cp_para_ram.ref_chang)
-    			{
-    				cp_para_ram.ref_chang = FALSE;
-                    
-    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-    			}
-                else
-    			{
-    				UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-    				UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-    			}
-
-    			if(TRUE == cp_para_ram.stop)
-    			{
-    				cp_para_ram.stop = FALSE;
-                    
-    				UART_TX_BUF[20] |= 0x01;
-    			}
+			if(TRUE == cp_para_ram.ref_chang)
+			{
+				cp_para_ram.ref_chang = FALSE;
                 
-    			if(TRUE == cp_para_ram.run)
-    			{
-    				cp_para_ram.run = FALSE;
-                    
-    				UART_TX_BUF[20] |= 0x02;
-    			}
+				UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+				UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+			}
+            else
+			{
+				UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+				UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+			}
 
-                UART_TX_BUF[20] &= ~0x04; //VFD_FWD
+			if(TRUE == cp_para_ram.stop)
+			{
+				cp_para_ram.stop = FALSE;
+                
+				UART_TX_BUF[20] |= 0x01;
+			}
+            
+			if(TRUE == cp_para_ram.run)
+			{
+				cp_para_ram.run = FALSE;
+                
+				UART_TX_BUF[20] |= 0x02;
+			}
 
-                UART_TX_BUF[20] |= 0x08; //VFD_LOC
-            }
+            UART_TX_BUF[20] &= ~0x04; //VFD_FWD
+
+            UART_TX_BUF[20] |= 0x08; //VFD_LOC
             break;
 
         case 8:
@@ -331,9 +325,15 @@ void vfd_con(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
 
-                        if(UART_RX_BUF[11] & 0x10)
+                        if(cp_para_ram.fb_sts_word1 & 0x1000)
                         {
                             cp_para_ram.lr = VFD_LOC;
                         }
@@ -345,12 +345,12 @@ void vfd_con(void)
                         if(VFD_LOC == cp_para_ram.lr) //本地
                         {
                             led_disp_buf[5] &= LED_LOC_REM;
-                            LEDOE_ENABLE();
+                            LED_OE_ENABLE();
                         }
                         else //远程
                         {
                             led_disp_buf[5] |= LED_LOC_REM_MASK;
-                            LEDOE_ENABLE();
+                            LED_OE_ENABLE();
                         }
                     }
                     break;
@@ -368,7 +368,7 @@ void vfd_con(void)
                 led_disp_buf[2] = 0xff;
                 led_disp_buf[1] = led_table['C' - 32];
                 led_disp_buf[0] = led_table['P' - 32];
-                LEDOE_ENABLE();
+                LED_OE_ENABLE();
             }
             else
             {
@@ -419,7 +419,7 @@ void MENU_Init(void)
     led_disp_buf[2] = 0xff;
     led_disp_buf[1] = 0xff;
     led_disp_buf[0] = 0xff;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
     
     form_id = FORM_ID_HOME1;
 
@@ -455,7 +455,7 @@ bool form_key_callback(unsigned int key_msg)
 
         cp_para_ram.stop = TRUE;
         led_disp_buf[5] |= LED_RUN_MASK;
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
 
         ret = TRUE;
         break;
@@ -485,6 +485,7 @@ bool keep_vfd_connect(void)
     memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
 
     UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    
     UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
     UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
 
@@ -552,8 +553,14 @@ bool keep_vfd_connect(void)
                 cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                 cp_para_ram.count++;
 
-                if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                   (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                /* 0304 */
+                cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                
+                /* 0303 */
+                cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                
+                if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                   (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                 {
                     form_id = FORM_ID_ERR;
                 }
@@ -600,7 +607,7 @@ bool cp_alarm(u16 alarm_code)
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_blink_pos = 0;
         blink_led = 0;
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
 
         os_dly_wait(100);
 	}
@@ -658,62 +665,59 @@ void form_err_callback(void)
         case FORM_ERR_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.clr_err)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.clr_err)
-                {
-                    cp_para_ram.clr_err = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x10;
-                }
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.clr_err = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[20] |= 0x10;
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.ref_chang)
+            {
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
+
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
+                
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -751,12 +755,18 @@ void form_err_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if(UART_RX_BUF[11] & 0x80) //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if(cp_para_ram.fb_sts_word1 & 0x8000) //0303.Bit15，故障
                         {
                             fault = TRUE;
                         }
 
-                        if(UART_RX_BUF[10] & 0x01) //0304.Bit0，报警
+                        if(cp_para_ram.fb_sts_word2 & 0x0001) //0304.Bit0，报警
                         {
                             alarm = TRUE;
                         }
@@ -777,7 +787,7 @@ void form_err_callback(void)
                         led_disp_buf[4] = led_table['F' - 32];
                         led_disp_buf[5] |= LED_V_A_Hz_MASK;
                         led_blink_pos = 6;
-                        LEDOE_ENABLE();
+                        LED_OE_ENABLE();
                     }
                     break;
 
@@ -793,7 +803,7 @@ void form_err_callback(void)
                         led_disp_buf[4] = led_table['A' - 32];
                         led_disp_buf[5] |= LED_V_A_Hz_MASK;
                         led_blink_pos = 6;
-                        LEDOE_ENABLE();
+                        LED_OE_ENABLE();
                     }
                     break;
 
@@ -984,7 +994,7 @@ void form_home_disp(void)
     led_blink_pos = 0;
     blink_led = 0;
     
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 CODE u8 form_home_cmd[MAX_FORM_HOME_CMD][32] = {
@@ -1012,55 +1022,52 @@ void form_home_callback(void)
         case FORM_HOME_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -1094,8 +1101,14 @@ void form_home_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             i = FORM_HOME_READ_CMD;
                             
@@ -1168,12 +1181,19 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -1187,14 +1207,14 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -1203,26 +1223,33 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
-             * 逻辑非(!x)的等价式: !x = (0 == x)
-             * 华兄 */
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -1285,55 +1312,52 @@ void form_ref_callback(void)
         case FORM_REF_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -1363,8 +1387,14 @@ void form_ref_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -1398,7 +1428,7 @@ void form_ref_callback(void)
     led_disp_buf[3] = led_table['r' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_ref(unsigned int key_msg, unsigned int form_msg)
@@ -1410,12 +1440,19 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -1429,14 +1466,14 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -1445,23 +1482,33 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -1507,7 +1554,7 @@ void form_ref_val_disp(void)
     led_disp_buf[5] &= LED_Hz;
     led_blink_pos = cp_para_ram.vfd_para_shift + 1;
     blink_led = 0;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 CODE u8 form_ref_val_cmd[MAX_FORM_REF_VAL_CMD][32] = {
@@ -1533,55 +1580,52 @@ void form_ref_val_callback(void)
         case FORM_REF_VAL_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -1611,8 +1655,14 @@ void form_ref_val_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -1652,12 +1702,19 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -1671,14 +1728,14 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
                 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -1687,7 +1744,7 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
@@ -1782,55 +1839,52 @@ void form_para_callback(void)
         case FORM_PARA_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -1860,8 +1914,14 @@ void form_para_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -1895,7 +1955,7 @@ void form_para_callback(void)
     led_disp_buf[3] = led_table['P' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_para(unsigned int key_msg, unsigned int form_msg)
@@ -1907,12 +1967,19 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -1926,14 +1993,14 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -1942,23 +2009,33 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -2051,7 +2128,7 @@ bool group_update(u8 key_msg)
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
             led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
         }
     }
     else
@@ -2061,7 +2138,7 @@ bool group_update(u8 key_msg)
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
         led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
     }
 
     return (ret);
@@ -2090,55 +2167,52 @@ void form_para_group_callback(void)
         case FORM_PARA_GROUP_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -2168,8 +2242,14 @@ void form_para_group_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -2211,7 +2291,7 @@ void form_para_group_callback(void)
     led_disp_buf[3] = 0xff;
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_para_group(unsigned int key_msg, unsigned int form_msg)
@@ -2227,12 +2307,19 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -2246,14 +2333,14 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -2262,23 +2349,33 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -2380,7 +2477,7 @@ bool grade_update(u8 key_msg)
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
             led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
         }
     }
     else
@@ -2390,7 +2487,7 @@ bool grade_update(u8 key_msg)
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
         led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
     }
 
     return (ret);
@@ -2459,7 +2556,7 @@ bool func_code_read(void)
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
             led_disp_buf[0] = led_table[i + 16];
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
         }
     }
     else
@@ -2469,7 +2566,7 @@ bool func_code_read(void)
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
         led_disp_buf[0] = led_table[i + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
     }
 
     return (ret);
@@ -2579,55 +2676,52 @@ void form_para_grade_callback(void)
         case FORM_PARA_GRADE_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -2657,8 +2751,14 @@ void form_para_grade_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -2701,7 +2801,7 @@ void form_para_grade_callback(void)
     led_disp_buf[3] = led_table[cp_para_ram.group % 100 / 10 + 16];
     led_disp_buf[4] = (cp_para_ram.group > 99) ? (led_table[cp_para_ram.group % 1000 / 100 + 16]) : (0xff);
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
@@ -2717,12 +2817,19 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -2736,14 +2843,14 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -2752,23 +2859,33 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -2865,7 +2982,7 @@ bool func_code_write(void)
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
             led_disp_buf[0] = led_table[i + 16];
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
         }
     }
     else
@@ -2875,7 +2992,7 @@ bool func_code_write(void)
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
         led_disp_buf[0] = led_table[i + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
     }
 
     return (ret);
@@ -3009,7 +3126,7 @@ void form_para_val_disp(void)
     led_blink_pos = cp_para_ram.vfd_para_shift + 1;
     blink_led = 0;
     
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 bool check_vfd_para_attr(void)
@@ -3098,55 +3215,52 @@ void form_para_val_callback(void)
         case FORM_PARA_VAL_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -3176,8 +3290,14 @@ void form_para_val_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -3231,12 +3351,19 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -3250,14 +3377,14 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -3266,7 +3393,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
@@ -3370,55 +3497,52 @@ void form_copy_callback(void)
         case FORM_COPY_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -3448,8 +3572,14 @@ void form_copy_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -3483,7 +3613,7 @@ void form_copy_callback(void)
     led_disp_buf[3] = led_table['C' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy(unsigned int key_msg, unsigned int form_msg)
@@ -3495,12 +3625,19 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -3514,14 +3651,14 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -3530,23 +3667,33 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -3599,55 +3746,52 @@ void form_copy_upload_callback(void)
         case FORM_COPY_UPLOAD_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -3677,8 +3821,14 @@ void form_copy_upload_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -3712,7 +3862,7 @@ void form_copy_upload_callback(void)
     led_disp_buf[3] = led_table['u' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
@@ -3724,12 +3874,19 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -3743,14 +3900,14 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -3759,23 +3916,33 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -3830,55 +3997,52 @@ void form_copy_download_all_callback(void)
         case FORM_COPY_DOWNLOAD_ALL_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -3908,8 +4072,14 @@ void form_copy_download_all_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -3943,7 +4113,7 @@ void form_copy_download_all_callback(void)
     led_disp_buf[3] = led_table['d' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
@@ -3955,12 +4125,19 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -3974,14 +4151,14 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -3990,23 +4167,33 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -4061,55 +4248,52 @@ void form_copy_download_part_callback(void)
         case FORM_COPY_DOWNLOAD_PART_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -4139,8 +4323,14 @@ void form_copy_download_part_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -4174,7 +4364,7 @@ void form_copy_download_part_callback(void)
     led_disp_buf[3] = led_table['d' - 32];
     led_disp_buf[4] = 0xff;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
@@ -4186,12 +4376,19 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -4205,14 +4402,14 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -4221,23 +4418,33 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -4316,7 +4523,7 @@ bool chang_baudrate(u16 baudrate)
             led_disp_buf[2] = led_table['r' - 32];
             led_disp_buf[1] = led_table['r' - 32];
             led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
         }
     }
     else
@@ -4326,7 +4533,7 @@ bool chang_baudrate(u16 baudrate)
         led_disp_buf[2] = led_table['r' - 32];
         led_disp_buf[1] = led_table['r' - 32];
         led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
     }
 
     return (ret);
@@ -4359,55 +4566,52 @@ void copy_upload_rate_init(void)
         case 2:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -4438,8 +4642,14 @@ void copy_upload_rate_init(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -4510,55 +4720,52 @@ void copy_comm_reset(void)
         case 0:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -4614,8 +4821,14 @@ void copy_comm_reset(void)
                             i = num; //跳过复位
                         }
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -4679,55 +4892,52 @@ void form_copy_upload_rate_callback(void)
         case COPY_UPLOAD_RATE_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -4765,8 +4975,14 @@ void form_copy_upload_rate_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -4791,7 +5007,7 @@ void form_copy_upload_rate_callback(void)
                         {
                             form_id = FORM_ID_COPY_UPLOAD;
                             
-                            cp_alarm(CP_VFD_PARA_UPLOAD_FAIL);
+                            cp_alarm(CP_VFD_PARA_BAK_ERR);
                             
                             break;
                         }
@@ -4900,7 +5116,7 @@ void form_copy_upload_rate_callback(void)
     led_disp_buf[4] = led_table['u' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= LED_PER_CENT;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
@@ -4927,33 +5143,40 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
                 cp_alarm(CP_VFD_REM);
             }
             break;
-            
+
         case KEY_MSG_STOP:
             cp_para_ram.stop = TRUE;
             
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -4962,23 +5185,33 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -5041,55 +5274,52 @@ void copy_download_all_rate_init(void)
         case 1:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -5120,8 +5350,14 @@ void copy_download_all_rate_init(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -5319,55 +5555,52 @@ void form_copy_download_all_rate_callback(void)
         case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -5405,8 +5638,14 @@ void form_copy_download_all_rate_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -5469,7 +5708,7 @@ void form_copy_download_all_rate_callback(void)
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= LED_PER_CENT;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_msg)
@@ -5483,7 +5722,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_disp_buf[5] &= LED_PER_CENT;
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
         
 #if 1
         if(TRUE == check_vfd_para()) //校验存储的变频器参数
@@ -5520,12 +5759,19 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -5539,14 +5785,14 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -5555,23 +5801,33 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 
@@ -5723,55 +5979,52 @@ void form_copy_download_part_rate_callback(void)
         case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
             UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            if((0x04 == (UART_TX_BUF[11] & 0x0f)) && ((0xa1 == (UART_TX_BUF[12] & 0xff))))
+            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
+            UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
+
+            if(TRUE == cp_para_ram.ref_chang)
             {
-                UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-                UART_TX_BUF[16] = (u8)(cp_para_ram.count & 0xff);
-
-                if(TRUE == cp_para_ram.ref_chang)
-                {
-                    cp_para_ram.ref_chang = FALSE;
-                    
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
-                }
-                else
-                {
-                    UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
-                    UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
-                }
-
-                if(TRUE == cp_para_ram.stop)
-                {
-                    cp_para_ram.stop = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x01;
-                }
+                cp_para_ram.ref_chang = FALSE;
                 
-                if(TRUE == cp_para_ram.run)
-                {
-                    cp_para_ram.run = FALSE;
-                    
-                    UART_TX_BUF[20] |= 0x02;
-                }
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref_mod >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref_mod >> 0);
+            }
+            else
+            {
+                UART_TX_BUF[23] = (u8)(cp_para_ram.ref >> 8);
+                UART_TX_BUF[24] = (u8)(cp_para_ram.ref >> 0);
+            }
 
-                if(VFD_REV == cp_para_ram.fr)
-                {
-                    UART_TX_BUF[20] |= 0x04;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x04;
-                }
+            if(TRUE == cp_para_ram.stop)
+            {
+                cp_para_ram.stop = FALSE;
                 
-                if(VFD_LOC == cp_para_ram.lr)
-                {
-                    UART_TX_BUF[20] |= 0x08;
-                }
-                else
-                {
-                    UART_TX_BUF[20] &= ~0x08;
-                }
+                UART_TX_BUF[20] |= 0x01;
+            }
+            
+            if(TRUE == cp_para_ram.run)
+            {
+                cp_para_ram.run = FALSE;
+                
+                UART_TX_BUF[20] |= 0x02;
+            }
+
+            if(VFD_REV == cp_para_ram.fr)
+            {
+                UART_TX_BUF[20] |= 0x04;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x04;
+            }
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                UART_TX_BUF[20] |= 0x08;
+            }
+            else
+            {
+                UART_TX_BUF[20] &= ~0x08;
             }
             break;
 
@@ -5809,8 +6062,14 @@ void form_copy_download_part_rate_callback(void)
                         cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
                         cp_para_ram.count++;
 
-                        if((UART_RX_BUF[10] & 0x01) || //0304.Bit0，报警
-                           (UART_RX_BUF[11] & 0x80))   //0303.Bit15，故障
+                        /* 0304 */
+                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+
+                        /* 0303 */
+                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+
+                        if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15，故障
+                           (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0，报警
                         {
                             form_id = FORM_ID_ERR;
                         }
@@ -5873,7 +6132,7 @@ void form_copy_download_part_rate_callback(void)
     led_disp_buf[4] = led_table['d' - 32];
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= LED_PER_CENT;
-    LEDOE_ENABLE();
+    LED_OE_ENABLE();
 }
 
 static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_msg)
@@ -5887,7 +6146,7 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         led_disp_buf[4] = led_table['d' - 32];
         led_disp_buf[5] |= LED_V_A_Hz_MASK;
         led_disp_buf[5] &= LED_PER_CENT;
-        LEDOE_ENABLE();
+        LED_OE_ENABLE();
         
 #if 1
         if(TRUE == check_vfd_para()) //校验存储的变频器参数
@@ -5924,12 +6183,19 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
         case KEY_MSG_RUN:
             if(VFD_LOC == cp_para_ram.lr)
             {
-                cp_para_ram.run = TRUE;
-                
-                cp_para_ram.vfd_state = VFD_RUN;
-                
-                led_disp_buf[5] &= LED_RUN;
-                LEDOE_ENABLE();
+                if(cp_para_ram.fb_sts_word2 & 0x4000)
+                {                    
+                    cp_alarm(CP_VFD_RUN_LOCK);
+                }
+                else
+                {
+                    cp_para_ram.run = TRUE;
+                    
+                    cp_para_ram.vfd_state = VFD_RUN;
+                    
+                    led_disp_buf[5] &= LED_RUN;
+                    LED_OE_ENABLE();
+                }
             }
             else
             {
@@ -5943,14 +6209,14 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             cp_para_ram.vfd_state = VFD_STOP;
         
             led_disp_buf[5] |= LED_RUN_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
             break;
 
         case KEY_MSG_LOC_REM:
             cp_para_ram.lr = VFD_REM;      
         
             led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM);
             break;
@@ -5959,23 +6225,33 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             cp_para_ram.lr = VFD_LOC;           
         
             led_disp_buf[5] &= LED_LOC_REM;
-            LEDOE_ENABLE();
+            LED_OE_ENABLE();
 
             form_key_callback(KEY_MSG_LOC_REM_LONG);
             break;
 
         case KEY_MSG_FWD_REV:
-            cp_para_ram.fr = !cp_para_ram.fr;
-
-            if(VFD_REV == cp_para_ram.fr)
+            if(cp_para_ram.fb_sts_word2 & 0x0004)
             {
-                led_disp_buf[5] &= LED_FWD_REV;
-                LEDOE_ENABLE();
+                cp_alarm(CP_VFD_DIR_LOCK);
             }
             else
             {
-                led_disp_buf[5] |= LED_FWD_REV_MASK;
-                LEDOE_ENABLE();
+                /* 逻辑非(!x)的结果有2种: TRUE(1), FALSE(0)
+                 * 逻辑非(!x)的等价式: !x = (0 == x)
+                 * 华兄 */
+                cp_para_ram.fr = !cp_para_ram.fr;
+
+                if(VFD_REV == cp_para_ram.fr)
+                {
+                    led_disp_buf[5] &= LED_FWD_REV;
+                    LED_OE_ENABLE();
+                }
+                else
+                {
+                    led_disp_buf[5] |= LED_FWD_REV_MASK;
+                    LED_OE_ENABLE();
+                }
             }
             break;
 

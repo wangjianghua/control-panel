@@ -20,9 +20,12 @@ typedef enum
 {
 	CP_NORMAL = 0u,				                //正常，没有报警
 	CP_VFD_REM = 5011u,			                //传动由另外一个信号源控制
+    CP_VFD_DIR_LOCK	= 5012u,                    //电机旋转方向被锁定
+    CP_VFD_RUN_LOCK = 5013u,                    //封锁按钮信号，因为启动被禁止
 	CP_NON_ZERO = 5019u,		                //禁止写入非零值 （只能写入零）
 	CP_READ_ONLY = 5022u,		                //参数组或参数处于写保护状态
 	CP_VFD_RUN = 5023u,			                //传动单元正处于运行状态，不允许对参数进行修改
+	CP_VFD_PARA_BAK_ERR = 5041u,                //参数备份文件不能移入内存
     CP_VFD_PARA_UPLOAD_GIVE_UP = 5050u,			//放弃参数上传
     CP_VFD_PARA_UPLOAD_FAIL = 5052u,			//参数上传失败
     CP_VFD_PARA_DOWNLOAD_GIVE_UP = 5060u,		//放弃参数下装

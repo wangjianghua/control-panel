@@ -202,6 +202,8 @@ typedef struct _cp_para_ram
     u16 vfd_para_index; //变频器参数存取索引
     u16 fault_code; //故障码
     u16 alarm_code; //报警码
+    u16 fb_sts_word1; //总线状态字 1
+    u16 fb_sts_word2; //总线状态字 2
 } CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;

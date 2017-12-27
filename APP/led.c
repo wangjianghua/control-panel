@@ -30,12 +30,12 @@ XDATA u8 blink_led = 0;
 
 void led_display(u8 com, u8 data)
 {
-    LEDX0_DISABLE();
-    LEDX1_DISABLE();
-    LEDX2_DISABLE();
-    LEDX3_DISABLE();
-    LEDX4_DISABLE();	
-    LEDX5_DISABLE();  
+    LED_X0_DISABLE();
+    LED_X1_DISABLE();
+    LED_X2_DISABLE();
+    LED_X3_DISABLE();
+    LED_X4_DISABLE();	
+    LED_X5_DISABLE();  
     
     os_dly_wait(LED_DISP_TIME);
     
@@ -44,27 +44,27 @@ void led_display(u8 com, u8 data)
     switch(com)
     {
     case 0: 
-        LEDX0_ENABLE();
+        LED_X0_ENABLE();
         break;
         
     case 1: 
-        LEDX1_ENABLE();
+        LED_X1_ENABLE();
         break;
         
     case 2: 
-        LEDX2_ENABLE();
+        LED_X2_ENABLE();
         break;
         
     case 3: 
-        LEDX3_ENABLE();
+        LED_X3_ENABLE();
         break;
         
     case 4: 
-        LEDX4_ENABLE();
+        LED_X4_ENABLE();
         break;
         
     case 5: 
-        LEDX5_ENABLE();
+        LED_X5_ENABLE();
         break;
         
     default: 
@@ -81,7 +81,6 @@ __task void AppTaskDisp(void)
     {           
     	for(i = 0; i < LED_BLINK_TIME; i++)
     	{
-
     		led_display(0, led_disp_buf[0]);	
     		os_dly_wait(LED_DISP_TIME);
 
@@ -105,12 +104,12 @@ __task void AppTaskDisp(void)
     	{
     		if(led_blink_pos > 5)
     		{
-    			LEDX0_DISABLE();
-                LEDX1_DISABLE();
-                LEDX2_DISABLE();
-                LEDX3_DISABLE();
-                LEDX4_DISABLE();	
-                LEDX5_DISABLE();
+    			LED_X0_DISABLE();
+                LED_X1_DISABLE();
+                LED_X2_DISABLE();
+                LED_X3_DISABLE();
+                LED_X4_DISABLE();	
+                LED_X5_DISABLE();
                 
                 os_dly_wait(5 * LED_DISP_TIME);
     		}
@@ -118,12 +117,12 @@ __task void AppTaskDisp(void)
     		{
                 if(1 == led_blink_pos)
                 {
-                    LEDX0_DISABLE();
-                    LEDX1_DISABLE();
-                    LEDX2_DISABLE();
-                    LEDX3_DISABLE();
-                    LEDX4_DISABLE();	
-                    LEDX5_DISABLE();
+                    LED_X0_DISABLE();
+                    LED_X1_DISABLE();
+                    LED_X2_DISABLE();
+                    LED_X3_DISABLE();
+                    LED_X4_DISABLE();	
+                    LED_X5_DISABLE();
                     
                     os_dly_wait(LED_DISP_TIME);					  
                 }
@@ -136,12 +135,12 @@ __task void AppTaskDisp(void)
 
                 if(2 == led_blink_pos)
                 {
-                    LEDX0_DISABLE();
-                    LEDX1_DISABLE();
-                    LEDX2_DISABLE();
-                    LEDX3_DISABLE();
-                    LEDX4_DISABLE();	
-                    LEDX5_DISABLE();
+                    LED_X0_DISABLE();
+                    LED_X1_DISABLE();
+                    LED_X2_DISABLE();
+                    LED_X3_DISABLE();
+                    LED_X4_DISABLE();	
+                    LED_X5_DISABLE();
 
                     os_dly_wait(LED_DISP_TIME);	
                 }
@@ -154,12 +153,12 @@ __task void AppTaskDisp(void)
 
                 if(3 == led_blink_pos)
                 {	
-                    LEDX0_DISABLE();
-                    LEDX1_DISABLE();
-                    LEDX2_DISABLE();
-                    LEDX3_DISABLE();
-                    LEDX4_DISABLE();	
-                    LEDX5_DISABLE();
+                    LED_X0_DISABLE();
+                    LED_X1_DISABLE();
+                    LED_X2_DISABLE();
+                    LED_X3_DISABLE();
+                    LED_X4_DISABLE();	
+                    LED_X5_DISABLE();
 
                     os_dly_wait(LED_DISP_TIME);															  
                 }
@@ -172,12 +171,12 @@ __task void AppTaskDisp(void)
 
                 if(4 == led_blink_pos)
                 {
-                    LEDX0_DISABLE();
-                    LEDX1_DISABLE();
-                    LEDX2_DISABLE();
-                    LEDX3_DISABLE();
-                    LEDX4_DISABLE();	
-                    LEDX5_DISABLE();
+                    LED_X0_DISABLE();
+                    LED_X1_DISABLE();
+                    LED_X2_DISABLE();
+                    LED_X3_DISABLE();
+                    LED_X4_DISABLE();	
+                    LED_X5_DISABLE();
 
                     os_dly_wait(LED_DISP_TIME);	
                 }
@@ -190,12 +189,12 @@ __task void AppTaskDisp(void)
                 
                 if(5 == led_blink_pos)
                 {
-                    LEDX0_DISABLE();
-                    LEDX1_DISABLE();
-                    LEDX2_DISABLE();
-                    LEDX3_DISABLE();
-                    LEDX4_DISABLE();	
-                    LEDX5_DISABLE();
+                    LED_X0_DISABLE();
+                    LED_X1_DISABLE();
+                    LED_X2_DISABLE();
+                    LED_X3_DISABLE();
+                    LED_X4_DISABLE();	
+                    LED_X5_DISABLE();
 
                     os_dly_wait(LED_DISP_TIME);	
                 }
