@@ -2123,22 +2123,12 @@ bool group_update(u8 key_msg)
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LED_OE_ENABLE();
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LED_OE_ENABLE();
+        err_con();
     }
 
     return (ret);
@@ -2472,22 +2462,12 @@ bool grade_update(u8 key_msg)
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LED_OE_ENABLE();
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LED_OE_ENABLE();
+        err_con();
     }
 
     return (ret);
@@ -2501,7 +2481,7 @@ CODE u8 form_para_grade_func_code_read_cmd[][32] = {
 bool func_code_read(void)
 {
     OS_RESULT result;
-    u8 i, len;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
     
@@ -2551,22 +2531,12 @@ bool func_code_read(void)
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LED_OE_ENABLE();
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[i + 16];
-        LED_OE_ENABLE();
+        err_con();
     }
 
     return (ret);
@@ -2939,7 +2909,7 @@ CODE u8 form_para_val_func_code_write_cmd[][32] = {
 bool func_code_write(void)
 {
     OS_RESULT result;
-    u8 i, len;
+    u8 len;
     unsigned int crc;
     bool ret = FALSE;
     
@@ -2977,22 +2947,12 @@ bool func_code_write(void)
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[i + 16];
-            LED_OE_ENABLE();
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[i + 16];
-        LED_OE_ENABLE();
+        err_con();
     }
 
     return (ret);
@@ -4518,22 +4478,12 @@ bool chang_baudrate(u16 baudrate)
         }
         else
         {
-            led_disp_buf[4] = 0xff;
-            led_disp_buf[3] = led_table['E' - 32];
-            led_disp_buf[2] = led_table['r' - 32];
-            led_disp_buf[1] = led_table['r' - 32];
-            led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-            LED_OE_ENABLE();
+            err_con();
         }
     }
     else
     {
-        led_disp_buf[4] = 0xff;
-        led_disp_buf[3] = led_table['E' - 32];
-        led_disp_buf[2] = led_table['r' - 32];
-        led_disp_buf[1] = led_table['r' - 32];
-        led_disp_buf[0] = led_table[COPY_UPLOAD_RATE_BAUDRATE + 16];
-        LED_OE_ENABLE();
+        err_con();
     }
 
     return (ret);
@@ -4857,6 +4807,28 @@ void copy_comm_reset(void)
     }
 }
 
+bool copy_over(void)
+{
+    bool ret = FALSE;
+    
+    
+    cp_para_ram.vfd_para_count = 0;
+    cp_para_ram.vfd_para_total = 0;
+    cp_para_ram.rate = 0;
+    
+    cp_para_ram.vfd_para_index = 0;
+    cp_para_ram.vfd_para_crc = 0;
+    
+    if(TRUE == chang_baudrate(BAUD_RATE_9600))
+    {
+        copy_comm_reset(); 
+
+        ret = TRUE;
+    }
+
+    return (ret);
+}
+
 CODE u8 copy_upload_rate_cmd[][32] = {
     /* COPY_UPLOAD_RATE_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -5000,15 +4972,20 @@ void form_copy_upload_rate_callback(void)
                     size = UART_RX_BUF[2] - 8; //帧数据长度
                     
                     if((0x41 == UART_RX_BUF[3]) && (0x82 == UART_RX_BUF[4])) //头帧
-                    {                        
+                    {
+                        last_frame = FALSE;
+                        
                         cp_para_ram.vfd_para_total = num;
 
                         if(cp_para_ram.vfd_para_total > MAX_VFD_PARA_LEN)
                         {
-                            form_id = FORM_ID_COPY_UPLOAD;
-                            
-                            cp_alarm(CP_VFD_PARA_BAK_ERR);
-                            
+                            if(TRUE == copy_over())
+                            {                                
+                                cp_alarm(CP_VFD_PARA_BAK_ERR);
+                            }
+
+                            form_id = FORM_ID_COPY_UPLOAD; //强制退出上传
+
                             break;
                         }
 
@@ -5077,18 +5054,9 @@ void form_copy_upload_rate_callback(void)
                     if((0x41 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
                     {
                         last_frame = FALSE;
-                        
-                        cp_para_ram.vfd_para_count = 0;
-                        cp_para_ram.vfd_para_total = 0;
-                        cp_para_ram.rate = 0;
-                        
-                        cp_para_ram.vfd_para_index = 0;
-                        cp_para_ram.vfd_para_crc = 0;
-                        
-                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
+
+                        if(TRUE == copy_over())
                         {
-                            copy_comm_reset();
-                            
                             form_id = FORM_ID_COPY_UPLOAD;
                         }
                     }
@@ -5219,17 +5187,15 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(BAUD_RATE_9600))
+            if(TRUE == copy_over())
             {
-                copy_comm_reset();
-                
-                form_id = FORM_ID_COPY_UPLOAD;
-
                 cp_alarm(CP_VFD_PARA_UPLOAD_GIVE_UP);
-
-                return (FORM_MSG_NONE);
             }
-            break;
+            
+            form_id = FORM_ID_COPY_UPLOAD;
+            
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
             break;
@@ -5451,6 +5417,11 @@ void form_copy_download_all_rate_callback(void)
     {            
         if(COPY_DOWNLOAD_ALL_RATE_SET_CMD == i)
         {
+            if(0 == cp_para_ram.vfd_para_total)
+            {
+                frame_num = 0;
+            }
+            
             len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
@@ -5485,8 +5456,13 @@ void form_copy_download_all_rate_callback(void)
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
                 cp_para_ram.vfd_para_total = EEPROM_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
-            
+
                 os_dly_wait(5); //5ms
+
+                if(cp_para_ram.vfd_para_total > DOWNLOAD_DEFAULT_LEN)
+                {
+                    cp_para_ram.vfd_para_total = DOWNLOAD_DEFAULT_LEN;
+                }
             }
             else if(1 == frame_num) //第二帧
             {
@@ -5669,18 +5645,9 @@ void form_copy_download_all_rate_callback(void)
                     if((0x42 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
                     {
                         frame_num = 0;
-                        
-                        cp_para_ram.vfd_para_count = 0;
-                        cp_para_ram.vfd_para_total = 0;
-                        cp_para_ram.rate = 0;
-                        
-                        cp_para_ram.vfd_para_index = 0;
-                        cp_para_ram.vfd_para_crc = 0;
-                        
-                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
+
+                        if(TRUE == copy_over())
                         {
-                            copy_comm_reset();
-                            
                             form_id = FORM_ID_COPY_DOWNLOAD_ALL;
                         }
                     }
@@ -5835,17 +5802,15 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(BAUD_RATE_9600))
-            { 
-                copy_comm_reset();
-                
-                form_id = FORM_ID_COPY_DOWNLOAD_ALL;
-
+            if(TRUE == copy_over())
+            {
                 cp_alarm(CP_VFD_PARA_DOWNLOAD_GIVE_UP);
-
-                return (FORM_MSG_NONE);
             }
-            break;
+            
+            form_id = FORM_ID_COPY_DOWNLOAD_ALL;
+            
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
             break;
@@ -5875,6 +5840,11 @@ void form_copy_download_part_rate_callback(void)
     {            
         if(COPY_DOWNLOAD_ALL_RATE_SET_CMD == i)
         {
+            if(0 == cp_para_ram.vfd_para_total)
+            {
+                frame_num = 0;
+            }
+            
             len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
                             
             memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
@@ -5911,6 +5881,11 @@ void form_copy_download_part_rate_callback(void)
                 cp_para_ram.vfd_para_total = EEPROM_ReadHalfWord(VFD_PARA_LEN_ADDR) - 2;
             
                 os_dly_wait(5); //5ms
+
+                if(cp_para_ram.vfd_para_total > DOWNLOAD_DEFAULT_LEN)
+                {
+                    cp_para_ram.vfd_para_total = DOWNLOAD_DEFAULT_LEN;
+                }
             }
             else if(1 == frame_num) //第二帧
             {
@@ -6093,18 +6068,9 @@ void form_copy_download_part_rate_callback(void)
                     if((0x42 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
                     {
                         frame_num = 0;
-                        
-                        cp_para_ram.vfd_para_count = 0;
-                        cp_para_ram.vfd_para_total = 0;
-                        cp_para_ram.rate = 0;
-                        
-                        cp_para_ram.vfd_para_index = 0;
-                        cp_para_ram.vfd_para_crc = 0;
-                        
-                        if(TRUE == chang_baudrate(BAUD_RATE_9600))
+
+                        if(TRUE == copy_over())
                         {
-                            copy_comm_reset();
-                            
                             form_id = FORM_ID_COPY_DOWNLOAD_PART;
                         }
                     }
@@ -6259,17 +6225,15 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             break;
 
         case KEY_MSG_EXIT:
-            if(TRUE == chang_baudrate(BAUD_RATE_9600))
-            { 
-                copy_comm_reset();
-                
-                form_id = FORM_ID_COPY_DOWNLOAD_PART;
-
+            if(TRUE == copy_over())
+            {
                 cp_alarm(CP_VFD_PARA_DOWNLOAD_GIVE_UP);
-
-                return (FORM_MSG_NONE);
             }
-            break;
+
+            form_id = FORM_ID_COPY_DOWNLOAD_PART;           
+            
+            return (FORM_MSG_NONE);
+            //break;
 
         case KEY_MSG_UP:
             break;
@@ -6294,7 +6258,11 @@ __task void AppTaskCP(void)
     unsigned int form_msg;
 
 
+#if (EEPROM_TEST_EN > 0u)
     os_dly_wait(1000);
+#else
+    os_dly_wait(2000);
+#endif
     
     os_sem_send(&key_sem);
     

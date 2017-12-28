@@ -15,8 +15,10 @@
 
 #define VFD_REPLY_TIMEOUT       1000u //1s
 
+#define DOWNLOAD_DEFAULT_LEN    0x0660 //默认下载长度
+
 #define CP_PARA_ADDR            (0u)                            //控制盘参数存储地址
-#define VFD_PARA_AREA_SIZE      (3u * 1024u)                    //变频器参数区大小
+#define VFD_PARA_AREA_SIZE      (7u * 1024u)                    //变频器参数区大小
 #define VFD_PARA_FLAG           ('H')                           //变频器参数标志
 #define VFD_PARA_FLAG_ADDR      (AT24CXX - VFD_PARA_AREA_SIZE)  //1B, 变频器参数标志存储地址
 #define VFD_PARA_LEN_ADDR       (VFD_PARA_FLAG_ADDR + 1u)       //2B, 变频器参数长度存储地址
