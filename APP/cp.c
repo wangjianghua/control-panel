@@ -5507,19 +5507,19 @@ void form_copy_download_all_rate_callback(void)
             }
         
             cp_para_ram.vfd_para_index += UART_TX_BUF[10] - 10;
-        
+
+            UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
+            UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+                
             if(1 == frame_num) //ͷ֡
             {
-                UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-                UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+                UART_TX_BUF[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
+                UART_TX_BUF[22] = (u8)(cp_para_ram.vfd_para_total);
 
                 cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 12;
             }
             else
             {
-                UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-                UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
-                
                 cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 10;
             }
 
@@ -5930,19 +5930,19 @@ void form_copy_download_part_rate_callback(void)
             }
         
             cp_para_ram.vfd_para_index += UART_TX_BUF[10] - 10;
-        
+
+            UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
+            UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+                
             if(1 == frame_num) //ͷ֡
             {
-                UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-                UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+                UART_TX_BUF[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
+                UART_TX_BUF[22] = (u8)(cp_para_ram.vfd_para_total);
 
                 cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 12;
             }
             else
             {
-                UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-                UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
-                
                 cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 10;
             }
 
@@ -6259,9 +6259,9 @@ __task void AppTaskCP(void)
 
 
 #if (EEPROM_TEST_EN > 0u)
-    os_dly_wait(1000);
-#else
     os_dly_wait(2000);
+#else
+    os_dly_wait(3000);
 #endif
     
     os_sem_send(&key_sem);
