@@ -131,6 +131,8 @@ bool uart_recv_align(void)
 
 void err_con(void)
 {
+    blink_led = 0;
+    led_blink_pos = 0;
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[4] = 0xff;
     led_disp_buf[3] = led_table['E' - 32];
@@ -887,7 +889,7 @@ void form_home_disp(void)
     
     led_disp_buf[0] = led_table[disp_para_val % 10 + 16];    
 
-    switch(cp_para_ram.disp_para_dcl[form_id - 1])
+    switch(cp_para_ram.disp_para_format[form_id - 1])
     {
     case 0:
         led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
@@ -1141,16 +1143,16 @@ void form_home_callback(void)
                         cp_para_ram.disp_para_unit[2] = (UART_RX_BUF[25] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[25]) : (0x00);
 
                         cp_para_ram.disp_para_sign[0] = UART_RX_BUF[14] & 0x01;
-                        cp_para_ram.disp_para_enum[0] = UART_RX_BUF[14] & 0x80;
-                        cp_para_ram.disp_para_dcl[0] = (UART_RX_BUF[14] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_enum[0] = (UART_RX_BUF[14] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[0] = (UART_RX_BUF[14] & 0x0f) >> 1;
                         
                         cp_para_ram.disp_para_sign[1] = UART_RX_BUF[20] & 0x01;
-                        cp_para_ram.disp_para_enum[1] = UART_RX_BUF[20] & 0x80;
-                        cp_para_ram.disp_para_dcl[1] = (UART_RX_BUF[20] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_enum[1] = (UART_RX_BUF[20] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[1] = (UART_RX_BUF[20] & 0x0f) >> 1;
                         
                         cp_para_ram.disp_para_sign[2] = UART_RX_BUF[26] & 0x01;
-                        cp_para_ram.disp_para_enum[2] = UART_RX_BUF[26] & 0x80;
-                        cp_para_ram.disp_para_dcl[2] = (UART_RX_BUF[26] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_enum[2] = (UART_RX_BUF[26] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[2] = (UART_RX_BUF[26] & 0x0f) >> 1;
 
                         form_home_disp();
                     }
@@ -2520,8 +2522,8 @@ bool func_code_read(void)
             cp_para_ram.vfd_para_val = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
 
             cp_para_ram.vfd_para_sign = UART_RX_BUF[11] & 0x01;
-            cp_para_ram.vfd_para_enum = UART_RX_BUF[11] & 0x80;
-            cp_para_ram.vfd_para_dcl = (UART_RX_BUF[11] & 0x0f) >> 1;
+            cp_para_ram.vfd_para_enum = (UART_RX_BUF[11] & 0x80) >> 7;
+            cp_para_ram.vfd_para_format = (UART_RX_BUF[11] & 0x0f) >> 1;
             
             cp_para_ram.vfd_para_unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
 
@@ -2960,6 +2962,7 @@ bool func_code_write(void)
 
 void form_para_val_disp(void)
 {
+    char buf[5] = {0};
     u8 disp_para_unit, len;
     u16 disp_para_val;
     
@@ -2979,7 +2982,7 @@ void form_para_val_disp(void)
     
     led_disp_buf[0] = led_table[disp_para_val % 10 + 16];
 
-    switch(cp_para_ram.vfd_para_dcl)
+    switch(cp_para_ram.vfd_para_format)
     {
     case 0:
         led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
@@ -3066,6 +3069,26 @@ void form_para_val_disp(void)
         }
         break;
 
+    case 6:
+        if(FALSE == cp_para_ram.vfd_para_sign) //十六进制
+        {
+            int_to_hex(buf, disp_para_val);
+            
+            led_disp_buf[0] = led_table['h' - 32];
+            led_disp_buf[1] = led_table[buf[3] - 32];
+            led_disp_buf[2] = led_table[buf[2] - 32];
+            led_disp_buf[3] = led_table[buf[1] - 32];
+            led_disp_buf[4] = led_table[buf[0] - 32];
+        }
+        else //二进制
+        {
+            led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
+            led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
+            led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
+            led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+        }
+        break;
+
     default:
         led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
         led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
@@ -3083,7 +3106,16 @@ void form_para_val_disp(void)
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
 
-    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+    if((6 == cp_para_ram.vfd_para_format) ||
+       (TRUE == cp_para_ram.vfd_para_enum))
+    {
+        led_blink_pos = 0;
+    }
+    else
+    {
+        led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+    }
+    
     blink_led = 0;
     
     LED_OE_ENABLE();
@@ -3150,6 +3182,93 @@ bool check_vfd_para_attr(void)
     }
 
     return (alarm_code);
+}
+
+s16 func_code_search(void)
+{
+    u8 i;
+    
+    
+    for(i = 0; i < FUNC_CODE_ENUM_NUM; i++)
+    {
+        if((cp_para_ram.group == (func_code_enum[i].func_code / 100)) &&
+           (cp_para_ram.grade == (func_code_enum[i].func_code % 100)))
+        {
+            return (i);
+        }
+    }
+            
+    return (-1);    
+}
+
+s16 func_code_val_search(u16 array[], u8 len)
+{
+    u8 i;
+    
+    
+    for(i = 0; i < len; i++)
+    {
+        if(cp_para_ram.vfd_para_val == array[i])
+        {
+            return (i);
+        }
+    }
+            
+    return (-1);
+}
+
+bool enum_update(unsigned int key_msg)
+{
+    u8 len;
+    s16 index;
+    u16 *pbuf;
+    bool ret = FALSE;
+    
+    
+    index = func_code_search();
+    
+    if(-1 != index)
+    {
+        pbuf = func_code_enum[index].array;
+        len = func_code_enum[index].len;
+        
+        index = func_code_val_search(pbuf, len);
+        
+        if(-1 != index)
+        {
+            switch(key_msg)
+            {
+            case KEY_MSG_UP:
+            case KEY_MSG_UP_LONG:
+                if(index < (len - 1))
+                {
+                    index++;
+                }
+                
+                cp_para_ram.vfd_para_val = pbuf[index];
+
+                ret = TRUE;
+                break;
+                
+            case KEY_MSG_DOWN:
+            case KEY_MSG_DOWN_LONG:
+                if(index > 0)
+                {
+                    index--;
+                    
+                    cp_para_ram.vfd_para_val = pbuf[index];
+                }
+
+                ret = TRUE;
+                break;
+                
+            default:
+                break;        
+            }
+        }
+    }
+
+    return (ret);
 }
 
 CODE u8 form_para_val_cmd[MAX_FORM_PARA_VAL_CMD][32] = {
@@ -3394,16 +3513,23 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_UP_LONG:            
             if(CP_NORMAL == check_vfd_para_attr())
             {
-            	if(TRUE == cp_para_ram.vfd_para_sign)
-            	{
-                	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
-                	
-                	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
-                }
-                else
+                if(TRUE == cp_para_ram.vfd_para_enum)
                 {
-                	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+                    enum_update(KEY_MSG_UP);
                 }
+            	else 
+            	{
+                    if(TRUE == cp_para_ram.vfd_para_sign)
+                	{
+                    	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+                    	
+                    	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+                    }
+                    else
+                    {
+                    	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+                    }
+            	}
             }
             break;
 
@@ -3411,15 +3537,22 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
         case KEY_MSG_DOWN_LONG:            
             if(CP_NORMAL == check_vfd_para_attr())
             {
-            	if(TRUE == cp_para_ram.vfd_para_sign)
-            	{
-                	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
-                	
-                	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+                if(TRUE == cp_para_ram.vfd_para_enum)
+                {
+                    enum_update(KEY_MSG_DOWN);
                 }
                 else
                 {
-    	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
+                	if(TRUE == cp_para_ram.vfd_para_sign)
+                	{
+                    	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
+                    	
+                    	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
+                    }
+                    else
+                    {
+        	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
+                    }
                 }
             }
             break;

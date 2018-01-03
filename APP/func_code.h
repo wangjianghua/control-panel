@@ -3,6 +3,7 @@
 
 
 #define FUNC_CODE_UNIT_NUM                      8u
+#define FUNC_CODE_ENUM_NUM                      14u
 
 typedef enum
 {
@@ -33,7 +34,15 @@ typedef enum
     CP_VFD_PARA_CRC_ERR = 5089u,				//下装失败，因为 CRC 错误	
 } ENUM_CP_ALARM_CODE;			                //报警代码 ( 基本型控制盘 )
 
+typedef struct _func_code_enum
+{
+    u16 func_code;
+    u16 *array;
+    u8 len;
+} FUNC_CODE_ENUM, *P_FUNC_CODE_ENUM;
+
 extern CODE u8 func_code_unit[FUNC_CODE_UNIT_NUM];
+extern CODE FUNC_CODE_ENUM func_code_enum[FUNC_CODE_ENUM_NUM];
 
 
 #endif

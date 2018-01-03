@@ -189,16 +189,16 @@ typedef struct _cp_para_ram
     u8 grade_nearby[8]; //当前附近级号
     u8 vfd_para_unit; //变频器参数单位
     u8 disp_para_unit[3]; //主界面显示参数单位
-    u8 disp_para_dcl[3]; //主界面显示参数小数位
+    u8 disp_para_format[3]; //主界面显示参数格式
     u8 vfd_para_shift; //变频器参数位切换
-    u8 vfd_para_dcl; //变频器参数小数位
+    u8 vfd_para_attr; //变频器参数属性
+    u8 vfd_para_format; //变频器参数格式
     u16 count; //计数器
     u16 ref; //变频器给定值
     u16 ref_mod; //给定更改值
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型
     u16 vfd_para_val; //变频器参数值
-    u16 vfd_para_attr; //变频器参数属性
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
     u16 vfd_para_index; //变频器参数存取索引
