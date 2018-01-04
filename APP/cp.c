@@ -413,8 +413,23 @@ static const FORM form_list[MAX_FORM_NUM] =
 
 static unsigned int form_id;
 
+void LOGO_Disp(void)
+{
+    blink_led = 0;
+    led_blink_pos = 0;
+    led_disp_buf[5] = 0x00;
+    led_disp_buf[4] = 0x00;
+    led_disp_buf[3] = 0x00;
+    led_disp_buf[2] = 0x00;
+    led_disp_buf[1] = 0x00;
+    led_disp_buf[0] = 0x00;
+    LED_OE_ENABLE();
+}
+
 void MENU_Init(void)
 {
+    blink_led = 0;
+    led_blink_pos = 0;    
     led_disp_buf[5] = 0xff;
     led_disp_buf[4] = 0xff;
     led_disp_buf[3] = 0xff;
@@ -423,9 +438,11 @@ void MENU_Init(void)
     led_disp_buf[0] = 0xff;
     LED_OE_ENABLE();
     
+    os_dly_wait(10);
+    
     form_id = FORM_ID_HOME1;
-
-    os_dly_wait(5);
+    
+    os_sem_send(&key_sem);
 }
 
 void MEM_Init(void)
@@ -1176,7 +1193,21 @@ void form_home_callback(void)
 
 static int form_home(unsigned int key_msg, unsigned int form_msg)
 {
-    if(FORM_MSG_KEY == form_msg)
+    if(FORM_MSG_DATA == form_msg)
+    {
+        form_home_callback();
+
+        if(0x0100 == cp_para_ram.disp_para_type[form_id - 1]) //本页面不显示
+        {
+            form_id++;
+            
+            if(form_id > FORM_ID_HOME3)
+            {
+                form_id = FORM_ID_HOME1;
+            }    
+        }
+    }
+    else if(FORM_MSG_KEY == form_msg)
     {
         switch(key_msg)
         {
@@ -1262,6 +1293,16 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             {
                 form_id = FORM_ID_HOME1;
             }
+
+            if(0x0100 == cp_para_ram.disp_para_type[form_id - 1]) //本页面不显示
+            {
+                form_id++;
+                
+                if(form_id > FORM_ID_HOME3)
+                {
+                    form_id = FORM_ID_HOME1;
+                }    
+            }
             break;
 
         case KEY_MSG_DOWN:
@@ -1272,6 +1313,18 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             else
             {
                 form_id = FORM_ID_HOME3;
+            }
+
+            if(0x0100 == cp_para_ram.disp_para_type[form_id - 1]) //本页面不显示
+            {
+                if(FORM_ID_HOME1 != form_id)
+                {
+                    form_id--;
+                }
+                else
+                {
+                    form_id = FORM_ID_HOME3;
+                }   
             }
             break;
 
@@ -1520,7 +1573,9 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             
         case KEY_MSG_EXIT:
             form_id = FORM_ID_HOME;
-            break;
+
+            return (FORM_MSG_DATA);
+            //break;
 
         case KEY_MSG_UP:
             form_id = FORM_ID_COPY;
@@ -2049,7 +2104,9 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_EXIT:
             form_id = FORM_ID_HOME;
-            break;
+
+            return (FORM_MSG_DATA);
+            //break;
 
         case KEY_MSG_UP:
             form_id = FORM_ID_REF;
@@ -2962,7 +3019,7 @@ bool func_code_write(void)
 
 void form_para_val_disp(void)
 {
-    char buf[5] = {0};
+    char buf[17];
     u8 disp_para_unit, len;
     u16 disp_para_val;
     
@@ -3070,6 +3127,8 @@ void form_para_val_disp(void)
         break;
 
     case 6:
+        memset(buf, '0', sizeof(buf));
+        
         if(FALSE == cp_para_ram.vfd_para_sign) //十六进制
         {
             int_to_hex(buf, disp_para_val);
@@ -3082,10 +3141,13 @@ void form_para_val_disp(void)
         }
         else //二进制
         {
-            led_disp_buf[1] = (disp_para_val > 9) ? (led_table[disp_para_val % 100 / 10 + 16]) : (0xff);
-            led_disp_buf[2] = (disp_para_val > 99) ? (led_table[disp_para_val % 1000 / 100 + 16]) : (0xff);
-            led_disp_buf[3] = (disp_para_val > 999) ? (led_table[disp_para_val % 10000 / 1000 + 16]) : (0xff);
-            led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
+            int_to_bin(buf, disp_para_val);
+            
+            led_disp_buf[0] = led_table['b' - 32];
+            led_disp_buf[1] = led_table[buf[0] - 32];
+            led_disp_buf[2] = led_table[buf[1] - 32];
+            led_disp_buf[3] = led_table[buf[2] - 32];
+            led_disp_buf[4] = 0xff;
         }
         break;
 
@@ -3184,24 +3246,26 @@ bool check_vfd_para_attr(void)
     return (alarm_code);
 }
 
-s16 func_code_search(void)
+s16 func_code_enum_seqsearch(void)
 {
     u8 i;
+    u16 func_code;
+
     
+    func_code = cp_para_ram.group * 100 + cp_para_ram.grade;
     
     for(i = 0; i < FUNC_CODE_ENUM_NUM; i++)
     {
-        if((cp_para_ram.group == (func_code_enum[i].func_code / 100)) &&
-           (cp_para_ram.grade == (func_code_enum[i].func_code % 100)))
+        if(func_code_enum[i].func_code == func_code)
         {
             return (i);
         }
     }
             
-    return (-1);    
+    return (-1); 
 }
 
-s16 func_code_val_search(u16 array[], u8 len)
+s16 func_code_enum_val_seqsearch(u16 array[], u8 len)
 {
     u8 i;
     
@@ -3225,14 +3289,14 @@ bool enum_update(unsigned int key_msg)
     bool ret = FALSE;
     
     
-    index = func_code_search();
+    index = func_code_enum_seqsearch();
     
     if(-1 != index)
     {
         pbuf = func_code_enum[index].array;
         len = func_code_enum[index].len;
         
-        index = func_code_val_search(pbuf, len);
+        index = func_code_enum_val_seqsearch(pbuf, len);
         
         if(-1 != index)
         {
@@ -3266,6 +3330,150 @@ bool enum_update(unsigned int key_msg)
                 break;        
             }
         }
+    }
+
+    return (ret);
+}
+
+/* 折半查找
+ * 说明: 元素必须是有序的，如果是无序的则先要进行排序操作
+ * 华兄 */
+s16 func_code_limit_bisearch(void)
+{
+    u16 low, mid, high, func_code;
+    
+    
+    low = 0;
+    high = FUNC_CODE_LIMIT_NUM - 1;
+    
+    func_code = cp_para_ram.group * 100 + cp_para_ram.grade;
+    
+    while(low <= high)
+    {
+        mid = (low + high) / 2;
+        
+        if(func_code_limit[mid].func_code > func_code)
+        {
+            high = mid - 1;
+        }            
+        else if(func_code_limit[mid].func_code < func_code)
+        {
+            low = mid + 1;
+        }
+        else
+        {
+            return (mid);
+        }
+    }
+    
+    return (-1);
+}
+
+bool limit_update(void)
+{
+    s16 index;
+    bool ret = FALSE;
+    
+    
+    index = func_code_limit_bisearch();
+    
+    if(-1 != index)
+    {
+        if(func_code_limit[index].lower != func_code_limit[index].upper)
+        {
+            cp_para_ram.vfd_para_lower = func_code_limit[index].lower; //下限
+            cp_para_ram.vfd_para_upper = func_code_limit[index].upper; //上限
+            
+            ret = TRUE;
+        }
+    }
+    
+    return (ret);
+}
+
+bool para_update(unsigned int key_msg)
+{
+    s16 vfd_para_sign_val;
+    bool ret = FALSE;
+
+
+    vfd_para_sign_val = (s16)cp_para_ram.vfd_para_val;
+        
+    switch(key_msg)
+    {
+    case KEY_MSG_UP:
+    case KEY_MSG_UP_LONG:
+        if(TRUE == cp_para_ram.vfd_para_sign)
+        {
+            vfd_para_sign_val += pow(10, cp_para_ram.vfd_para_shift);
+            
+            if(TRUE == cp_para_ram.vfd_para_limit)
+            {
+                if(vfd_para_sign_val > (s16)cp_para_ram.vfd_para_upper) //上限判断
+                {
+                    vfd_para_sign_val = (s16)cp_para_ram.vfd_para_upper;
+                }
+            }   
+            
+            cp_para_ram.vfd_para_val = (u16)vfd_para_sign_val;
+        }
+        else
+        {
+            cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
+            
+            if(TRUE == cp_para_ram.vfd_para_limit)
+            {
+                if(cp_para_ram.vfd_para_val > cp_para_ram.vfd_para_upper) //上限判断
+                {
+                    cp_para_ram.vfd_para_val = cp_para_ram.vfd_para_upper;
+                }
+            }
+        }
+
+        ret = TRUE;
+        break;
+
+    case KEY_MSG_DOWN:
+    case KEY_MSG_DOWN_LONG:
+        if(TRUE == cp_para_ram.vfd_para_sign)
+        {
+            vfd_para_sign_val -= pow(10, cp_para_ram.vfd_para_shift);
+            
+            if(TRUE == cp_para_ram.vfd_para_limit)
+            {
+                if(vfd_para_sign_val < (s16)cp_para_ram.vfd_para_lower) //下限判断
+                {
+                    vfd_para_sign_val = (s16)cp_para_ram.vfd_para_lower;
+                }
+            }   
+            
+            cp_para_ram.vfd_para_val = (u16)vfd_para_sign_val;
+        }
+        else
+        {
+            if(cp_para_ram.vfd_para_val > pow(10, cp_para_ram.vfd_para_shift))
+            {
+                cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);  
+            }
+            else
+            {
+                cp_para_ram.vfd_para_val = 0;
+            }
+            
+            if(TRUE == cp_para_ram.vfd_para_limit)
+            {
+                if(cp_para_ram.vfd_para_val < cp_para_ram.vfd_para_lower) //下限判断
+                {
+                    cp_para_ram.vfd_para_val = cp_para_ram.vfd_para_lower;
+                }
+            }           
+        }
+
+        ret = TRUE;
+        break;
+
+    default:
+        break;
     }
 
     return (ret);
@@ -3409,19 +3617,9 @@ void form_para_val_callback(void)
 
 static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 {
-    static s16 vfd_para_val;
-
-
     if(FORM_MSG_DATA == form_msg)
     {
-        if(TRUE == cp_para_ram.vfd_para_sign)
-        {
-            vfd_para_val = (s16)cp_para_ram.vfd_para_val;
-        }
-        else
-        {
-            vfd_para_val = 0;
-        }
+        cp_para_ram.vfd_para_limit = limit_update(); //更新功能码界限
     }
     else if(FORM_MSG_KEY == form_msg)
     {
@@ -3482,7 +3680,7 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             
             if(TRUE == cp_para_ram.vfd_para_sign)
             {
-            	cp_para_ram.vfd_para_shift %= get_data_length(abs(vfd_para_val));
+            	cp_para_ram.vfd_para_shift %= get_data_length(abs((s16)cp_para_ram.vfd_para_val));
             }
             else
             {
@@ -3515,20 +3713,14 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             {
                 if(TRUE == cp_para_ram.vfd_para_enum)
                 {
-                    enum_update(KEY_MSG_UP);
+                    if(FALSE == enum_update(KEY_MSG_UP))
+                    {
+                        para_update(KEY_MSG_UP);
+                    }
                 }
             	else 
             	{
-                    if(TRUE == cp_para_ram.vfd_para_sign)
-                	{
-                    	vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
-                    	
-                    	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
-                    }
-                    else
-                    {
-                    	cp_para_ram.vfd_para_val += pow(10, cp_para_ram.vfd_para_shift);
-                    }
+                    para_update(KEY_MSG_UP);
             	}
             }
             break;
@@ -3539,20 +3731,14 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             {
                 if(TRUE == cp_para_ram.vfd_para_enum)
                 {
-                    enum_update(KEY_MSG_DOWN);
+                    if(FALSE == enum_update(KEY_MSG_DOWN))
+                    {
+                        para_update(KEY_MSG_DOWN);
+                    }
                 }
                 else
                 {
-                	if(TRUE == cp_para_ram.vfd_para_sign)
-                	{
-                    	vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);
-                    	
-                    	cp_para_ram.vfd_para_val = (u16)vfd_para_val;
-                    }
-                    else
-                    {
-        	            cp_para_ram.vfd_para_val -= pow(10, cp_para_ram.vfd_para_shift);        	
-                    }
+                    para_update(KEY_MSG_DOWN);
                 }
             }
             break;
@@ -3796,7 +3982,9 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_EXIT:
             form_id = FORM_ID_HOME;
-            break;
+
+            return (FORM_MSG_DATA);
+            //break;
 
         case KEY_MSG_UP:
             form_id = FORM_ID_PARA;
@@ -6391,14 +6579,14 @@ __task void AppTaskCP(void)
     unsigned int form_msg;
 
 
+    LOGO_Disp();
+    
 #if (EEPROM_TEST_EN > 0u)
     os_dly_wait(2000);
 #else
     os_dly_wait(3000);
 #endif
-    
-    os_sem_send(&key_sem);
-    
+        
 #if (EEPROM_TEST_EN > 0u)
     EEPROM_Test();
 #endif

@@ -4,6 +4,7 @@
 
 #define FUNC_CODE_UNIT_NUM                      8u
 #define FUNC_CODE_ENUM_NUM                      14u
+#define FUNC_CODE_LIMIT_NUM                     300u
 
 typedef enum
 {
@@ -41,8 +42,16 @@ typedef struct _func_code_enum
     u8 len;
 } FUNC_CODE_ENUM, *P_FUNC_CODE_ENUM;
 
+typedef struct _func_code_limit
+{
+	u16 func_code;
+	u16 lower;
+	u16 upper;
+} FUNC_CODE_LIMIT, *P_FUNC_CODE_LIMIT;
+
 extern CODE u8 func_code_unit[FUNC_CODE_UNIT_NUM];
 extern CODE FUNC_CODE_ENUM func_code_enum[FUNC_CODE_ENUM_NUM];
+extern CODE FUNC_CODE_LIMIT func_code_limit[FUNC_CODE_LIMIT_NUM];
 
 
 #endif

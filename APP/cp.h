@@ -180,6 +180,7 @@ typedef struct _cp_para_ram
     bool vfd_para_sign; //变频器参数符号位
     bool vfd_para_enum; //变频器参数枚举位
     bool vfd_state; //变频器状态
+    bool vfd_para_limit; //变频器参数界限标志
     u8 cmd; //命令字
 	u8 group; //变频器分组
 	u8 grade; //变频器分级
@@ -202,6 +203,8 @@ typedef struct _cp_para_ram
     u16 vfd_para_count; //变频器参数当前数目
     u16 vfd_para_total; //变频器参数总数目
     u16 vfd_para_index; //变频器参数存取索引
+    u16 vfd_para_lower; //变频器参数下限
+    u16 vfd_para_upper; //变频器参数上限
     u16 fault_code; //故障码
     u16 alarm_code; //报警码
     u16 fb_sts_word1; //总线状态字 1

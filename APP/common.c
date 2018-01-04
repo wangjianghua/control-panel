@@ -29,3 +29,16 @@ void int_to_hex(char *str, u16 data)
     sprintf(str, "%04X", data);
 }
 
+void int_to_bin(char *buf, u16 data)
+{
+    u8 i;
+
+    
+    for(i = 0; data > 0; i++)
+    {
+        buf[i] = (data % 2) + '0';
+        
+        data /= 2;
+    }
+}
+

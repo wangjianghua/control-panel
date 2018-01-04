@@ -43,6 +43,7 @@ typedef enum
 
 u8 get_data_length(u32 data);
 void int_to_hex(char *str, u16 data);
+void int_to_bin(char *buf, u16 data);
 
 
 #endif
