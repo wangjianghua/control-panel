@@ -2,7 +2,7 @@
 #define __CP_H__
 
 
-#define MAX_REF_VAL             (500u * 100u)
+#define MAX_REF_VAL             (500u * 100u) //最大给定值
 
 #define VFD_LOC                 TRUE  //表示变频器处于本地控制，即控制命令来自控制盘
 #define VFD_REM                 FALSE //表示变频器处于远程控制，例如I/O (X1)或现场总线
@@ -14,6 +14,12 @@
 #define VFD_STOP                FALSE //停止
 
 #define VFD_REPLY_TIMEOUT       1000u //1s
+
+#define ERR_REPEAT_TIMEOUT      40u //10s
+
+#define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
+
+#define CP_VERSION              100u //控制盘软件版本
 
 #define DOWNLOAD_DEFAULT_LEN    0x0660 //默认下载长度
 
@@ -209,6 +215,7 @@ typedef struct _cp_para_ram
     u16 alarm_code; //报警码
     u16 fb_sts_word1; //总线状态字 1
     u16 fb_sts_word2; //总线状态字 2
+    u32 err_repeat_timeout; //错误重复显示超时时间
 } CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;

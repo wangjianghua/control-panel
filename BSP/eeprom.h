@@ -14,7 +14,7 @@
 #define	EEPROM_SDA_LOW()	    GPIO_ResetBits(EEPROM_PORT, EEPROM_SDA_PIN)
 #define	EEPROM_SDA_HIGH()	    GPIO_SetBits(EEPROM_PORT, EEPROM_SDA_PIN)
 
-#define EEPROM_TEST_EN          1u
+#define EEPROM_TEST_EN          0u
 
 #define AT24C01                 128u  
 #define AT24C02                 256u  

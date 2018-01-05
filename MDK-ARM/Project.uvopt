@@ -316,7 +316,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>125</TopLine>
+      <TopLine>123</TopLine>
       <CurrentLine>133</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\BSP\StdPeriph_Lib\CMSIS\CM3\DeviceSupport\ST\STM32F10x\startup\arm\startup_stm32f10x_md.s</PathWithFileName>
@@ -964,7 +964,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>144</TopLine>
+      <TopLine>146</TopLine>
       <CurrentLine>152</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\RTX\Source\RTX_Conf_CM.c</PathWithFileName>
@@ -1058,10 +1058,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>34</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>3185</TopLine>
-      <CurrentLine>3193</CurrentLine>
+      <TopLine>6624</TopLine>
+      <CurrentLine>6640</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\APP\cp.c</PathWithFileName>
       <FilenameWithoutPath>cp.c</FilenameWithoutPath>

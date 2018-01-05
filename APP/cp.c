@@ -365,12 +365,14 @@ void vfd_con(void)
                     break;
                 }
 
+#if (VFD_CON_DISP_EN > 0u)
                 led_disp_buf[4] = 0xff;
                 led_disp_buf[3] = 0xff;
                 led_disp_buf[2] = 0xff;
                 led_disp_buf[1] = led_table['C' - 32];
                 led_disp_buf[0] = led_table['P' - 32];
                 LED_OE_ENABLE();
+#endif                
             }
             else
             {
@@ -417,29 +419,30 @@ void LOGO_Disp(void)
 {
     blink_led = 0;
     led_blink_pos = 0;
-    led_disp_buf[5] = 0x00;
-    led_disp_buf[4] = 0x00;
-    led_disp_buf[3] = 0x00;
-    led_disp_buf[2] = 0x00;
-    led_disp_buf[1] = 0x00;
-    led_disp_buf[0] = 0x00;
+    led_disp_buf[5] = 0xff;
+    led_disp_buf[4] = led_table['A' - 32];
+    led_disp_buf[3] = led_table['5' - 32];
+    led_disp_buf[2] = led_table['8' - 32];
+    led_disp_buf[1] = led_table['0' - 32];
+    led_disp_buf[0] = led_table['S' - 32];
+    LED_OE_ENABLE();
+}
+
+void VERSION_Disp(void)
+{
+    led_disp_buf[0] = led_table[CP_VERSION % 10 + 16];    
+    led_disp_buf[1] = led_table[CP_VERSION % 100 / 10 + 16];
+    led_disp_buf[2] = led_table[CP_VERSION % 1000 / 100 + 16] & led_table['.' - 32];
+    led_disp_buf[3] = (CP_VERSION > 999) ? (led_table[CP_VERSION % 10000 / 1000 + 16]) : (0xff);
+    led_disp_buf[4] = (CP_VERSION > 9999) ? (led_table[CP_VERSION % 100000 / 10000 + 16]) : (0xff);
+    led_disp_buf[5] = 0xff;
+    led_blink_pos = 0;
+    blink_led = 0;
     LED_OE_ENABLE();
 }
 
 void MENU_Init(void)
-{
-    blink_led = 0;
-    led_blink_pos = 0;    
-    led_disp_buf[5] = 0xff;
-    led_disp_buf[4] = 0xff;
-    led_disp_buf[3] = 0xff;
-    led_disp_buf[2] = 0xff;
-    led_disp_buf[1] = 0xff;
-    led_disp_buf[0] = 0xff;
-    LED_OE_ENABLE();
-    
-    os_dly_wait(10);
-    
+{   
     form_id = FORM_ID_HOME1;
     
     os_sem_send(&key_sem);
@@ -581,14 +584,20 @@ bool keep_vfd_connect(void)
                 if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                    (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                 {
-                    form_id = FORM_ID_ERR;
+                    if(0 == cp_para_ram.err_repeat_timeout)
+                    {
+                        form_id = FORM_ID_ERR;
+                    }
                 }
 
                 cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
             }
             else
             {
-                form_id = FORM_ID_ERR;
+                if(0 == cp_para_ram.err_repeat_timeout)
+                {
+                    form_id = FORM_ID_ERR;
+                }
             }           
         }
         else
@@ -861,7 +870,12 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
-            break;
+            cp_para_ram.err_repeat_timeout = ERR_REPEAT_TIMEOUT;
+            
+            form_id = FORM_ID_HOME;
+
+            return (FORM_MSG_DATA);
+            //break;
             
         case KEY_MSG_EXIT:
             cp_para_ram.clr_err = TRUE;
@@ -1129,18 +1143,24 @@ void form_home_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            i = FORM_HOME_READ_CMD;
-                            
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                i = FORM_HOME_READ_CMD;
+                                
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        i = FORM_HOME_READ_CMD;
-                        
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            i = FORM_HOME_READ_CMD;
+
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -1451,14 +1471,20 @@ void form_ref_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -1721,14 +1747,20 @@ void form_ref_val_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -1980,14 +2012,20 @@ void form_para_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -2300,14 +2338,20 @@ void form_para_group_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -2789,14 +2833,20 @@ void form_para_grade_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -3586,14 +3636,20 @@ void form_para_val_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -3860,14 +3916,20 @@ void form_copy_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -4111,14 +4173,20 @@ void form_copy_upload_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -4362,14 +4430,20 @@ void form_copy_download_all_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -4613,14 +4687,20 @@ void form_copy_download_part_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -4922,14 +5002,20 @@ void copy_upload_rate_init(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -5101,14 +5187,20 @@ void copy_comm_reset(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -5277,14 +5369,20 @@ void form_copy_upload_rate_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -5646,14 +5744,20 @@ void copy_download_all_rate_init(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -5944,14 +6048,20 @@ void form_copy_download_all_rate_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -6367,14 +6477,20 @@ void form_copy_download_part_rate_callback(void)
                         if((cp_para_ram.fb_sts_word1 & 0x8000) || //0303.Bit15£¨π ’œ
                            (cp_para_ram.fb_sts_word2 & 0x0001))   //0304.Bit0£¨±®æØ
                         {
-                            form_id = FORM_ID_ERR;
+                            if(0 == cp_para_ram.err_repeat_timeout)
+                            {
+                                form_id = FORM_ID_ERR;
+                            }
                         }
 
                         cp_para_ram.ref = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
                     }
                     else
                     {
-                        form_id = FORM_ID_ERR;
+                        if(0 == cp_para_ram.err_repeat_timeout)
+                        {
+                            form_id = FORM_ID_ERR;
+                        }
                     }
                     break;
 
@@ -6589,6 +6705,8 @@ __task void AppTaskCP(void)
         
 #if (EEPROM_TEST_EN > 0u)
     EEPROM_Test();
+#else
+    VERSION_Disp();
 #endif
 
     MEM_Init();
@@ -6605,17 +6723,32 @@ __task void AppTaskCP(void)
         {
         case OS_R_TMO: 
             key_msg = KEY_MSG_NONE;
+
+            if(cp_para_ram.err_repeat_timeout)
+            {
+                cp_para_ram.err_repeat_timeout--;
+            }
             break;
             
         case OS_R_SEM:
         case OS_R_OK:
             key_msg = KEY_MSG;
+
+            if(cp_para_ram.err_repeat_timeout)
+            {
+                cp_para_ram.err_repeat_timeout = ERR_REPEAT_TIMEOUT;
+            }
             
             os_sem_send(&key_sem);
             break;
             
         default:   
             key_msg = KEY_MSG_NONE;
+
+            if(cp_para_ram.err_repeat_timeout)
+            {
+                cp_para_ram.err_repeat_timeout--;
+            }
             break;
         }
 

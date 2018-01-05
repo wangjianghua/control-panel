@@ -25,8 +25,8 @@
 #define LED_X5_ENABLE()         GPIO_ResetBits(GPIOB, GPIO_Pin_11)
 #define LED_X5_DISABLE()        GPIO_SetBits(GPIOB, GPIO_Pin_11)
 
-#define LED_DISP_TIME           2u
-#define LED_BLINK_TIME          20u
+#define LED_DISP_TIME           1u
+#define LED_BLINK_TIME          50u
 
 #define LED_DISP_BUF_SIZE       6u
 
