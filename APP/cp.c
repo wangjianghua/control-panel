@@ -3673,8 +3673,13 @@ void form_para_val_callback(void)
 
 static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 {
+    static u16 func_code;
+
+    
     if(FORM_MSG_DATA == form_msg)
     {
+        func_code = cp_para_ram.group * 100 + cp_para_ram.grade;
+        
         cp_para_ram.vfd_para_limit = limit_update(); //更新功能码界限
     }
     else if(FORM_MSG_KEY == form_msg)
@@ -3746,9 +3751,43 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
 
         case KEY_MSG_ENTER:            
             if(TRUE == func_code_write())
-            {
+            {    
                 led_blink_pos = 0;
-                cp_para_ram.vfd_para_shift = 0;
+                cp_para_ram.vfd_para_shift = 0;          
+                
+                switch(func_code)
+                {
+                case 10502:
+                    if(1 == cp_para_ram.vfd_para_val)
+                    {
+                        cp_para_ram.pwr_mod |= 0x01;
+                    
+                        if(0x03 == (cp_para_ram.pwr_mod & 0x03)) //更改功率后，控制盘复位
+                        {
+                            cp_para_ram.pwr_mod = 0;
+                            
+                            STM32_SoftReset();
+                        }
+                    }
+                    break;
+                    
+                case 10511:
+                    if(4012 == cp_para_ram.vfd_para_val)
+                    {
+                        cp_para_ram.pwr_mod |= 0x02;
+                        
+                        if(0x03 == (cp_para_ram.pwr_mod & 0x03)) //更改功率后，控制盘复位
+                        {
+                            cp_para_ram.pwr_mod = 0;
+                            
+                            STM32_SoftReset();
+                        }
+                    }
+                    break;
+                    
+                default:
+                    break;            
+                }        
                 
                 return (FORM_MSG_NONE);
             }

@@ -263,7 +263,7 @@ u8 ReadKeyVal(void)
         break;
         
     case 5:
-        if(count > 20)
+        if(count > 10)
         {
             count = 0;
             key_val = key + 36;

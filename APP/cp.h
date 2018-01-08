@@ -200,6 +200,7 @@ typedef struct _cp_para_ram
     u8 vfd_para_shift; //变频器参数位切换
     u8 vfd_para_attr; //变频器参数属性
     u8 vfd_para_format; //变频器参数格式
+    u8 pwr_mod; //功率更改
     u16 count; //计数器
     u16 ref; //变频器给定值
     u16 ref_mod; //给定更改值
