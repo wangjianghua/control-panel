@@ -20,7 +20,7 @@
 #include "includes.h"
 
 /* Private typedef -----------------------------------------------------------*/
-typedef unsigned int OS_STK;
+typedef unsigned long long OS_STK; //U64
 
 /* Private macro -------------------------------------------------------------*/
 #define APP_CFG_TASK_START_PRIO             1u
@@ -29,11 +29,11 @@ typedef unsigned int OS_STK;
 #define APP_CFG_TASK_UART_PRIO              4u
 #define APP_CFG_TASK_CP_PRIO                5u
 
-#define APP_CFG_TASK_START_STK_SIZE         128u
-#define APP_CFG_TASK_DISP_STK_SIZE          128u
-#define APP_CFG_TASK_KEY_STK_SIZE           256u
-#define APP_CFG_TASK_UART_STK_SIZE          128u
-#define APP_CFG_TASK_CP_STK_SIZE            512u
+#define APP_CFG_TASK_START_STK_SIZE         512u
+#define APP_CFG_TASK_DISP_STK_SIZE          512u
+#define APP_CFG_TASK_KEY_STK_SIZE           1024u
+#define APP_CFG_TASK_UART_STK_SIZE          512u
+#define APP_CFG_TASK_CP_STK_SIZE            2048u
 
 /* Private variables ---------------------------------------------------------*/
 OS_TID TaskDisp;
@@ -41,11 +41,11 @@ OS_TID TaskKey;
 OS_TID TaskUart;
 OS_TID TaskCP;
 
-static OS_STK AppTaskStartStk[APP_CFG_TASK_START_STK_SIZE];
-static OS_STK AppTaskDispStk[APP_CFG_TASK_DISP_STK_SIZE];
-static OS_STK AppTaskKeyStk[APP_CFG_TASK_KEY_STK_SIZE];
-static OS_STK AppTaskUartStk[APP_CFG_TASK_UART_STK_SIZE];
-static OS_STK AppTaskCPStk[APP_CFG_TASK_CP_STK_SIZE];
+static OS_STK AppTaskStartStk[APP_CFG_TASK_START_STK_SIZE / 8];
+static OS_STK AppTaskDispStk[APP_CFG_TASK_DISP_STK_SIZE / 8];
+static OS_STK AppTaskKeyStk[APP_CFG_TASK_KEY_STK_SIZE / 8];
+static OS_STK AppTaskUartStk[APP_CFG_TASK_UART_STK_SIZE / 8];
+static OS_STK AppTaskCPStk[APP_CFG_TASK_CP_STK_SIZE / 8];
 
 /* Private function prototypes -----------------------------------------------*/
 void AppEventCreate(void);

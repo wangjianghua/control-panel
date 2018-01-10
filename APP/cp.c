@@ -5857,14 +5857,14 @@ bool check_vfd_para(void)
             
             for(i = 0, crc = 0; i < (len + 2); i++)
             {
-                if(0 == (i % 20))
+                if(0 == (i % 10))
                 {
                     keep_vfd_connect();
                 }
                 
                 crc += EEPROM_ReadByte(VFD_PARA_LEN_ADDR + i);
 
-                os_dly_wait(5); //5ms
+                os_dly_wait(10); //10ms
             }
 
             if(cp_para_ram.vfd_para_crc == crc)
