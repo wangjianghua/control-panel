@@ -3,8 +3,8 @@
 
 
 #define FUNC_CODE_UNIT_NUM                      8u
-#define FUNC_CODE_ENUM_NUM                      14u
-#define FUNC_CODE_LIMIT_NUM                     300u
+#define FUNC_CODE_ENUM_NUM                      20u
+#define FUNC_CODE_LIMIT_NUM                     292u
 
 typedef enum
 {

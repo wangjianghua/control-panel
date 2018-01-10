@@ -1635,7 +1635,16 @@ void form_ref_val_disp(void)
     led_disp_buf[4] = (disp_para_val > 9999) ? (led_table[disp_para_val % 100000 / 10000 + 16]) : (0xff);
     led_disp_buf[5] |= LED_V_A_Hz_MASK;
     led_disp_buf[5] &= LED_Hz;
-    led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+
+    if(0 == cp_para_ram.key_mod_timeout)
+    {
+        led_blink_pos = cp_para_ram.vfd_para_shift + 1;
+    }
+    else
+    {
+        led_blink_pos = 0;
+    }
+    
     blink_led = 0;
     LED_OE_ENABLE();
 }
@@ -1874,6 +1883,8 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             {
                 cp_para_ram.ref_mod = MAX_REF_VAL;
             }
+
+            cp_para_ram.key_mod_timeout = KEY_MOD_TIMEOUT;
             break;
 
         case KEY_MSG_DOWN:
@@ -1893,6 +1904,8 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
 
                 cp_para_ram.vfd_para_shift = 0;
             }
+
+            cp_para_ram.key_mod_timeout = KEY_MOD_TIMEOUT;
             break;
 
         default:
@@ -3219,7 +3232,8 @@ void form_para_val_disp(void)
     led_disp_buf[5] &= ((u8)LED_V_A_Hz != func_code_unit[disp_para_unit]) ? (func_code_unit[disp_para_unit]) : (0xff);
 
     if((6 == cp_para_ram.vfd_para_format) ||
-       (TRUE == cp_para_ram.vfd_para_enum))
+       (TRUE == cp_para_ram.vfd_para_enum) ||
+       (0 != cp_para_ram.key_mod_timeout))
     {
         led_blink_pos = 0;
     }
@@ -3818,6 +3832,8 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
                     para_update(KEY_MSG_UP);
             	}
             }
+
+            cp_para_ram.key_mod_timeout = KEY_MOD_TIMEOUT;
             break;
 
         case KEY_MSG_DOWN:
@@ -3836,6 +3852,8 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
                     para_update(KEY_MSG_DOWN);
                 }
             }
+
+            cp_para_ram.key_mod_timeout = KEY_MOD_TIMEOUT;
             break;
 
         default:
@@ -6767,6 +6785,11 @@ __task void AppTaskCP(void)
             {
                 cp_para_ram.err_repeat_timeout--;
             }
+
+            if(cp_para_ram.key_mod_timeout)
+            {
+                cp_para_ram.key_mod_timeout--;
+            }
             break;
             
         case OS_R_SEM:
@@ -6787,6 +6810,11 @@ __task void AppTaskCP(void)
             if(cp_para_ram.err_repeat_timeout)
             {
                 cp_para_ram.err_repeat_timeout--;
+            }
+
+            if(cp_para_ram.key_mod_timeout)
+            {
+                cp_para_ram.key_mod_timeout--;
             }
             break;
         }

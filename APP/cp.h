@@ -17,6 +17,8 @@
 
 #define ERR_REPEAT_TIMEOUT      40u //10s
 
+#define KEY_MOD_TIMEOUT         10u //2.5s
+
 #define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
 
 #define CP_VERSION              100u //控制盘软件版本
@@ -216,7 +218,8 @@ typedef struct _cp_para_ram
     u16 alarm_code; //报警码
     u16 fb_sts_word1; //总线状态字 1
     u16 fb_sts_word2; //总线状态字 2
-    u32 err_repeat_timeout; //错误重复显示超时时间
+    u16 err_repeat_timeout; //错误重复显示超时时间
+    u16 key_mod_timeout; //按键更改超时时间
 } CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;
