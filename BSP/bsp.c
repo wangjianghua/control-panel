@@ -275,7 +275,7 @@ void KEY_Init(void)
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
-void Eeprom_Init(void)
+void EEPROM_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
       
@@ -363,7 +363,7 @@ void BSP_Init(void)
 
     KEY_Init();
 
-    Eeprom_Init();
+    EEPROM_Init();
 
     USART1_Init();
 }

@@ -2,8 +2,6 @@
 #define __CP_H__
 
 
-#define MAX_REF_VAL             (500u * 100u) //最大给定值
-
 #define VFD_LOC                 TRUE  //表示变频器处于本地控制，即控制命令来自控制盘
 #define VFD_REM                 FALSE //表示变频器处于远程控制，例如I/O (X1)或现场总线
 
@@ -180,7 +178,6 @@ typedef struct _cp_para_ram
     bool lr; //本地远程操作方式，本地LOC、远程REM
     bool run; //运行
     bool stop; //停止
-    bool ref_chang; //给定更改标志
     bool fr; //旋转状态，正转FWD、反转REV  
     bool func_code_visible; //隐藏功能码可视标志
     bool disp_para_sign[3]; //主界面显示参数符号位
@@ -204,8 +201,6 @@ typedef struct _cp_para_ram
     u8 vfd_para_format; //变频器参数格式
     u8 pwr_mod; //功率更改
     u16 count; //计数器
-    u16 ref; //变频器给定值
-    u16 ref_mod; //给定更改值
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型
     u16 vfd_para_val; //变频器参数值
@@ -220,6 +215,12 @@ typedef struct _cp_para_ram
     u16 fb_sts_word2; //总线状态字 2
     u16 err_repeat_timeout; //错误重复显示超时时间
     u16 key_mod_timeout; //按键更改超时时间
+    s32 ref1; //给定1
+    s32 ref2; //给定2
+    s32 ref_cur; //当前给定
+    s32 ref_min; //给定最小值
+    s32 ref_max; //给定最大值
+    s32 *p_ref_mod; //更改给定
 } CP_PARA_RAM, *P_CP_PARA_RAM;
 
 extern OS_SEM cp_sem;

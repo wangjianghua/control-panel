@@ -36,10 +36,6 @@
 extern OS_SEM key_sem;
 extern XDATA u8 key_value;
 
-BIT CheckKeyPress(void);
-u8 KeyScan(void);
-BIT ReadKeyPress(u8 key);
-u8 ReadKeyVal(void);
 __task void AppTaskKey(void);
 
 

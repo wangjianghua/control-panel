@@ -482,5 +482,6 @@ CODE FUNC_CODE_LIMIT func_code_limit[FUNC_CODE_LIMIT_NUM] =
     {9907, 100, 5000},
     {9908, 50, 30000},
     {9909, 2, 33},
+    {9915, 0, 97},
 };
 

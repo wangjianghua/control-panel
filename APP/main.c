@@ -4,7 +4,7 @@
  * @details  Control panel
  * @author   华兄
  * @email    jianghua.wang@foxmail.com
- * @date     2017
+ * @date     2018
  * @version  vX.XX
  * @par Copyright (c):  
  *           华兄电子
@@ -36,10 +36,10 @@ typedef unsigned long long OS_STK; //U64
 #define APP_CFG_TASK_CP_STK_SIZE            2048u
 
 /* Private variables ---------------------------------------------------------*/
-OS_TID TaskDisp;
-OS_TID TaskKey;
-OS_TID TaskUart;
-OS_TID TaskCP;
+OS_TID TaskDispId;
+OS_TID TaskKeyId;
+OS_TID TaskUartId;
+OS_TID TaskCPId;
 
 static OS_STK AppTaskStartStk[APP_CFG_TASK_START_STK_SIZE / 8];
 static OS_STK AppTaskDispStk[APP_CFG_TASK_DISP_STK_SIZE / 8];
@@ -62,25 +62,25 @@ void AppEventCreate(void)
 
 void AppTaskCreate(void)
 {
-    TaskDisp = os_tsk_create_user(AppTaskDisp,
-                                  APP_CFG_TASK_DISP_PRIO,
-                                  &AppTaskDispStk,
-                                  sizeof(AppTaskDispStk));
+    TaskDispId = os_tsk_create_user(AppTaskDisp,
+                                    APP_CFG_TASK_DISP_PRIO,
+                                    &AppTaskDispStk,
+                                    sizeof(AppTaskDispStk));
 
-    TaskKey = os_tsk_create_user(AppTaskKey,
-                                 APP_CFG_TASK_KEY_PRIO,
-                                 &AppTaskKeyStk,
-                                 sizeof(AppTaskKeyStk));
+    TaskKeyId = os_tsk_create_user(AppTaskKey,
+                                   APP_CFG_TASK_KEY_PRIO,
+                                   &AppTaskKeyStk,
+                                   sizeof(AppTaskKeyStk));
 
-    TaskUart = os_tsk_create_user(AppTaskUart,
-                                  APP_CFG_TASK_UART_PRIO,
-                                  &AppTaskUartStk,
-                                  sizeof(AppTaskUartStk));
+    TaskUartId = os_tsk_create_user(AppTaskUart,
+                                    APP_CFG_TASK_UART_PRIO,
+                                    &AppTaskUartStk,
+                                    sizeof(AppTaskUartStk));
 
-    TaskCP = os_tsk_create_user(AppTaskCP,
-                                APP_CFG_TASK_CP_PRIO,
-                                &AppTaskCPStk,
-                                sizeof(AppTaskCPStk));
+    TaskCPId = os_tsk_create_user(AppTaskCP,
+                                  APP_CFG_TASK_CP_PRIO,
+                                  &AppTaskCPStk,
+                                  sizeof(AppTaskCPStk));
 }
 
 __task void AppTaskStart(void)
@@ -96,7 +96,7 @@ __task void AppTaskStart(void)
   * @param  None
   * @retval None
   */
-int  main(void)
+int main(void)
 {
     BSP_Init();
 
