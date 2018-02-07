@@ -3529,6 +3529,11 @@ bool para_update(unsigned int key_msg)
                     cp_para_ram.vfd_para_val = cp_para_ram.vfd_para_upper;
                 }
             }
+
+            if(cp_para_ram.vfd_para_shift >= get_data_length(cp_para_ram.vfd_para_val))
+            {
+                cp_para_ram.vfd_para_shift = get_data_length(cp_para_ram.vfd_para_val) - 1;
+            }
         }
 
         ret = TRUE;
@@ -3572,7 +3577,12 @@ bool para_update(unsigned int key_msg)
                 {
                     cp_para_ram.vfd_para_val = cp_para_ram.vfd_para_lower;
                 }
-            }           
+            }    
+
+            if(cp_para_ram.vfd_para_shift >= get_data_length(cp_para_ram.vfd_para_val))
+            {
+                cp_para_ram.vfd_para_shift = get_data_length(cp_para_ram.vfd_para_val) - 1;
+            }
         }
 
         ret = TRUE;
