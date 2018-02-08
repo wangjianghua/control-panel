@@ -644,6 +644,45 @@ bool cp_alarm(u16 alarm_code)
 	return (TRUE);
 }
 
+bool vfd_fault(u16 fault_code)
+{
+	if(0 == fault_code)
+	{
+		return (FALSE);
+	}
+
+    led_disp_buf[0] = (fault_code > 0) ? (led_table[fault_code % 10 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[1] = (fault_code > 9) ? (led_table[fault_code % 100 / 10 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[2] = (fault_code > 99) ? (led_table[fault_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[3] = (fault_code > 999) ? (led_table[fault_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[4] = led_table['F' - 32];
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_blink_pos = 6;
+    LED_OE_ENABLE();
+	
+	return (TRUE);    
+}
+
+bool vfd_alarm(u16 alarm_code)
+{
+	if(0 == alarm_code)
+	{
+		return (FALSE);
+	}
+
+    led_disp_buf[0] = (alarm_code > 0) ? (led_table[alarm_code % 10 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[1] = (alarm_code > 9) ? (led_table[alarm_code % 100 / 10 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[2] = (alarm_code > 99) ? (led_table[alarm_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[3] = (alarm_code > 999) ? (led_table[alarm_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
+    led_disp_buf[4] = led_table['A' - 32];
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_blink_pos = 0;
+    blink_led = 0;
+    LED_OE_ENABLE();
+	
+	return (TRUE);    
+}
+
 CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
     /* FORM_ERR_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -658,33 +697,12 @@ void form_err_callback(void)
     OS_RESULT result;
     u8 i, len;
     unsigned int crc;
-    static bool fault = FALSE, alarm = FALSE;
+    static u16 count = 0, code = 0;
+    static bool (*p_err_func)(u16 code) = vfd_fault;
     
-    
-    for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
-    { 
-        if((FORM_ERR_FAULT_CMD == i) && 
-           (FALSE == fault))
-        {
-            i = FORM_ERR_ALARM_CMD;
-        }
-        else if((FORM_ERR_FAULT_CMD == i) && 
-                (TRUE == fault))
-        {
-            fault = FALSE;
-        }
 
-        if((FORM_ERR_ALARM_CMD == i) &&
-           (FALSE == alarm))
-        {
-            return;
-        }
-        else if((FORM_ERR_ALARM_CMD == i) &&
-                (TRUE == alarm))
-        {
-            alarm = FALSE;
-        }
-        
+    for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
+    {         
         len = (form_err_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, form_err_cmd[i], len);
@@ -697,13 +715,6 @@ void form_err_callback(void)
             UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
             UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
 
-            if(TRUE == cp_para_ram.clr_err)
-            {
-                cp_para_ram.clr_err = FALSE;
-                
-                UART_TX_BUF[20] |= 0x10;
-            }
-
             UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
             UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
             UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
@@ -713,6 +724,13 @@ void form_err_callback(void)
             UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
             UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
             UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+
+            if(TRUE == cp_para_ram.clr_err)
+            {
+                cp_para_ram.clr_err = FALSE;
+                
+                UART_TX_BUF[20] |= 0x10;
+            }
 
             if(TRUE == cp_para_ram.stop)
             {
@@ -787,50 +805,16 @@ void form_err_callback(void)
                         /* 0303 */
                         cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
 
-                        if(cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) //0303.Bit15£¬¹ÊÕÏ
-                        {
-                            fault = TRUE;
-                        }
-
-                        if(cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM) //0304.Bit0£¬±¨¾¯
-                        {
-                            alarm = TRUE;
-                        }
-
                         cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
                     }
                     break;
 
                 case FORM_ERR_FAULT_CMD:
                     cp_para_ram.fault_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
-
-                    if(0 != cp_para_ram.fault_code)
-                    {
-                        led_disp_buf[0] = (cp_para_ram.fault_code > 0) ? (led_table[cp_para_ram.fault_code % 10 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[1] = (cp_para_ram.fault_code > 9) ? (led_table[cp_para_ram.fault_code % 100 / 10 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[2] = (cp_para_ram.fault_code > 99) ? (led_table[cp_para_ram.fault_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[3] = (cp_para_ram.fault_code > 999) ? (led_table[cp_para_ram.fault_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[4] = led_table['F' - 32];
-                        led_disp_buf[5] |= LED_V_A_Hz_MASK;
-                        led_blink_pos = 6;
-                        LED_OE_ENABLE();
-                    }
                     break;
 
                 case FORM_ERR_ALARM_CMD:
                     cp_para_ram.alarm_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
-
-                    if(0 != cp_para_ram.alarm_code)
-                    {
-                        led_disp_buf[0] = (cp_para_ram.alarm_code > 0) ? (led_table[cp_para_ram.alarm_code % 10 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[1] = (cp_para_ram.alarm_code > 9) ? (led_table[cp_para_ram.alarm_code % 100 / 10 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[2] = (cp_para_ram.alarm_code > 99) ? (led_table[cp_para_ram.alarm_code % 1000 / 100 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[3] = (cp_para_ram.alarm_code > 999) ? (led_table[cp_para_ram.alarm_code % 10000 / 1000 + 16]) : (led_table['0' - 32]);
-                        led_disp_buf[4] = led_table['A' - 32];
-                        led_disp_buf[5] |= LED_V_A_Hz_MASK;
-                        led_blink_pos = 6;
-                        LED_OE_ENABLE();
-                    }
                     break;
 
                 default:
@@ -846,6 +830,38 @@ void form_err_callback(void)
         {
             err_con();
         }
+    }
+
+    if((0 != cp_para_ram.fault_code) &&
+       (0 != cp_para_ram.alarm_code))
+    {
+        p_err_func(code);
+            
+        count++;
+
+        if(0 == (count % 10))
+        {
+            count = 0;
+            
+            if(vfd_fault == p_err_func)
+            {
+                p_err_func = vfd_alarm;
+                code = cp_para_ram.alarm_code;
+            }
+            else
+            {
+                p_err_func = vfd_fault;
+                code = cp_para_ram.fault_code;
+            }
+        }
+    }
+    else
+    {
+        vfd_fault(cp_para_ram.fault_code);
+        vfd_alarm(cp_para_ram.alarm_code);
+
+        count = 0;
+        p_err_func = vfd_fault;
     }
 }
 
@@ -868,6 +884,11 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_ENTER:
+            cp_para_ram.stop = TRUE;
+            cp_para_ram.vfd_state = VFD_STOP;
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LED_OE_ENABLE();
+            
             cp_para_ram.err_repeat_timeout = ERR_REPEAT_TIMEOUT;
             
             form_id = FORM_ID_HOME;
@@ -876,6 +897,11 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             //break;
             
         case KEY_MSG_EXIT:
+            cp_para_ram.stop = TRUE;
+            cp_para_ram.vfd_state = VFD_STOP;
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LED_OE_ENABLE();
+            
             cp_para_ram.clr_err = TRUE;
 
             form_id = FORM_ID_HOME;
