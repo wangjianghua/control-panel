@@ -683,6 +683,19 @@ bool vfd_alarm(u16 alarm_code)
 	return (TRUE);    
 }
 
+void vfd_err_no(void)
+{
+    blink_led = 0;
+    led_blink_pos = 0;
+    led_disp_buf[5] |= LED_V_A_Hz_MASK;
+    led_disp_buf[4] = 0xff;
+    led_disp_buf[3] = 0xff;
+    led_disp_buf[2] = led_table['E' - 32] & led_table['.' - 32];
+    led_disp_buf[1] = led_table['N' - 32];
+    led_disp_buf[0] = led_table['O' - 32];
+    LED_OE_ENABLE();
+}
+
 CODE u8 form_err_cmd[MAX_FORM_ERR_CMD][32] = {
     /* FORM_ERR_SET_CMD */
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -697,8 +710,9 @@ void form_err_callback(void)
     OS_RESULT result;
     u8 i, len;
     unsigned int crc;
-    static u16 count = 0, code = 0;
-    static bool (*p_err_func)(u16 code) = vfd_fault;
+    static u8 count = VFD_ERR_DISP_TIME - 1;
+    static u16 code = 0;
+    static bool (*p_err_disp_func)(u16 code) = vfd_fault;
     
 
     for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
@@ -832,36 +846,59 @@ void form_err_callback(void)
         }
     }
 
-    if((0 != cp_para_ram.fault_code) &&
-       (0 != cp_para_ram.alarm_code))
-    {
-        p_err_func(code);
-            
+    if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) &&
+       (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))
+    {            
         count++;
 
-        if(0 == (count % 10))
+        if(0 == (count % VFD_ERR_DISP_TIME))
         {
             count = 0;
             
-            if(vfd_fault == p_err_func)
+            if(vfd_fault == p_err_disp_func)
             {
-                p_err_func = vfd_alarm;
+                p_err_disp_func = vfd_alarm;
                 code = cp_para_ram.alarm_code;
             }
             else
             {
-                p_err_func = vfd_fault;
+                p_err_disp_func = vfd_fault;
                 code = cp_para_ram.fault_code;
             }
         }
+
+        if(NULL != p_err_disp_func)
+        {
+            p_err_disp_func(code);
+        }
+    }
+    else if(cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT)
+    {
+        if(FALSE == vfd_fault(cp_para_ram.fault_code))
+        {
+            vfd_err_no();
+        }
+
+        count = VFD_ERR_DISP_TIME - 1;
+        code = 0;
+        p_err_disp_func = vfd_fault;
+    }
+    else if(cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM)
+    {
+        if(FALSE == vfd_alarm(cp_para_ram.alarm_code))
+        {
+            vfd_err_no();
+        }
+
+        count = VFD_ERR_DISP_TIME - 1;
+        code = 0;
+        p_err_disp_func = vfd_fault;
     }
     else
     {
-        vfd_fault(cp_para_ram.fault_code);
-        vfd_alarm(cp_para_ram.alarm_code);
-
-        count = 0;
-        p_err_func = vfd_fault;
+        count = VFD_ERR_DISP_TIME - 1;
+        code = 0;
+        p_err_disp_func = vfd_fault;
     }
 }
 
@@ -908,10 +945,30 @@ static int form_err(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_UP:
-            break;
+            cp_para_ram.stop = TRUE;
+            cp_para_ram.vfd_state = VFD_STOP;
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LED_OE_ENABLE();
+            
+            cp_para_ram.err_repeat_timeout = ERR_REPEAT_TIMEOUT;
+            
+            form_id = FORM_ID_HOME;
+
+            return (FORM_MSG_DATA);
+            //break;
 
         case KEY_MSG_DOWN:
-            break;
+            cp_para_ram.stop = TRUE;
+            cp_para_ram.vfd_state = VFD_STOP;
+            led_disp_buf[5] |= LED_RUN_MASK;
+            LED_OE_ENABLE();
+            
+            cp_para_ram.err_repeat_timeout = ERR_REPEAT_TIMEOUT;
+            
+            form_id = FORM_ID_HOME;
+
+            return (FORM_MSG_DATA);
+            //break;
 
         default:
             break;

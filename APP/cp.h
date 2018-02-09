@@ -17,6 +17,8 @@
 
 #define KEY_MOD_TIMEOUT         10u //2.5s
 
+#define VFD_ERR_DISP_TIME       10u //2.5s
+
 #define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
 
 #define CP_VERSION              100u //控制盘软件版本
