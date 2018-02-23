@@ -469,7 +469,7 @@ bool form_key_callback(unsigned int key_msg)
     
     switch(key_msg)
     {
-    case KEY_MSG_LOC_REM_LONG:
+    case KEY_MSG_LOC_REM:
         if(cp_para_ram.fb_sts_word2 & FB_STS_WORD_REF1_REQ)
         {
             cp_para_ram.ref1 = 0;
@@ -710,9 +710,9 @@ void form_err_callback(void)
     OS_RESULT result;
     u8 i, len;
     unsigned int crc;
-    static u8 count = VFD_ERR_DISP_TIME - 1;
-    static u16 code = 0;
+    static u8 count = 0;
     static bool (*p_err_disp_func)(u16 code) = vfd_fault;
+    static u16 *p_code = &cp_para_ram.fault_code;
     
 
     for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
@@ -849,6 +849,12 @@ void form_err_callback(void)
     if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) &&
        (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))
     {            
+        if((NULL != p_err_disp_func) &&
+           (NULL != p_code))
+        {
+            p_err_disp_func(*p_code);
+        }
+        
         count++;
 
         if(0 == (count % VFD_ERR_DISP_TIME))
@@ -858,18 +864,13 @@ void form_err_callback(void)
             if(vfd_fault == p_err_disp_func)
             {
                 p_err_disp_func = vfd_alarm;
-                code = cp_para_ram.alarm_code;
+                p_code = &cp_para_ram.alarm_code;
             }
             else
             {
                 p_err_disp_func = vfd_fault;
-                code = cp_para_ram.fault_code;
+                p_code = &cp_para_ram.fault_code;
             }
-        }
-
-        if(NULL != p_err_disp_func)
-        {
-            p_err_disp_func(code);
         }
     }
     else if(cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT)
@@ -879,9 +880,9 @@ void form_err_callback(void)
             vfd_err_no();
         }
 
-        count = VFD_ERR_DISP_TIME - 1;
-        code = 0;
-        p_err_disp_func = vfd_fault;
+        count = 0;
+        p_err_disp_func = vfd_fault; 
+        p_code = &cp_para_ram.fault_code;        
     }
     else if(cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM)
     {
@@ -890,15 +891,15 @@ void form_err_callback(void)
             vfd_err_no();
         }
 
-        count = VFD_ERR_DISP_TIME - 1;
-        code = 0;
-        p_err_disp_func = vfd_fault;
+        count = 0;
+        p_err_disp_func = vfd_fault; 
+        p_code = &cp_para_ram.fault_code;
     }
     else
     {
-        count = VFD_ERR_DISP_TIME - 1;
-        code = 0;
-        p_err_disp_func = vfd_fault;
+        count = 0;
+        p_err_disp_func = vfd_fault; 
+        p_code = &cp_para_ram.fault_code;
     }
 }
 
