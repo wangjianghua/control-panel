@@ -36,6 +36,7 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_msg);
 static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_msg);
 
+#if 0
 CODE unsigned int wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
 	0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,  
@@ -91,6 +92,38 @@ unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen
 
     return (J_u16Result);  
 }
+#else
+unsigned int CRC16Calculate(unsigned char *data_value, unsigned int length)
+{
+    unsigned int crc_value = 0xFFFF;
+    int i;
+
+
+    if(length > (UART_MAX_LEN - 2))
+    {
+        return (0);
+    }
+
+    while(length--)
+    {
+        crc_value ^= *data_value++;
+
+        for(i = 0; i < 8; i++)
+        {
+            if(crc_value & 0x0001)
+            {
+                crc_value = (crc_value >> 1) ^ 0xa001;
+            }
+            else
+            {
+                crc_value = crc_value >> 1;
+            }
+        }
+    }
+
+    return (crc_value);
+}
+#endif
 
 bool uart_recv_align(void)
 {
@@ -152,7 +185,6 @@ CODE u8 vfd_con_cmd[][32] = {
     {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x07, 0xA2, 0x50, 0x82, 0x00, 0xC9},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x03, 0x06, 0x07, 0xA2, 0x50, 0x82, 0x00, 0x65},
 	{0xF7, 0x17, 0x00, 0x59, 0x00, 0x0B, 0x00, 0x59, 0x00, 0x09, 0x12, 0x04, 0xA1, 0x50, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-    {0xF7, 0x17, 0x00, 0x59, 0x00, 0x03, 0x00, 0x59, 0x00, 0x02, 0x04, 0x0E, 0xA1, 0x50, 0x02},
 };
 
 void vfd_con(void)
@@ -161,22 +193,12 @@ void vfd_con(void)
     s8 i;
     u8 len;
     unsigned int crc;
-    bool done = FALSE;
     
 
     memset(&cp_para_ram, 0, sizeof(cp_para_ram));
    
     for(i = 0; i < 8; i++)
     {        
-        if((5 == i) && 
-           (TRUE == cp_para_ram.func_code_visible) &&
-           (FALSE == done))
-        {
-            done = TRUE;
-            
-            i = 8;
-        }
-        
         len = (vfd_con_cmd[i][10] + 11) % UART_TX_LEN;
                         
         memcpy(UART_TX_BUF, vfd_con_cmd[i], len);
@@ -278,10 +300,6 @@ void vfd_con(void)
 			}            
             break;
 
-        case 8:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
-            break;
-
         default:
             break;
         }
@@ -344,10 +362,6 @@ void vfd_con(void)
                             LED_OE_ENABLE();
                         }
                     }
-                    break;
-
-                case 8:
-                    i = 4;
                     break;
                 
                 default:
@@ -480,6 +494,7 @@ bool form_key_callback(unsigned int key_msg)
         }
         
         cp_para_ram.stop = TRUE;
+        cp_para_ram.vfd_state = VFD_STOP;
         led_disp_buf[5] |= LED_RUN_MASK;
         LED_OE_ENABLE();
 
@@ -3902,38 +3917,10 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
                 led_blink_pos = 0;
                 cp_para_ram.vfd_para_shift = 0;          
                 
-                switch(func_code)
-                {
-                case 10502:
-                    if(1 == cp_para_ram.vfd_para_val)
-                    {
-                        cp_para_ram.pwr_mod |= 0x01;
-                    
-                        if(0x03 == (cp_para_ram.pwr_mod & 0x03)) //更改功率后，控制盘复位
-                        {
-                            cp_para_ram.pwr_mod = 0;
-                            
-                            STM32_SoftReset();
-                        }
-                    }
-                    break;
-                    
-                case 10511:
-                    if(4012 == cp_para_ram.vfd_para_val)
-                    {
-                        cp_para_ram.pwr_mod |= 0x02;
-                        
-                        if(0x03 == (cp_para_ram.pwr_mod & 0x03)) //更改功率后，控制盘复位
-                        {
-                            cp_para_ram.pwr_mod = 0;
-                            
-                            STM32_SoftReset();
-                        }
-                    }
-                    break;
-                    
-                default:
-                    break;            
+                if((PWR_MOD_FUNC_CODE == func_code) &&
+                   (PWR_MOD_PWD == cp_para_ram.vfd_para_val))
+                {                            
+                    STM32_SoftReset();
                 }        
                 
                 return (FORM_MSG_NONE);

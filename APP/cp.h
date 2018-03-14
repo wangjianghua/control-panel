@@ -21,7 +21,7 @@
 
 #define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
 
-#define CP_VERSION              100u //控制盘软件版本
+#define CP_VERSION              110u //控制盘软件版本
 
 #define DOWNLOAD_DEFAULT_LEN    0x0660 //默认下载长度
 
@@ -189,19 +189,18 @@ typedef struct _cp_para_ram
     bool vfd_state; //变频器状态
     bool vfd_para_limit; //变频器参数界限标志
     u8 cmd; //命令字
-	u8 group; //变频器分组
-	u8 grade; //变频器分级
+	u8 group; //变频器功能码组号
+	u8 grade; //变频器功能码标号
 	u8 rate; //进度
 	u8 vfd_para_crc; //变频器参数存取校验码
     u8 group_nearby[4]; //当前附近组号
-    u8 grade_nearby[8]; //当前附近级号
+    u8 grade_nearby[8]; //当前附近标号
     u8 vfd_para_unit; //变频器参数单位
     u8 disp_para_unit[3]; //主界面显示参数单位
     u8 disp_para_format[3]; //主界面显示参数格式
     u8 vfd_para_shift; //变频器参数位切换
     u8 vfd_para_attr; //变频器参数属性
     u8 vfd_para_format; //变频器参数格式
-    u8 pwr_mod; //功率更改
     u16 count; //计数器
     u16 disp_para_val[3]; //主界面显示参数值
     u16 disp_para_type[3]; //主界面显示参数类型

@@ -6,6 +6,9 @@
 #define FUNC_CODE_ENUM_NUM                      20u
 #define FUNC_CODE_LIMIT_NUM                     293u
 
+#define PWR_MOD_FUNC_CODE                       10511u
+#define PWR_MOD_PWD                             4012u
+
 typedef enum
 {
 	BAUD_RATE_1200 = 1200u,

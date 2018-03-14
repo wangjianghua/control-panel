@@ -4,7 +4,7 @@
  * @details  
  * @author   华兄
  * @email    jianghua.wang@foxmail.com
- * @date     2017
+ * @date     2018
  * @version  vX.XX
  * @par Copyright (c):  
  *           华兄电子
@@ -42,73 +42,127 @@ void EEPROM_Delay(u16 dly)
     
 	for(i = 0; i < dly; i++)
 	{
-   	    NOP();
+
 	}
 }
 
 void EEPROM_Start(void) 
 {
+    EEPROM_SDA_Output();
 	EEPROM_SDA_HIGH();
 	EEPROM_SCL_HIGH();
-	EEPROM_Delay(50); 		 
+	EEPROM_Delay(EEPROM_DELAY_TIME); 		 
 	EEPROM_SDA_LOW();
-	EEPROM_Delay(50); 
+	EEPROM_Delay(EEPROM_DELAY_TIME); 
 	EEPROM_SCL_LOW();
-	EEPROM_Delay(50);
 }
 
 void EEPROM_Stop(void) 
 {
-	EEPROM_SDA_LOW();
-	EEPROM_SCL_HIGH();
-	EEPROM_Delay(50); 
-	EEPROM_SDA_HIGH();
-	EEPROM_Delay(50);
+    EEPROM_SDA_Output();
 	EEPROM_SCL_LOW();
-	EEPROM_Delay(50);    
+	EEPROM_SDA_LOW();    
+	EEPROM_Delay(EEPROM_DELAY_TIME); 
+	EEPROM_SCL_HIGH();
+	EEPROM_SDA_HIGH();    
+	EEPROM_Delay(EEPROM_DELAY_TIME);    
 }
 
-u8 EEPROM_RecvByte(void) 
+void EEPROM_WaitAck(void)
+{
+    u8 timeout = 0;
+
+    
+    EEPROM_SDA_Input();
+
+    EEPROM_SDA_HIGH(); 
+    EEPROM_Delay(EEPROM_DELAY_TIME);
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(EEPROM_DELAY_TIME); 
+    
+	while(EEPROM_SDA)
+	{
+        timeout++;
+
+        if(timeout > 250)
+        {
+            EEPROM_Stop();
+                
+            return;
+        }
+    }
+    
+	EEPROM_SCL_LOW();
+}
+
+void EEPROM_Ack(void)
+{
+	EEPROM_SCL_LOW();
+    EEPROM_SDA_Output();
+	EEPROM_SDA_LOW();
+	EEPROM_Delay(EEPROM_DELAY_TIME);
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(EEPROM_DELAY_TIME);
+    EEPROM_SCL_LOW();
+}
+
+void EEPROM_NoAck(void)
+{
+	EEPROM_SCL_LOW();
+    EEPROM_SDA_Output();
+	EEPROM_SDA_HIGH();
+	EEPROM_Delay(EEPROM_DELAY_TIME);
+	EEPROM_SCL_HIGH();
+	EEPROM_Delay(EEPROM_DELAY_TIME);
+    EEPROM_SCL_LOW();
+}
+
+u8 EEPROM_RecvByte(u8 ack) 
 {
 	u8 i, data = 0;
 
 
     EEPROM_SDA_Input();
-    EEPROM_Delay(20);
 
 	for(i = 0; i < 8; i++)
-	{
+	{        
+		EEPROM_SCL_LOW();
+		EEPROM_Delay(EEPROM_DELAY_TIME);
+        EEPROM_SCL_HIGH();
+
 		data <<= 1;
-        
-		EEPROM_SCL_HIGH();
-		EEPROM_Delay(50);
         
 		if(EEPROM_SDA) 
 		{
-            data |= 1;
+            data |= 0x01;
 		}
-        
-		EEPROM_SCL_LOW();
-		EEPROM_Delay(50); 
+
+        EEPROM_Delay(EEPROM_DELAY_TIME);
 	}
 
-    EEPROM_SDA_Output();
-    EEPROM_Delay(20);
-
-	EEPROM_SDA_HIGH();
-	EEPROM_Delay(50);
+    if(EEPROM_ACK == ack)
+    {
+        EEPROM_Ack();
+    }
+    else
+    {
+        EEPROM_NoAck();
+    }
 
 	return (data);
 }
 
 void EEPROM_SendByte(u8 data) 
 {
-	s8 i;
+	u8 i;
 
-    
-	for(i = 7; i >= 0; i--)
-	{
-		if((data >> i) & 0x01)
+
+    EEPROM_SDA_Output();
+    EEPROM_SCL_LOW();
+
+    for(i = 0; i < 8; i++)
+    {
+		if((data & 0x80) >> 7)
 		{
 			EEPROM_SDA_HIGH();
 		}
@@ -116,55 +170,16 @@ void EEPROM_SendByte(u8 data)
 		{
 			EEPROM_SDA_LOW();
 		}
-        
-		EEPROM_SCL_HIGH();
-		EEPROM_Delay(50); 
-		EEPROM_SCL_LOW();
-		EEPROM_Delay(50); 
-	}
 
-	EEPROM_SDA_HIGH();
-	EEPROM_Delay(50);    
-}
+        data <<= 1;
 
-void EEPROM_WaitAck(void)
-{
-    u16 timeout = 0;
+        EEPROM_Delay(EEPROM_DELAY_TIME);
 
-    
-    EEPROM_SDA_HIGH(); 
-    EEPROM_Delay(20);
-	EEPROM_SCL_HIGH();
-	EEPROM_Delay(50); 
-
-    EEPROM_SDA_Input();
-    EEPROM_Delay(20);
-    
-	while(EEPROM_SDA)
-	{
-        timeout++;
-
-        if(timeout > 1000)
-        {
-            break;
-        }
+        EEPROM_SCL_HIGH();
+        EEPROM_Delay(EEPROM_DELAY_TIME); 
+        EEPROM_SCL_LOW();
+        EEPROM_Delay(EEPROM_DELAY_TIME);
     }
-
-    EEPROM_SDA_Output();
-    EEPROM_Delay(20);
-    
-	EEPROM_SCL_LOW();
-	EEPROM_Delay(50);
-}
-
-void EEPROM_Ack(void)
-{
-	EEPROM_SDA_LOW();
-	EEPROM_Delay(20);
-	EEPROM_SCL_HIGH();
-	EEPROM_Delay(50);
-	EEPROM_SCL_LOW();
-	EEPROM_Delay(50);
 }
 
 u8 EEPROM_ReadByte(u16 addr) 
@@ -191,7 +206,7 @@ u8 EEPROM_ReadByte(u16 addr)
 	EEPROM_Start();
 	EEPROM_SendByte(AT_DEV_ADDR_READ);
 	EEPROM_WaitAck();
-	data = EEPROM_RecvByte();
+	data = EEPROM_RecvByte(EEPROM_NO_ACK);
 	EEPROM_Stop();
     
  	return (data); 
@@ -222,7 +237,7 @@ void EEPROM_WriteByte(u16 addr, u8 data)
 
 u16 EEPROM_ReadHalfWord(u16 addr)
 {
-    u8 data1, data2;
+    u8 data_low, data_high;
 	u16 data;
 
 
@@ -245,15 +260,15 @@ u16 EEPROM_ReadHalfWord(u16 addr)
 	EEPROM_Start();
 	EEPROM_SendByte(AT_DEV_ADDR_READ);
 	EEPROM_WaitAck();
-	data1 = EEPROM_RecvByte();
+	data_low = EEPROM_RecvByte(EEPROM_NO_ACK);
 	EEPROM_Stop();
 	EEPROM_Start();
 	EEPROM_SendByte(AT_DEV_ADDR_READ);
 	EEPROM_WaitAck();
-	data2 = EEPROM_RecvByte();
+	data_high = EEPROM_RecvByte(EEPROM_NO_ACK);
 	EEPROM_Stop();
     
-	data = data1 + (data2 << 8);	
+	data = ((u16)data_high << 8) | data_low;	
     
 	return (data);
 }
@@ -276,7 +291,7 @@ void EEPROM_WriteHalfWord(u16 addr, u16 data)
 	EEPROM_WaitAck();
 	EEPROM_SendByte(addr % 256);
 	EEPROM_WaitAck();
-	EEPROM_SendByte(data);
+	EEPROM_SendByte(data & 0xff);
 	EEPROM_WaitAck();
 	EEPROM_SendByte((data >> 8) & 0xff);
 	EEPROM_WaitAck();
