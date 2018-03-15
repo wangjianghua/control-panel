@@ -4,7 +4,7 @@
 
 #define FUNC_CODE_UNIT_NUM                      8u
 #define FUNC_CODE_ENUM_NUM                      20u
-#define FUNC_CODE_LIMIT_NUM                     293u
+#define FUNC_CODE_LIMIT_NUM                     (293u - 3u)
 
 #define PWR_MOD_FUNC_CODE                       10511u
 #define PWR_MOD_PWD                             4012u
