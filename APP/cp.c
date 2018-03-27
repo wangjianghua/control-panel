@@ -37,7 +37,7 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
 static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_msg);
 
 #if 1
-CODE unsigned int wCRC16Table[256] = {   
+const unsigned short wCRC16Table[256] = {   
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,  
 	0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,  
 	0xCC01, 0x0CC0, 0x0D80, 0xCD41, 0x0F00, 0xCFC1, 0xCE81, 0x0E40,   
@@ -72,36 +72,38 @@ CODE unsigned int wCRC16Table[256] = {
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-unsigned int CRC16Calculate(unsigned char *J_u8DataIn, unsigned int J_u16DataLen)  
+unsigned int CRC16Calculate(const unsigned char *T_u8DataIn, unsigned int T_u16DataLen)  
 {  
-    unsigned int J_u16Result = 0xffff;
-    unsigned int J_u16TableNo = 0;
-    unsigned int J_u16Index;  
+    unsigned int T_u16Result = 0xffff;
+    unsigned int T_u16TableNo = 0;
+    unsigned int T_u16Index;  
     
     
-    if(J_u16DataLen > (UART_MAX_LEN - 2))
+    if((0 == T_u16DataLen) ||
+       (T_u16DataLen > (UART_MAX_LEN - 2)))
     {
-        return (0);
+        return (0xffff);
     }
     
-    for(J_u16Index = 0; J_u16Index < J_u16DataLen; J_u16Index++)  
+    for(T_u16Index = 0; T_u16Index < T_u16DataLen; T_u16Index++)  
     {  
-        J_u16TableNo = (J_u16Result & 0xff) ^ (J_u8DataIn[J_u16Index] & 0xff);
-        J_u16Result = ((J_u16Result >> 8) & 0xff) ^ wCRC16Table[J_u16TableNo];
+        T_u16TableNo = (T_u16Result & 0xff) ^ (T_u8DataIn[T_u16Index] & 0xff);
+        T_u16Result = ((T_u16Result >> 8) & 0xff) ^ wCRC16Table[T_u16TableNo];
     }  
 
-    return (J_u16Result);  
+    return (T_u16Result);  
 }
 #else
-unsigned int CRC16Calculate(unsigned char *data_value, unsigned int length)
+unsigned int CRC16Calculate(const unsigned char *data_value, unsigned int length)
 {
     unsigned int crc_value = 0xffff;
     unsigned int i;
 
 
-    if(length > (UART_MAX_LEN - 2))
+    if((0 == length) ||
+       (length > (UART_MAX_LEN - 2)))
     {
-        return (0);
+        return (0xffff);
     }
 
     while(length--)
@@ -125,41 +127,48 @@ unsigned int CRC16Calculate(unsigned char *data_value, unsigned int length)
 }
 #endif
 
-bool uart_recv_align(void)
+u8 uart_recv_align(void)
 {
-    u8 i, offset;
+    u8 i, offset, len;
 
 
-    if(uart_rx_count < 2)
-    {
-        return (FALSE);
-    }
+    len = uart_rx_index;
     
-    for(i = 0, offset = 0; i < uart_rx_count; i++)
-    {
-        if((0xF7 == UART_RX_BUF[i]) && (0x17 == UART_RX_BUF[i + 1]))
-        {
-            offset = i;
+    uart_rx_index = 0;
 
-            break;
+    if(len < 3) //无效帧
+    {
+        len = 0;
+    }
+    else 
+    {
+        for(i = 0, offset = 0; i < len; i++)
+        {
+            if((0xF7 == UART_RX_BUF[i]) && 
+               (0x17 == UART_RX_BUF[i + 1])) //寻找帧头
+            {
+                offset = i;
+
+                break;
+            }
+        }
+
+        if(offset > 0) //数据帧存在赘余
+        {
+            for(i = 0; i < len; i++) //数据帧左对齐
+            {
+                UART_RX_BUF[i] = UART_RX_BUF[i + offset];
+            }
+
+            len -= offset;
+        }
+        else if(len == i) //找不到帧头
+        {
+            len = 0;
         }
     }
 
-    if(offset > 0) //串口接收数据存在赘余
-    {
-        for(i = 0; i < uart_rx_count; i++) //数据左对齐
-        {
-            UART_RX_BUF[i] = UART_RX_BUF[i + offset];
-        }
-
-        uart_rx_count -= offset;
-
-        return (TRUE);
-    }
-    else
-    {
-        return (FALSE);
-    }
+    return (len);    
 }
 
 void err_con(void)
@@ -314,9 +323,9 @@ void vfd_con(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
                         
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -582,9 +591,9 @@ bool keep_vfd_connect(void)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {
             if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
             {
@@ -816,9 +825,9 @@ void form_err_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -1216,9 +1225,9 @@ void form_home_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -1541,9 +1550,9 @@ void form_ref_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -1849,9 +1858,9 @@ void form_ref_val_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -2126,9 +2135,9 @@ void form_para_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -2346,9 +2355,9 @@ bool group_update(u8 key_msg)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {            
             memcpy(cp_para_ram.group_nearby, &UART_RX_BUF[7], sizeof(cp_para_ram.group_nearby));
 
@@ -2464,9 +2473,9 @@ void form_para_group_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -2686,9 +2695,9 @@ bool grade_update(u8 key_msg)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {            
             memcpy(cp_para_ram.grade_nearby, &UART_RX_BUF[7], sizeof(cp_para_ram.grade_nearby));
 
@@ -2761,9 +2770,9 @@ bool func_code_read(void)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {
             cp_para_ram.vfd_para_attr = UART_RX_BUF[7];
             
@@ -2835,9 +2844,9 @@ bool func_code_visible_init(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -2956,9 +2965,9 @@ void form_para_grade_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -3187,9 +3196,9 @@ bool func_code_write(void)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {
             if(0x40 == (UART_RX_BUF[3] & 0xf0))
             {
@@ -3777,9 +3786,9 @@ void form_para_val_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -4073,9 +4082,9 @@ void form_copy_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -4327,9 +4336,9 @@ void form_copy_upload_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -4581,9 +4590,9 @@ void form_copy_download_all_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -4835,9 +4844,9 @@ void form_copy_download_part_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -5038,9 +5047,9 @@ bool chang_baudrate(u16 baudrate)
     
     if(OS_R_TMO != result)
     {
-        uart_recv_align();
+        len = uart_recv_align();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+        if(0 == CRC16Calculate(UART_RX_BUF, len))
         {
             USART_BaudRate(CP_UART, baudrate);
             
@@ -5147,9 +5156,9 @@ void copy_upload_rate_init(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -5323,9 +5332,9 @@ void copy_comm_reset(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -5508,9 +5517,9 @@ void form_copy_upload_rate_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -5880,9 +5889,9 @@ void copy_download_all_rate_init(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -6181,9 +6190,9 @@ void form_copy_download_all_rate_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {
@@ -6607,9 +6616,9 @@ void form_copy_download_part_rate_callback(void)
 
         if(OS_R_TMO != result)
         {
-            uart_recv_align();
+            len = uart_recv_align();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, uart_rx_count))
+            if(0 == CRC16Calculate(UART_RX_BUF, len))
             {
                 switch(i)
                 {

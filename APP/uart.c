@@ -6,12 +6,12 @@ OS_SEM uart_sem;
 XDATA u8 uart_tx_buf[UART_TX_LEN];
 XDATA u8 uart_rx_buf[UART_RX_LEN];
 XDATA u8 uart_tx_index = 0, uart_tx_count = 0;
-XDATA u8 uart_rx_count = 0;
+XDATA u8 uart_rx_index = 0;
 XDATA u16 uart_rx_timeout = 0;
 
 void uart_recv_clear(void)
 {
-    uart_rx_count = 0;
+    uart_rx_index = 0;
 
     while(OS_R_TMO != os_sem_wait(&uart_sem, 0));
 }
@@ -36,7 +36,7 @@ __task void AppTaskUart(void)
 {
     while(1)
     {
-        if(0 != uart_rx_count)
+        if(0 != uart_rx_index)
         {
             if(uart_rx_timeout)
             {

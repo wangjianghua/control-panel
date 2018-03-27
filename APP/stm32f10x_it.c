@@ -125,9 +125,9 @@ void USART1_IRQHandler(void)
     if(RESET != USART_GetITStatus(USART1, USART_IT_RXNE))
     {                
         /* Read one byte from the receive data register */
-        UART_RX_BUF[uart_rx_count++] = USART_ReceiveData(USART1);
+        UART_RX_BUF[uart_rx_index++] = USART_ReceiveData(USART1);
 
-        uart_rx_count %= UART_RX_LEN;
+        uart_rx_index %= UART_RX_LEN;
         
         uart_rx_timeout = UART_RX_TIMEOUT;
     }

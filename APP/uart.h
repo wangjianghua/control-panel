@@ -16,17 +16,17 @@
 /* ´®¿Úµ÷ÊÔ
  * »ªÐÖ */
 #define ECHO()                                                 \
-        if(0 != uart_rx_count)                                 \
+        if(0 != uart_rx_index)                                 \
         {                                                      \
-            memcpy(UART_TX_BUF, UART_RX_BUF, uart_rx_count);   \
-            uart_send(uart_rx_count);                          \
+            memcpy(UART_TX_BUF, UART_RX_BUF, uart_rx_index);   \
+            uart_send(uart_rx_index);                          \
         }                                                      \
 
 extern OS_SEM uart_sem;
 extern XDATA u8 uart_tx_buf[UART_TX_LEN];
 extern XDATA u8 uart_rx_buf[UART_RX_LEN];
 extern XDATA u8 uart_tx_index, uart_tx_count;
-extern XDATA u8 uart_rx_count;
+extern XDATA u8 uart_rx_index;
 extern XDATA u16 uart_rx_timeout;
 
 void uart_recv_clear(void);
