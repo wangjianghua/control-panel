@@ -20,6 +20,9 @@ OS_SEM cp_sem;
 XDATA CP_PARA_ROM cp_para_rom;
 XDATA CP_PARA_RAM cp_para_ram;
 
+XDATA u8 cp_cmd_buf[MAX_BUF_LEN];
+XDATA u8 vfd_reply_buf[MAX_BUF_LEN];
+
 static int form_err(unsigned int key_msg, unsigned int form_msg);
 static int form_home(unsigned int key_msg, unsigned int form_msg);
 static int form_ref(unsigned int key_msg, unsigned int form_msg);
@@ -80,7 +83,7 @@ unsigned int CRC16Calculate(const unsigned char *T_u8DataIn, unsigned int T_u16D
     
     
     if((0 == T_u16DataLen) ||
-       (T_u16DataLen > (UART_MAX_LEN - 2)))
+       (T_u16DataLen > (MAX_BUF_LEN - 2)))
     {
         return (0xffff);
     }
@@ -101,7 +104,7 @@ unsigned int CRC16Calculate(const unsigned char *data_value, unsigned int length
 
 
     if((0 == length) ||
-       (length > (UART_MAX_LEN - 2)))
+       (length > (MAX_BUF_LEN - 2)))
     {
         return (0xffff);
     }
@@ -127,7 +130,7 @@ unsigned int CRC16Calculate(const unsigned char *data_value, unsigned int length
 }
 #endif
 
-u8 uart_recv_align(void)
+u8 uart_recv_proc(void)
 {
     u8 i, offset, len;
 
@@ -136,16 +139,25 @@ u8 uart_recv_align(void)
     
     uart_rx_index = 0;
 
-    if(len < 3) //无效帧
+    /* Modbus-RTU帧最大为256字节
+     * 子节点地址: 1字节
+     * 功能代码: 1字节
+     * 数据: 0到252字节
+     * CRC: 2字节(CRC低 CRC高)
+     * 华兄 */
+    if(len < 4) //无效帧
     {
         len = 0;
     }
     else 
     {
+        disable_interrupt();
+        memcpy(vfd_reply_buf, UART_RX_BUF, len);
+        enable_interrupt();
+        
         for(i = 0, offset = 0; i < len; i++)
         {
-            if((0xF7 == UART_RX_BUF[i]) && 
-               (0x17 == UART_RX_BUF[i + 1])) //寻找帧头
+            if(VFD_ADDR == vfd_reply_buf[i]) //寻找地址
             {
                 offset = i;
 
@@ -157,12 +169,12 @@ u8 uart_recv_align(void)
         {
             for(i = 0; i < len; i++) //数据帧左对齐
             {
-                UART_RX_BUF[i] = UART_RX_BUF[i + offset];
+                vfd_reply_buf[i] = vfd_reply_buf[i + offset];
             }
 
             len -= offset;
         }
-        else if(len == i) //找不到帧头
+        else if(len == i) //找不到地址
         {
             len = 0;
         }
@@ -208,104 +220,104 @@ void vfd_con(void)
    
     for(i = 0; i < 8; i++)
     {        
-        len = (vfd_con_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (vfd_con_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, vfd_con_cmd[i], len);
+        memcpy(cp_cmd_buf, vfd_con_cmd[i], len);
 
         switch(i)
         {
         case 2:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 3:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 4:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
 			if(TRUE == cp_para_ram.stop)
 			{
 				cp_para_ram.stop = FALSE;
                 
-				UART_TX_BUF[20] |= 0x01;
+				cp_cmd_buf[20] |= 0x01;
 			}
             
 			if(TRUE == cp_para_ram.run)
 			{
 				cp_para_ram.run = FALSE;
                 
-				UART_TX_BUF[20] |= 0x02;
+				cp_cmd_buf[20] |= 0x02;
 			}
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
 
 			if(VFD_LOC == cp_para_ram.lr)
 			{
-				UART_TX_BUF[20] |= 0x08;
+				cp_cmd_buf[20] |= 0x08;
 			}
             else
 			{
-				UART_TX_BUF[20] &= ~0x08;
+				cp_cmd_buf[20] &= ~0x08;
 			}               
             break;
 
         case 5:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 6:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 7:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
-		    UART_TX_BUF[20] |= 0x01; //停止
+		    cp_cmd_buf[20] |= 0x01; //停止
 
-            UART_TX_BUF[20] &= ~0x04; //正转
+            cp_cmd_buf[20] &= ~0x04; //正转
 
 			if(VFD_LOC == cp_para_ram.lr)
 			{
-				UART_TX_BUF[20] |= 0x08;
+				cp_cmd_buf[20] |= 0x08;
 			}
             else
 			{
-				UART_TX_BUF[20] &= ~0x08;
+				cp_cmd_buf[20] &= ~0x08;
 			}            
             break;
 
@@ -313,19 +325,19 @@ void vfd_con(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
 
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
                         
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -333,23 +345,23 @@ void vfd_con(void)
                     break;
                     
                 case 1:
-                    cp_para_ram.cmd = UART_RX_BUF[5];
+                    cp_para_ram.cmd = vfd_reply_buf[5];
                     break;
                 
                 case 4:
                 case 7:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
 
                         if(cp_para_ram.fb_sts_word1 & FB_STS_WORD_LOC_CTRL)
                         {
@@ -530,81 +542,81 @@ bool keep_vfd_connect(void)
     bool ret = FALSE;
 
     
-    len = (keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11) % UART_TX_LEN;
+    len = (keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
+    memcpy(cp_cmd_buf, keep_vfd_connect_cmd[KEEP_VFD_CONNECT_CMD], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
     
-    UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-    UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+    cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+    cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-    UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-    UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-    UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-    UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+    cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+    cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+    cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+    cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
     
-    UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-    UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-    UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-    UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+    cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+    cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+    cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+    cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
     if(TRUE == cp_para_ram.stop)
     {
         cp_para_ram.stop = FALSE;
         
-        UART_TX_BUF[20] |= 0x01;
+        cp_cmd_buf[20] |= 0x01;
     }
     
     if(TRUE == cp_para_ram.run)
     {
         cp_para_ram.run = FALSE;
         
-        UART_TX_BUF[20] |= 0x02;
+        cp_cmd_buf[20] |= 0x02;
     }
 
     if(VFD_REV == cp_para_ram.fr)
     {
-        UART_TX_BUF[20] |= 0x04;
+        cp_cmd_buf[20] |= 0x04;
     }
     else
     {
-        UART_TX_BUF[20] &= ~0x04;
+        cp_cmd_buf[20] &= ~0x04;
     }
     
     if(VFD_LOC == cp_para_ram.lr)
     {
-        UART_TX_BUF[20] |= 0x08;
+        cp_cmd_buf[20] |= 0x08;
     }
     else
     {
-        UART_TX_BUF[20] &= ~0x08;
+        cp_cmd_buf[20] &= ~0x08;
     }
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
     
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {
-            if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+            if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
             {
-                cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                 cp_para_ram.count++;
 
                 /* 0304 */
-                cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
                 
                 /* 0303 */
-                cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
                 
                 if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                    (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -615,7 +627,7 @@ bool keep_vfd_connect(void)
                     }
                 }
 
-                cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
             }
             else
             {
@@ -741,118 +753,118 @@ void form_err_callback(void)
 
     for(i = FORM_ERR_SET_CMD; i < MAX_FORM_ERR_CMD; i++)
     {         
-        len = (form_err_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_err_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_err_cmd[i], len);
+        memcpy(cp_cmd_buf, form_err_cmd[i], len);
 
         switch(i)
         {
         case FORM_ERR_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.clr_err)
             {
                 cp_para_ram.clr_err = FALSE;
                 
-                UART_TX_BUF[20] |= 0x10;
+                cp_cmd_buf[20] |= 0x10;
             }
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case FORM_ERR_FAULT_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case FORM_ERR_ALARM_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_ERR_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     break;
 
                 case FORM_ERR_FAULT_CMD:
-                    cp_para_ram.fault_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                    cp_para_ram.fault_code = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                     break;
 
                 case FORM_ERR_ALARM_CMD:
-                    cp_para_ram.alarm_code = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                    cp_para_ram.alarm_code = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                     break;
 
                 default:
@@ -1152,96 +1164,96 @@ void form_home_callback(void)
     
     for(i = 0; i < MAX_FORM_HOME_CMD; i++)
     {        
-        len = (form_home_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_home_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_home_cmd[i], len);
+        memcpy(cp_cmd_buf, form_home_cmd[i], len);
 
         switch(i)
         {
         case FORM_HOME_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case FORM_HOME_READ_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_HOME_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -1254,7 +1266,7 @@ void form_home_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -1268,31 +1280,31 @@ void form_home_callback(void)
                     break;
 
                 case FORM_HOME_READ_CMD:
-                    if((0x45 == UART_RX_BUF[3]) && (0xab == UART_RX_BUF[4]))
+                    if((0x45 == vfd_reply_buf[3]) && (0xab == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.disp_para_val[0] = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
-                        cp_para_ram.disp_para_val[1] = ((u16)UART_RX_BUF[15] << 8) | ((u16)UART_RX_BUF[16]);
-                        cp_para_ram.disp_para_val[2] = ((u16)UART_RX_BUF[21] << 8) | ((u16)UART_RX_BUF[22]);
+                        cp_para_ram.disp_para_val[0] = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
+                        cp_para_ram.disp_para_val[1] = ((u16)vfd_reply_buf[15] << 8) | ((u16)vfd_reply_buf[16]);
+                        cp_para_ram.disp_para_val[2] = ((u16)vfd_reply_buf[21] << 8) | ((u16)vfd_reply_buf[22]);
 
-                        cp_para_ram.disp_para_type[0] = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
-                        cp_para_ram.disp_para_type[1] = ((u16)UART_RX_BUF[17] << 8) | ((u16)UART_RX_BUF[18]);
-                        cp_para_ram.disp_para_type[2] = ((u16)UART_RX_BUF[23] << 8) | ((u16)UART_RX_BUF[24]);
+                        cp_para_ram.disp_para_type[0] = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
+                        cp_para_ram.disp_para_type[1] = ((u16)vfd_reply_buf[17] << 8) | ((u16)vfd_reply_buf[18]);
+                        cp_para_ram.disp_para_type[2] = ((u16)vfd_reply_buf[23] << 8) | ((u16)vfd_reply_buf[24]);
 
-                        cp_para_ram.disp_para_unit[0] = (UART_RX_BUF[13] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[13]) : (0x00);
-                        cp_para_ram.disp_para_unit[1] = (UART_RX_BUF[19] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[19]) : (0x00);
-                        cp_para_ram.disp_para_unit[2] = (UART_RX_BUF[25] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[25]) : (0x00);
+                        cp_para_ram.disp_para_unit[0] = (vfd_reply_buf[13] < FUNC_CODE_UNIT_NUM) ? (vfd_reply_buf[13]) : (0x00);
+                        cp_para_ram.disp_para_unit[1] = (vfd_reply_buf[19] < FUNC_CODE_UNIT_NUM) ? (vfd_reply_buf[19]) : (0x00);
+                        cp_para_ram.disp_para_unit[2] = (vfd_reply_buf[25] < FUNC_CODE_UNIT_NUM) ? (vfd_reply_buf[25]) : (0x00);
 
-                        cp_para_ram.disp_para_sign[0] = UART_RX_BUF[14] & 0x01;
-                        cp_para_ram.disp_para_enum[0] = (UART_RX_BUF[14] & 0x80) >> 7;
-                        cp_para_ram.disp_para_format[0] = (UART_RX_BUF[14] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_sign[0] = vfd_reply_buf[14] & 0x01;
+                        cp_para_ram.disp_para_enum[0] = (vfd_reply_buf[14] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[0] = (vfd_reply_buf[14] & 0x0f) >> 1;
                         
-                        cp_para_ram.disp_para_sign[1] = UART_RX_BUF[20] & 0x01;
-                        cp_para_ram.disp_para_enum[1] = (UART_RX_BUF[20] & 0x80) >> 7;
-                        cp_para_ram.disp_para_format[1] = (UART_RX_BUF[20] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_sign[1] = vfd_reply_buf[20] & 0x01;
+                        cp_para_ram.disp_para_enum[1] = (vfd_reply_buf[20] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[1] = (vfd_reply_buf[20] & 0x0f) >> 1;
                         
-                        cp_para_ram.disp_para_sign[2] = UART_RX_BUF[26] & 0x01;
-                        cp_para_ram.disp_para_enum[2] = (UART_RX_BUF[26] & 0x80) >> 7;
-                        cp_para_ram.disp_para_format[2] = (UART_RX_BUF[26] & 0x0f) >> 1;
+                        cp_para_ram.disp_para_sign[2] = vfd_reply_buf[26] & 0x01;
+                        cp_para_ram.disp_para_enum[2] = (vfd_reply_buf[26] & 0x80) >> 7;
+                        cp_para_ram.disp_para_format[2] = (vfd_reply_buf[26] & 0x0f) >> 1;
 
                         form_home_disp();
                     }
@@ -1481,58 +1493,58 @@ void form_ref_callback(void)
     
     for(i = 0; i < MAX_FORM_REF_CMD; i++)
     {        
-        len = (form_ref_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_ref_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_ref_cmd[i], len);
+        memcpy(cp_cmd_buf, form_ref_cmd[i], len);
 
         switch(i)
         {
         case FORM_REF_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -1540,33 +1552,33 @@ void form_ref_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_REF_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -1577,7 +1589,7 @@ void form_ref_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -1789,58 +1801,58 @@ void form_ref_val_callback(void)
     
     for(i = 0; i < MAX_FORM_REF_VAL_CMD; i++)
     {        
-        len = (form_ref_val_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_ref_val_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_ref_val_cmd[i], len);
+        memcpy(cp_cmd_buf, form_ref_val_cmd[i], len);
 
         switch(i)
         {
         case FORM_REF_VAL_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -1848,33 +1860,33 @@ void form_ref_val_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_REF_VAL_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -1885,10 +1897,10 @@ void form_ref_val_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
 
-                        cp_para_ram.ref_min = (s32)(((u32)UART_RX_BUF[17] << 24) | ((u32)UART_RX_BUF[18] << 16) | ((u32)UART_RX_BUF[19] << 8) | ((u32)UART_RX_BUF[20]));
-                        cp_para_ram.ref_max = (s32)(((u32)UART_RX_BUF[21] << 24) | ((u32)UART_RX_BUF[22] << 16) | ((u32)UART_RX_BUF[23] << 8) | ((u32)UART_RX_BUF[24]));
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -2066,58 +2078,58 @@ void form_para_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_CMD; i++)
     {        
-        len = (form_para_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_para_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_para_cmd[i], len);
+        memcpy(cp_cmd_buf, form_para_cmd[i], len);
 
         switch(i)
         {
         case FORM_PARA_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -2125,33 +2137,33 @@ void form_para_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_PARA_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -2162,7 +2174,7 @@ void form_para_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -2336,30 +2348,30 @@ bool group_update(u8 key_msg)
     bool ret = FALSE;
 
 
-    len = (para_group_update_cmd[0][10] + 11) % UART_TX_LEN;
+    len = (para_group_update_cmd[0][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, para_group_update_cmd[0], len);
+    memcpy(cp_cmd_buf, para_group_update_cmd[0], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-    UART_TX_BUF[15] = 0;
-    UART_TX_BUF[16] = cp_para_ram.group;
+    cp_cmd_buf[15] = 0;
+    cp_cmd_buf[16] = cp_para_ram.group;
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
 
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {            
-            memcpy(cp_para_ram.group_nearby, &UART_RX_BUF[7], sizeof(cp_para_ram.group_nearby));
+            memcpy(cp_para_ram.group_nearby, &vfd_reply_buf[7], sizeof(cp_para_ram.group_nearby));
 
             switch(key_msg)
             {
@@ -2404,58 +2416,58 @@ void form_para_group_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_GROUP_CMD; i++)
     {        
-        len = (form_para_group_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_para_group_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_para_group_cmd[i], len);
+        memcpy(cp_cmd_buf, form_para_group_cmd[i], len);
 
         switch(i)
         {
         case FORM_PARA_GROUP_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -2463,33 +2475,33 @@ void form_para_group_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_PARA_GROUP_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -2500,7 +2512,7 @@ void form_para_group_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -2676,30 +2688,30 @@ bool grade_update(u8 key_msg)
     bool ret = FALSE;
 
 
-    len = (para_grade_update_cmd[0][10] + 11) % UART_TX_LEN;
+    len = (para_grade_update_cmd[0][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, para_grade_update_cmd[0], len);
+    memcpy(cp_cmd_buf, para_grade_update_cmd[0], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
     
-    UART_TX_BUF[15] = cp_para_ram.group;
-    UART_TX_BUF[16] = cp_para_ram.grade;
+    cp_cmd_buf[15] = cp_para_ram.group;
+    cp_cmd_buf[16] = cp_para_ram.grade;
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
 
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {            
-            memcpy(cp_para_ram.grade_nearby, &UART_RX_BUF[7], sizeof(cp_para_ram.grade_nearby));
+            memcpy(cp_para_ram.grade_nearby, &vfd_reply_buf[7], sizeof(cp_para_ram.grade_nearby));
 
             switch(key_msg)
             {
@@ -2745,44 +2757,44 @@ bool func_code_read(void)
     bool ret = FALSE;
     
           
-    len = (form_para_grade_func_code_read_cmd[0][10] + 11) % UART_TX_LEN;
+    len = (form_para_grade_func_code_read_cmd[0][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, form_para_grade_func_code_read_cmd[0], len);
+    memcpy(cp_cmd_buf, form_para_grade_func_code_read_cmd[0], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
     if(TRUE == cp_para_ram.func_code_visible)
     {
-        UART_TX_BUF[5] = 6;
-        UART_TX_BUF[14] = 4;
+        cp_cmd_buf[5] = 6;
+        cp_cmd_buf[14] = 4;
     }
     
-    UART_TX_BUF[15] = cp_para_ram.group;
-    UART_TX_BUF[16] = cp_para_ram.grade;
+    cp_cmd_buf[15] = cp_para_ram.group;
+    cp_cmd_buf[16] = cp_para_ram.grade;
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
     
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {
-            cp_para_ram.vfd_para_attr = UART_RX_BUF[7];
+            cp_para_ram.vfd_para_attr = vfd_reply_buf[7];
             
-            cp_para_ram.vfd_para_val = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+            cp_para_ram.vfd_para_val = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
-            cp_para_ram.vfd_para_sign = UART_RX_BUF[11] & 0x01;
-            cp_para_ram.vfd_para_enum = (UART_RX_BUF[11] & 0x80) >> 7;
-            cp_para_ram.vfd_para_format = (UART_RX_BUF[11] & 0x0f) >> 1;
+            cp_para_ram.vfd_para_sign = vfd_reply_buf[11] & 0x01;
+            cp_para_ram.vfd_para_enum = (vfd_reply_buf[11] & 0x80) >> 7;
+            cp_para_ram.vfd_para_format = (vfd_reply_buf[11] & 0x0f) >> 1;
             
-            cp_para_ram.vfd_para_unit = (UART_RX_BUF[12] < FUNC_CODE_UNIT_NUM) ? (UART_RX_BUF[12]) : (0x00);
+            cp_para_ram.vfd_para_unit = (vfd_reply_buf[12] < FUNC_CODE_UNIT_NUM) ? (vfd_reply_buf[12]) : (0x00);
 
             form_id = FORM_ID_PARA_VAL;
 
@@ -2816,49 +2828,49 @@ bool func_code_visible_init(void)
     
     for(i = 0; i < 2; i++)
     {        
-        len = (func_code_visible_init_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (func_code_visible_init_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, func_code_visible_init_cmd[i], len);
+        memcpy(cp_cmd_buf, func_code_visible_init_cmd[i], len);
 
         switch(i)
         {
         case 0:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 1:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case 0:
-                    if((0x4f == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x4f == vfd_reply_buf[3]) && (0xa1 == vfd_reply_buf[4]))
                     {
                         ret = TRUE;
                     }
                     break;
 
                 case 1:
-                    if((0x4f == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x4f == vfd_reply_buf[3]) && (0xa1 == vfd_reply_buf[4]))
                     {
                         ret = TRUE;
                     }
@@ -2896,58 +2908,58 @@ void form_para_grade_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_GRADE_CMD; i++)
     {        
-        len = (form_para_grade_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_para_grade_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_para_grade_cmd[i], len);
+        memcpy(cp_cmd_buf, form_para_grade_cmd[i], len);
 
         switch(i)
         {
         case FORM_PARA_GRADE_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -2955,33 +2967,33 @@ void form_para_grade_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_PARA_GRADE_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -2992,7 +3004,7 @@ void form_para_grade_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -3147,10 +3159,7 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_FUNC_CODE_LONG:
-            if(cp_para_ram.group >= 51)
-            {
-                cp_para_ram.func_code_visible = func_code_visible_init();
-            }
+            cp_para_ram.func_code_visible = func_code_visible_init();
             break;
 
         default:
@@ -3176,31 +3185,31 @@ bool func_code_write(void)
     bool ret = FALSE;
     
           
-    len = (form_para_val_func_code_write_cmd[0][10] + 11) % UART_TX_LEN;
+    len = (form_para_val_func_code_write_cmd[0][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, form_para_val_func_code_write_cmd[0], len);
+    memcpy(cp_cmd_buf, form_para_val_func_code_write_cmd[0], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
-    UART_TX_BUF[15] = cp_para_ram.group;
-    UART_TX_BUF[16] = cp_para_ram.grade;
-    UART_TX_BUF[17] = (u8)(cp_para_ram.vfd_para_val >> 8);
-    UART_TX_BUF[18] = (u8)cp_para_ram.vfd_para_val;
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[15] = cp_para_ram.group;
+    cp_cmd_buf[16] = cp_para_ram.grade;
+    cp_cmd_buf[17] = (u8)(cp_para_ram.vfd_para_val >> 8);
+    cp_cmd_buf[18] = (u8)cp_para_ram.vfd_para_val;
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
     
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {
-            if(0x40 == (UART_RX_BUF[3] & 0xf0))
+            if(0x40 == (vfd_reply_buf[3] & 0xf0))
             {
                 form_id = FORM_ID_PARA_GRADE;
 
@@ -3717,58 +3726,58 @@ void form_para_val_callback(void)
     
     for(i = 0; i < MAX_FORM_PARA_VAL_CMD; i++)
     {        
-        len = (form_para_val_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_para_val_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_para_val_cmd[i], len);
+        memcpy(cp_cmd_buf, form_para_val_cmd[i], len);
 
         switch(i)
         {
         case FORM_PARA_VAL_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -3776,33 +3785,33 @@ void form_para_val_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_PARA_VAL_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -3813,7 +3822,7 @@ void form_para_val_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -4013,58 +4022,58 @@ void form_copy_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_CMD; i++)
     {        
-        len = (form_copy_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_cmd[i], len);
 
         switch(i)
         {
         case FORM_COPY_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -4072,33 +4081,33 @@ void form_copy_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_COPY_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -4109,7 +4118,7 @@ void form_copy_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -4267,58 +4276,58 @@ void form_copy_upload_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_UPLOAD_CMD; i++)
     {        
-        len = (form_copy_upload_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_upload_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_upload_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_upload_cmd[i], len);
 
         switch(i)
         {
         case FORM_COPY_UPLOAD_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -4326,33 +4335,33 @@ void form_copy_upload_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_COPY_UPLOAD_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -4363,7 +4372,7 @@ void form_copy_upload_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -4521,58 +4530,58 @@ void form_copy_download_all_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_ALL_CMD; i++)
     {        
-        len = (form_copy_download_all_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_download_all_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_download_all_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_download_all_cmd[i], len);
 
         switch(i)
         {
         case FORM_COPY_DOWNLOAD_ALL_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -4580,33 +4589,33 @@ void form_copy_download_all_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_COPY_DOWNLOAD_ALL_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -4617,7 +4626,7 @@ void form_copy_download_all_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -4775,58 +4784,58 @@ void form_copy_download_part_callback(void)
     
     for(i = 0; i < MAX_FORM_COPY_DOWNLOAD_PART_CMD; i++)
     {        
-        len = (form_copy_download_part_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_download_part_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_download_part_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_download_part_cmd[i], len);
 
         switch(i)
         {
         case FORM_COPY_DOWNLOAD_PART_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
@@ -4834,33 +4843,33 @@ void form_copy_download_part_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case FORM_COPY_DOWNLOAD_PART_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -4871,7 +4880,7 @@ void form_copy_download_part_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -5028,28 +5037,28 @@ bool chang_baudrate(u16 baudrate)
     bool ret = FALSE;
 
 
-    len = (copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11) % UART_TX_LEN;
+    len = (copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE][10] + 11) % MAX_BUF_LEN;
                     
-    memcpy(UART_TX_BUF, copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE], len);
+    memcpy(cp_cmd_buf, copy_upload_rate_baudrate_cmd[COPY_UPLOAD_RATE_BAUDRATE], len);
 
-    UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+    cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
     
-    UART_TX_BUF[19] = (u8)(baudrate >> 8);
-    UART_TX_BUF[20] = (u8)baudrate;
+    cp_cmd_buf[19] = (u8)(baudrate >> 8);
+    cp_cmd_buf[20] = (u8)baudrate;
 
-    crc = CRC16Calculate(UART_TX_BUF, len);
-    UART_TX_BUF[len++] = (u8)(crc >> 0);
-    UART_TX_BUF[len++] = (u8)(crc >> 8);
+    crc = CRC16Calculate(cp_cmd_buf, len);
+    cp_cmd_buf[len++] = (u8)(crc >> 0);
+    cp_cmd_buf[len++] = (u8)(crc >> 8);
 
-    uart_send(len);
+    uart_send(cp_cmd_buf, len);
 
     result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
     
     if(OS_R_TMO != result)
     {
-        len = uart_recv_align();
+        len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(UART_RX_BUF, len))
+        if(0 == CRC16Calculate(vfd_reply_buf, len))
         {
             USART_BaudRate(CP_UART, baudrate);
             
@@ -5086,93 +5095,93 @@ void copy_upload_rate_init(void)
     
     for(i = 0; i < 5; i++)
     {        
-        len = (form_copy_upload_rate_init_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_upload_rate_init_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_upload_rate_init_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_upload_rate_init_cmd[i], len);
 
         switch(i)
         {
         case 2:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         default:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case 2:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -5183,7 +5192,7 @@ void copy_upload_rate_init(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -5243,106 +5252,106 @@ void copy_comm_reset(void)
     
     for(i = 0; i < num; i++)
     {        
-        len = (copy_comm_reset_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (copy_comm_reset_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, copy_comm_reset_cmd[i], len);
+        memcpy(cp_cmd_buf, copy_comm_reset_cmd[i], len);
 
         switch(i)
         {
         case 0:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case 1:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 2:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 3:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 4:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case 5:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case 0:
                 case 3:
-                    if((0x44 == UART_RX_BUF[3]) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x44 == vfd_reply_buf[3]) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         if(FORM_ID_COPY_UPLOAD_RATE == form_id)
@@ -5351,10 +5360,10 @@ void copy_comm_reset(void)
                         }
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -5365,7 +5374,7 @@ void copy_comm_reset(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -5440,100 +5449,100 @@ void form_copy_upload_rate_callback(void)
             i = COPY_UPLOAD_RATE_TAIL_CMD;
         }
         
-        len = (copy_upload_rate_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (copy_upload_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, copy_upload_rate_cmd[i], len);
+        memcpy(cp_cmd_buf, copy_upload_rate_cmd[i], len);
 
         switch(i)
         {
         case COPY_UPLOAD_RATE_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case COPY_UPLOAD_RATE_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case COPY_UPLOAD_RATE_TAIL_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case COPY_UPLOAD_RATE_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -5544,7 +5553,7 @@ void form_copy_upload_rate_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -5556,10 +5565,10 @@ void form_copy_upload_rate_callback(void)
                     break;
 
                 case COPY_UPLOAD_RATE_CMD:
-                    num = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]); //计数
-                    size = UART_RX_BUF[2] - 8; //帧数据长度
+                    num = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]); //计数
+                    size = vfd_reply_buf[2] - 8; //帧数据长度
                     
-                    if((0x41 == UART_RX_BUF[3]) && (0x82 == UART_RX_BUF[4])) //头帧
+                    if((0x41 == vfd_reply_buf[3]) && (0x82 == vfd_reply_buf[4])) //头帧
                     {
                         last_frame = FALSE;
                         
@@ -5595,11 +5604,11 @@ void form_copy_upload_rate_callback(void)
 
                         for(j = 0; j < (size + 2); j++)
                         {
-                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[9 + j]);
+                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, vfd_reply_buf[9 + j]);
 
                             cp_para_ram.vfd_para_index++;
 
-                            cp_para_ram.vfd_para_crc += UART_RX_BUF[9 + j];
+                            cp_para_ram.vfd_para_crc += vfd_reply_buf[9 + j];
 
                             os_dly_wait(5); //5ms
                         }
@@ -5610,17 +5619,17 @@ void form_copy_upload_rate_callback(void)
 
                         for(j = 0; j < size; j++)
                         {
-                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, UART_RX_BUF[11 + j]);
+                            EEPROM_WriteByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index, vfd_reply_buf[11 + j]);
 
                             cp_para_ram.vfd_para_index++;
 
-                            cp_para_ram.vfd_para_crc += UART_RX_BUF[11 + j];
+                            cp_para_ram.vfd_para_crc += vfd_reply_buf[11 + j];
                                                 
                             os_dly_wait(5); //5ms
                         }
                     }
 
-                    if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
+                    if((0x41 == vfd_reply_buf[3]) && (0x22 == vfd_reply_buf[4])) //倒数第二帧
                     {
                         cp_para_ram.vfd_para_count += size; //自身长度
                         
@@ -5639,7 +5648,7 @@ void form_copy_upload_rate_callback(void)
                     break;
 
                 case COPY_UPLOAD_RATE_TAIL_CMD:
-                    if((0x41 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
+                    if((0x41 == vfd_reply_buf[3]) && (0xA2 == vfd_reply_buf[4])) //尾帧
                     {
                         last_frame = FALSE;
 
@@ -5819,93 +5828,93 @@ void copy_download_all_rate_init(void)
     
     for(i = 0; i < 4; i++)
     {        
-        len = (form_copy_download_all_rate_init_cmd[i][10] + 11) % UART_TX_LEN;
+        len = (form_copy_download_all_rate_init_cmd[i][10] + 11) % MAX_BUF_LEN;
                         
-        memcpy(UART_TX_BUF, form_copy_download_all_rate_init_cmd[i], len);
+        memcpy(cp_cmd_buf, form_copy_download_all_rate_init_cmd[i], len);
 
         switch(i)
         {
         case 1:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         default:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case 1:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -5916,7 +5925,7 @@ void copy_download_all_rate_init(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -6013,17 +6022,17 @@ void form_copy_download_all_rate_callback(void)
                 frame_num = 0;
             }
             
-            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                             
-            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+            memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
         }
         else if((0xff == frame_num) && (COPY_DOWNLOAD_ALL_RATE_CMD == i))
         {
             i = COPY_DOWNLOAD_ALL_RATE_TAIL_CMD;
 
-            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                             
-            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+            memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
         }
         else if(COPY_DOWNLOAD_ALL_RATE_CMD == i)
         {
@@ -6031,18 +6040,18 @@ void form_copy_download_all_rate_callback(void)
             {
                 frame_num = 1;
                 
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
             
-                UART_TX_BUF[9]  = 0x16;
-                UART_TX_BUF[10] = 0x2C;
-                UART_TX_BUF[11] = 0x08;
-                UART_TX_BUF[12] = 0x8A;
-                UART_TX_BUF[14] = 0x86;
-                UART_TX_BUF[16] = 0x03;
-                UART_TX_BUF[17] = 0x01;
-                UART_TX_BUF[18] = 0x03;
+                cp_cmd_buf[9]  = 0x16;
+                cp_cmd_buf[10] = 0x2C;
+                cp_cmd_buf[11] = 0x08;
+                cp_cmd_buf[12] = 0x8A;
+                cp_cmd_buf[14] = 0x86;
+                cp_cmd_buf[16] = 0x03;
+                cp_cmd_buf[17] = 0x01;
+                cp_cmd_buf[18] = 0x03;
 
-                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
@@ -6059,12 +6068,12 @@ void form_copy_download_all_rate_callback(void)
             {
                 frame_num = 2;
             
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
             
-                UART_TX_BUF[9]  = 0x14;
-                UART_TX_BUF[10] = 0x28;
+                cp_cmd_buf[9]  = 0x14;
+                cp_cmd_buf[10] = 0x28;
 
-                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
             }
             else
             {
@@ -6072,46 +6081,46 @@ void form_copy_download_all_rate_callback(void)
                 {
                     frame_num = 0xfe; //倒数第二帧
                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                    memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
                     
-                    UART_TX_BUF[9]  = 0x06;
-                    UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
-                    UART_TX_BUF[12] = 0x22;
+                    cp_cmd_buf[9]  = 0x06;
+                    cp_cmd_buf[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
+                    cp_cmd_buf[12] = 0x22;
                     
-                    len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                    len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
                 }
                 else
                 {
                     frame_num = 3; //第二帧以后的帧
                     
-                    len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+                    len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+                    memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
                 }
             }
             
-            for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
+            for(j = 0; j < (cp_cmd_buf[10] - 10); j++)
             {
-                UART_TX_BUF[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
+                cp_cmd_buf[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
         
                 os_dly_wait(5); //5ms
             }
         
-            cp_para_ram.vfd_para_index += UART_TX_BUF[10] - 10;
+            cp_para_ram.vfd_para_index += cp_cmd_buf[10] - 10;
 
-            UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-            UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+            cp_cmd_buf[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
+            cp_cmd_buf[20] = (u8)(cp_para_ram.vfd_para_count);
                 
             if(1 == frame_num) //头帧
             {
-                UART_TX_BUF[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
-                UART_TX_BUF[22] = (u8)(cp_para_ram.vfd_para_total);
+                cp_cmd_buf[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
+                cp_cmd_buf[22] = (u8)(cp_para_ram.vfd_para_total);
 
-                cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 12;
+                cp_para_ram.vfd_para_count += cp_cmd_buf[10] - 12;
             }
             else
             {
-                cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 10;
+                cp_para_ram.vfd_para_count += cp_cmd_buf[10] - 10;
             }
 
             cp_para_ram.rate = (u8)((fp32)cp_para_ram.vfd_para_count / (fp32)cp_para_ram.vfd_para_total * 100);
@@ -6120,93 +6129,93 @@ void form_copy_download_all_rate_callback(void)
         switch(i)
         {
         case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case COPY_DOWNLOAD_ALL_RATE_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
             
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -6217,7 +6226,7 @@ void form_copy_download_all_rate_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -6229,14 +6238,14 @@ void form_copy_download_all_rate_callback(void)
                     break;
 
                 case COPY_DOWNLOAD_ALL_RATE_CMD:
-                    if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
+                    if((0x41 == vfd_reply_buf[3]) && (0x22 == vfd_reply_buf[4])) //倒数第二帧
                     {
                         frame_num = 0xff;
                     }
                     break;
 
                 case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
-                    if((0x42 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
+                    if((0x42 == vfd_reply_buf[3]) && (0xA2 == vfd_reply_buf[4])) //尾帧
                     {
                         frame_num = 0;
 
@@ -6439,17 +6448,17 @@ void form_copy_download_part_rate_callback(void)
                 frame_num = 0;
             }
             
-            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                             
-            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+            memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
         }
         else if((0xff == frame_num) && (COPY_DOWNLOAD_ALL_RATE_CMD == i))
         {
             i = COPY_DOWNLOAD_ALL_RATE_TAIL_CMD;
 
-            len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+            len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                             
-            memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+            memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
         }
         else if(COPY_DOWNLOAD_ALL_RATE_CMD == i)
         {
@@ -6457,18 +6466,18 @@ void form_copy_download_part_rate_callback(void)
             {
                 frame_num = 1;
                 
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
             
-                UART_TX_BUF[9]  = 0x16;
-                UART_TX_BUF[10] = 0x2C;
-                UART_TX_BUF[11] = 0x08;
-                UART_TX_BUF[12] = 0x8A;
-                UART_TX_BUF[14] = 0x86;
-                UART_TX_BUF[16] = 0x03;
-                UART_TX_BUF[17] = 0x01;
-                UART_TX_BUF[18] = 0x04; //变频器参数部分下载与全部下载在此有所区别
+                cp_cmd_buf[9]  = 0x16;
+                cp_cmd_buf[10] = 0x2C;
+                cp_cmd_buf[11] = 0x08;
+                cp_cmd_buf[12] = 0x8A;
+                cp_cmd_buf[14] = 0x86;
+                cp_cmd_buf[16] = 0x03;
+                cp_cmd_buf[17] = 0x01;
+                cp_cmd_buf[18] = 0x04; //变频器参数部分下载与全部下载在此有所区别
 
-                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
             
                 cp_para_ram.vfd_para_index = 0;
                 cp_para_ram.vfd_para_count = 0;
@@ -6485,12 +6494,12 @@ void form_copy_download_part_rate_callback(void)
             {
                 frame_num = 2;
             
-                memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
             
-                UART_TX_BUF[9]  = 0x14;
-                UART_TX_BUF[10] = 0x28;
+                cp_cmd_buf[9]  = 0x14;
+                cp_cmd_buf[10] = 0x28;
 
-                len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
             }
             else
             {
@@ -6498,46 +6507,46 @@ void form_copy_download_part_rate_callback(void)
                 {
                     frame_num = 0xfe; //倒数第二帧
                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], 60 % UART_TX_LEN);
+                    memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], 60 % MAX_BUF_LEN);
                     
-                    UART_TX_BUF[9]  = 0x06;
-                    UART_TX_BUF[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
-                    UART_TX_BUF[12] = 0x22;
+                    cp_cmd_buf[9]  = 0x06;
+                    cp_cmd_buf[10] = cp_para_ram.vfd_para_total - cp_para_ram.vfd_para_count + 10;
+                    cp_cmd_buf[12] = 0x22;
                     
-                    len = (UART_TX_BUF[10] + 11) % UART_TX_LEN;
+                    len = (cp_cmd_buf[10] + 11) % MAX_BUF_LEN;
                 }
                 else
                 {
                     frame_num = 3; //第二帧以后的帧
                     
-                    len = (copy_download_all_rate_cmd[i][10] + 11) % UART_TX_LEN;
+                    len = (copy_download_all_rate_cmd[i][10] + 11) % MAX_BUF_LEN;
                                     
-                    memcpy(UART_TX_BUF, copy_download_all_rate_cmd[i], len);
+                    memcpy(cp_cmd_buf, copy_download_all_rate_cmd[i], len);
                 }
             }
             
-            for(j = 0; j < (UART_TX_BUF[10] - 10); j++)
+            for(j = 0; j < (cp_cmd_buf[10] - 10); j++)
             {
-                UART_TX_BUF[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
+                cp_cmd_buf[21 + j] = EEPROM_ReadByte(VFD_PARA_ADDR + cp_para_ram.vfd_para_index + j);
         
                 os_dly_wait(5); //5ms
             }
         
-            cp_para_ram.vfd_para_index += UART_TX_BUF[10] - 10;
+            cp_para_ram.vfd_para_index += cp_cmd_buf[10] - 10;
 
-            UART_TX_BUF[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
-            UART_TX_BUF[20] = (u8)(cp_para_ram.vfd_para_count);
+            cp_cmd_buf[19] = (u8)(cp_para_ram.vfd_para_count >> 8);
+            cp_cmd_buf[20] = (u8)(cp_para_ram.vfd_para_count);
                 
             if(1 == frame_num) //头帧
             {
-                UART_TX_BUF[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
-                UART_TX_BUF[22] = (u8)(cp_para_ram.vfd_para_total);
+                cp_cmd_buf[21] = (u8)(cp_para_ram.vfd_para_total >> 8);
+                cp_cmd_buf[22] = (u8)(cp_para_ram.vfd_para_total);
 
-                cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 12;
+                cp_para_ram.vfd_para_count += cp_cmd_buf[10] - 12;
             }
             else
             {
-                cp_para_ram.vfd_para_count += UART_TX_BUF[10] - 10;
+                cp_para_ram.vfd_para_count += cp_cmd_buf[10] - 10;
             }
 
             cp_para_ram.rate = (u8)((fp32)cp_para_ram.vfd_para_count / (fp32)cp_para_ram.vfd_para_total * 100);
@@ -6546,93 +6555,93 @@ void form_copy_download_part_rate_callback(void)
         switch(i)
         {
         case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
 
-            UART_TX_BUF[15] = (u8)(cp_para_ram.count >> 8);
-            UART_TX_BUF[16] = (u8)(cp_para_ram.count >> 0);
+            cp_cmd_buf[15] = (u8)(cp_para_ram.count >> 8);
+            cp_cmd_buf[16] = (u8)(cp_para_ram.count >> 0);
 
-            UART_TX_BUF[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
-            UART_TX_BUF[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
-            UART_TX_BUF[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
-            UART_TX_BUF[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
+            cp_cmd_buf[21] = (u8)((u32)cp_para_ram.ref1 >> 24);
+            cp_cmd_buf[22] = (u8)((u32)cp_para_ram.ref1 >> 16);
+            cp_cmd_buf[23] = (u8)((u32)cp_para_ram.ref1 >> 8);
+            cp_cmd_buf[24] = (u8)((u32)cp_para_ram.ref1 >> 0);
             
-            UART_TX_BUF[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
-            UART_TX_BUF[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
-            UART_TX_BUF[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
-            UART_TX_BUF[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
+            cp_cmd_buf[25] = (u8)((u32)cp_para_ram.ref2 >> 24);
+            cp_cmd_buf[26] = (u8)((u32)cp_para_ram.ref2 >> 16);
+            cp_cmd_buf[27] = (u8)((u32)cp_para_ram.ref2 >> 8);
+            cp_cmd_buf[28] = (u8)((u32)cp_para_ram.ref2 >> 0);
 
             if(TRUE == cp_para_ram.stop)
             {
                 cp_para_ram.stop = FALSE;
                 
-                UART_TX_BUF[20] |= 0x01;
+                cp_cmd_buf[20] |= 0x01;
             }
             
             if(TRUE == cp_para_ram.run)
             {
                 cp_para_ram.run = FALSE;
                 
-                UART_TX_BUF[20] |= 0x02;
+                cp_cmd_buf[20] |= 0x02;
             }
 
             if(VFD_REV == cp_para_ram.fr)
             {
-                UART_TX_BUF[20] |= 0x04;
+                cp_cmd_buf[20] |= 0x04;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x04;
+                cp_cmd_buf[20] &= ~0x04;
             }
             
             if(VFD_LOC == cp_para_ram.lr)
             {
-                UART_TX_BUF[20] |= 0x08;
+                cp_cmd_buf[20] |= 0x08;
             }
             else
             {
-                UART_TX_BUF[20] &= ~0x08;
+                cp_cmd_buf[20] &= ~0x08;
             }
             break;
 
         case COPY_DOWNLOAD_ALL_RATE_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
 
         case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
-            UART_TX_BUF[13] = (UART_TX_BUF[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
+            cp_cmd_buf[13] = (cp_cmd_buf[13] & 0xf0) | (cp_para_ram.cmd & 0x0f);
             break;
             
         default:
             break;
         }
 
-        crc = CRC16Calculate(UART_TX_BUF, len);
-        UART_TX_BUF[len++] = (u8)(crc >> 0);
-        UART_TX_BUF[len++] = (u8)(crc >> 8);
+        crc = CRC16Calculate(cp_cmd_buf, len);
+        cp_cmd_buf[len++] = (u8)(crc >> 0);
+        cp_cmd_buf[len++] = (u8)(crc >> 8);
         
-        uart_send(len);
+        uart_send(cp_cmd_buf, len);
 
         result = os_sem_wait(&uart_sem, VFD_REPLY_TIMEOUT);
 
         if(OS_R_TMO != result)
         {
-            len = uart_recv_align();
+            len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(UART_RX_BUF, len))
+            if(0 == CRC16Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
                 case COPY_DOWNLOAD_ALL_RATE_SET_CMD:
-                    if((0x04 == (UART_RX_BUF[3] & 0x0f)) && (0xa1 == UART_RX_BUF[4]))
+                    if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
                     {
-                        cp_para_ram.count = ((u16)UART_RX_BUF[7] << 8) | ((u16)UART_RX_BUF[8]);
+                        cp_para_ram.count = ((u16)vfd_reply_buf[7] << 8) | ((u16)vfd_reply_buf[8]);
                         cp_para_ram.count++;
 
                         /* 0304 */
-                        cp_para_ram.fb_sts_word2 = ((u16)UART_RX_BUF[9] << 8) | ((u16)UART_RX_BUF[10]);
+                        cp_para_ram.fb_sts_word2 = ((u16)vfd_reply_buf[9] << 8) | ((u16)vfd_reply_buf[10]);
 
                         /* 0303 */
-                        cp_para_ram.fb_sts_word1 = ((u16)UART_RX_BUF[11] << 8) | ((u16)UART_RX_BUF[12]);
+                        cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         if((cp_para_ram.fb_sts_word1 & FB_STS_WORD_FAULT) || //0303.Bit15，故障
                            (cp_para_ram.fb_sts_word2 & FB_STS_WORD_ALARM))   //0304.Bit0，报警
@@ -6643,7 +6652,7 @@ void form_copy_download_part_rate_callback(void)
                             }
                         }
 
-                        cp_para_ram.ref_cur = (s32)(((u32)UART_RX_BUF[13] << 24) | ((u32)UART_RX_BUF[14] << 16) | ((u32)UART_RX_BUF[15] << 8) | ((u32)UART_RX_BUF[16]));
+                        cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
                     }
                     else
                     {
@@ -6655,14 +6664,14 @@ void form_copy_download_part_rate_callback(void)
                     break;
 
                 case COPY_DOWNLOAD_ALL_RATE_CMD:
-                    if((0x41 == UART_RX_BUF[3]) && (0x22 == UART_RX_BUF[4])) //倒数第二帧
+                    if((0x41 == vfd_reply_buf[3]) && (0x22 == vfd_reply_buf[4])) //倒数第二帧
                     {
                         frame_num = 0xff;
                     }
                     break;
 
                 case COPY_DOWNLOAD_ALL_RATE_TAIL_CMD:
-                    if((0x42 == UART_RX_BUF[3]) && (0xA2 == UART_RX_BUF[4])) //尾帧
+                    if((0x42 == vfd_reply_buf[3]) && (0xA2 == vfd_reply_buf[4])) //尾帧
                     {
                         frame_num = 0;
 

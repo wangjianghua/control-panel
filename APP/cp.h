@@ -21,7 +21,9 @@
 
 #define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
 
-#define CP_VERSION              110u //控制盘软件版本
+#define CP_VERSION              120u //控制盘软件版本
+
+#define VFD_ADDR                0xF7 //变频器通信地址
 
 #define DOWNLOAD_DEFAULT_LEN    0x0660 //默认下载长度
 
@@ -227,6 +229,8 @@ typedef struct _cp_para_ram
 extern OS_SEM cp_sem;
 extern XDATA CP_PARA_ROM cp_para_rom;
 extern XDATA CP_PARA_RAM cp_para_ram;
+extern XDATA u8 cp_cmd_buf[MAX_BUF_LEN];
+extern XDATA u8 vfd_reply_buf[MAX_BUF_LEN];
 
 __task void AppTaskCP(void);
 

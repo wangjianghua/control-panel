@@ -17,7 +17,7 @@ typedef enum
 #define BIT                                 u8
 #define SFR                 
 
-#define NOP                                 __NOP
+#define MAX_BUF_LEN                         128u
 
 #define OffsetOf(struct_t, member)          ((size_t)((char *)&((struct_t *)0)->member - (char *)(struct_t *)0))
 #define SizeOf(struct_t, member)            (sizeof(((struct_t *)0)->member))

@@ -42,7 +42,7 @@ void EEPROM_Delay(u16 dly)
     
 	for(i = 0; i < dly; i++)
 	{
-
+        nop();
 	}
 }
 

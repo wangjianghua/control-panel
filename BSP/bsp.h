@@ -64,10 +64,15 @@
 #define WDT_EN                       0u
 
 #if (WDT_EN > 0u)
-#define clr_wdt()         { IWDG_ReloadCounter(); }
+#define clr_wdt()                    IWDG_ReloadCounter()
 #else
 #define clr_wdt()
 #endif
+
+#define disable_interrupt()          __disable_irq()
+#define enable_interrupt()           __enable_irq()
+
+#define nop()                        __NOP()
 
 #define USART1_PREEMPT_PRIO          1u
 #define USART1_SUB_PRIO              1u

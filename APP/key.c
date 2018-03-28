@@ -325,8 +325,6 @@ __task void AppTaskKey(void)
             case OS_R_SEM:    
             case OS_R_OK:
                 key_value = KEY_VAL_NONE;
-                
-                os_dly_wait(20);
                 break;
                 
             default:    
