@@ -127,14 +127,14 @@ void USART1_IRQHandler(void)
         /* Read one byte from the receive data register */
         UART_RX_BUF[uart_rx_index++] = USART_ReceiveData(USART1);
 
-        uart_rx_index %= UART_RX_LEN;
+        uart_rx_index %= MAX_UART_RX_LEN;
         
         uart_rx_timeout = UART_RX_TIMEOUT;
     }
 
     if(RESET != USART_GetITStatus(USART1, USART_IT_TXE))
     {           
-        if(uart_tx_index < uart_tx_count)
+        if(uart_tx_index < uart_tx_total)
         {
             /* Write one byte to the transmit data register */
             USART_SendData(USART1, UART_TX_BUF[uart_tx_index++]);
@@ -145,7 +145,7 @@ void USART1_IRQHandler(void)
             USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
 
             uart_tx_index = 0;
-            uart_tx_count = 0;
+            uart_tx_total = 0;
         } 
     }
 }

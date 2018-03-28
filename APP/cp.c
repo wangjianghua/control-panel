@@ -145,7 +145,8 @@ u8 uart_recv_proc(void)
      * 数据: 0到252字节
      * CRC: 2字节(CRC低 CRC高)
      * 华兄 */
-    if(len < 4) //无效帧
+    if((len < 4) ||
+       (len > MAX_BUF_LEN)) //无效帧
     {
         len = 0;
     }

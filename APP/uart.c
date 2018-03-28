@@ -3,9 +3,9 @@
 
 OS_SEM uart_sem;
 
-XDATA u8 uart_tx_buf[UART_TX_LEN];
-XDATA u8 uart_rx_buf[UART_RX_LEN];
-XDATA u8 uart_tx_index = 0, uart_tx_count = 0;
+XDATA u8 uart_tx_buf[MAX_UART_TX_LEN];
+XDATA u8 uart_rx_buf[MAX_UART_RX_LEN];
+XDATA u8 uart_tx_index = 0, uart_tx_total = 0;
 XDATA u8 uart_rx_index = 0, uart_rx_timeout = 0;
 
 void uart_recv_clear(void)
@@ -19,20 +19,20 @@ void uart_send(u8 *buf, u8 len)
 {    
     uart_recv_clear();
 
-    if(len > UART_TX_LEN)
+    if(len > MAX_UART_TX_LEN)
     {
         return;
     }
 
     memcpy(UART_TX_BUF, buf, len);
     
-    uart_tx_count = len;
+    uart_tx_total = len;
     
     uart_tx_index = 0;
 
     USART_SendData(CP_UART, UART_TX_BUF[uart_tx_index++]);
 
-    if(uart_tx_index < uart_tx_count)
+    if(uart_tx_index < uart_tx_total)
     {
         USART_ITConfig(CP_UART, USART_IT_TXE, ENABLE);
     }
