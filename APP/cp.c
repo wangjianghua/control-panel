@@ -384,6 +384,10 @@ void vfd_con(void)
                             LED_OE_ENABLE();
                         }
                     }
+                    else
+                    {
+                        i = -1; //启动重复发送连接命令
+                    }
                     break;
                 
                 default:
@@ -506,6 +510,7 @@ bool form_key_callback(unsigned int key_msg)
     switch(key_msg)
     {
     case KEY_MSG_LOC_REM:
+    case KEY_MSG_LOC_REM_LONG:    
         if(cp_para_ram.fb_sts_word2 & FB_STS_WORD_REF1_REQ)
         {
             cp_para_ram.ref1 = 0;
@@ -889,7 +894,10 @@ void form_err_callback(void)
         if((NULL != p_err_disp_func) &&
            (NULL != p_code))
         {
-            p_err_disp_func(*p_code);
+            if(FALSE == p_err_disp_func(*p_code))
+            {
+                vfd_err_no();
+            }
         }
         
         count++;
@@ -933,10 +941,12 @@ void form_err_callback(void)
         p_code = &cp_para_ram.fault_code;
     }
     else
-    {
+    {        
         count = 0;
         p_err_disp_func = vfd_fault; 
         p_code = &cp_para_ram.fault_code;
+
+        form_id = FORM_ID_HOME;
     }
 }
 
@@ -1380,11 +1390,19 @@ static int form_home(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -1664,11 +1682,19 @@ static int form_ref(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -1980,11 +2006,19 @@ static int form_ref_val(unsigned int key_msg, unsigned int form_msg)
             break;
                 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -2264,11 +2298,19 @@ static int form_para(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -2599,11 +2641,19 @@ static int form_para_group(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -3092,11 +3142,19 @@ static int form_para_grade(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -3900,11 +3958,19 @@ static int form_para_val(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -4193,11 +4259,19 @@ static int form_copy(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -4447,11 +4521,19 @@ static int form_copy_upload(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -4701,11 +4783,19 @@ static int form_copy_download_all(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -4955,11 +5045,19 @@ static int form_copy_download_part(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -5739,11 +5837,19 @@ static int form_copy_upload_rate(unsigned int key_msg, unsigned int form_msg)
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -6360,11 +6466,19 @@ static int form_copy_download_all_rate(unsigned int key_msg, unsigned int form_m
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
@@ -6786,11 +6900,19 @@ static int form_copy_download_part_rate(unsigned int key_msg, unsigned int form_
             break;
 
         case KEY_MSG_LOC_REM:
-            cp_para_ram.lr = VFD_REM;      
-        
-            led_disp_buf[5] |= LED_LOC_REM_MASK;
-            LED_OE_ENABLE();
-
+            cp_para_ram.lr = !cp_para_ram.lr;
+            
+            if(VFD_LOC == cp_para_ram.lr)
+            {
+                led_disp_buf[5] &= LED_LOC_REM;
+                LED_OE_ENABLE();
+            }
+            else
+            {
+                led_disp_buf[5] |= LED_LOC_REM_MASK;
+                LED_OE_ENABLE();
+            }
+            
             form_key_callback(KEY_MSG_LOC_REM);
             break;
             
