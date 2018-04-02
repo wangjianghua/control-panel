@@ -23,11 +23,11 @@
 typedef unsigned long long OS_STK; //U64
 
 /* Private macro -------------------------------------------------------------*/
-#define APP_CFG_TASK_START_PRIO             1u
 #define APP_CFG_TASK_DISP_PRIO              2u
 #define APP_CFG_TASK_KEY_PRIO               3u
 #define APP_CFG_TASK_UART_PRIO              4u
 #define APP_CFG_TASK_CP_PRIO                5u
+#define APP_CFG_TASK_START_PRIO             6u //启动任务，优先级最高
 
 #define APP_CFG_TASK_START_STK_SIZE         512u
 #define APP_CFG_TASK_DISP_STK_SIZE          512u

@@ -21,7 +21,7 @@
 
 #define VFD_CON_DISP_EN         0u //变频器上电连接期间显示使能
 
-#define CP_VERSION              130u //控制盘软件版本
+#define CP_VERSION              131u //控制盘软件版本
 
 #define VFD_ADDR                0xF7 //变频器通信地址
 

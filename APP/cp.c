@@ -135,9 +135,11 @@ u8 uart_recv_proc(void)
     u8 i, offset, len;
 
 
+    disable_interrupt();
     len = uart_rx_index;
-    
     uart_rx_index = 0;
+    memcpy(vfd_reply_buf, UART_RX_BUF, len);
+    enable_interrupt();
 
     /* Modbus-RTU帧最大为256字节
      * 子节点地址: 1字节
@@ -151,11 +153,7 @@ u8 uart_recv_proc(void)
         len = 0;
     }
     else 
-    {
-        disable_interrupt();
-        memcpy(vfd_reply_buf, UART_RX_BUF, len);
-        enable_interrupt();
-        
+    {        
         for(i = 0, offset = 0; i < len; i++)
         {
             if(VFD_ADDR == vfd_reply_buf[i]) //寻找地址
@@ -7009,7 +7007,7 @@ __task void AppTaskCP(void)
     
     while(1)
     {
-        result = os_sem_wait(&cp_sem, 5);
+        result = os_sem_wait(&cp_sem, 10);
 
         switch(result)
         {
