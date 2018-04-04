@@ -75,7 +75,7 @@ const unsigned short wCRC16Table[256] = {
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-unsigned int CRC16Calculate(const unsigned char *T_u8DataIn, unsigned int T_u16DataLen)  
+unsigned int CRC16_Calculate(const unsigned char *T_u8DataIn, unsigned int T_u16DataLen)  
 {  
     unsigned int T_u16Result = 0xffff;
     unsigned int T_u16TableNo = 0;
@@ -97,7 +97,7 @@ unsigned int CRC16Calculate(const unsigned char *T_u8DataIn, unsigned int T_u16D
     return (T_u16Result);  
 }
 #else
-unsigned int CRC16Calculate(const unsigned char *data_value, unsigned int length)
+unsigned int CRC16_Calculate(const unsigned char *data_value, unsigned int length)
 {
     unsigned int crc_value = 0xffff;
     unsigned int i;
@@ -138,17 +138,25 @@ u8 uart_recv_proc(void)
     disable_interrupt();
     len = uart_rx_index;
     uart_rx_index = 0;
-    memcpy(vfd_reply_buf, UART_RX_BUF, len);
+
+    if(len <= MAX_BUF_LEN)
+    {
+        memcpy(vfd_reply_buf, UART_RX_BUF, len);
+    }
+    else
+    {
+        len = 0; //丢弃此帧
+    }
     enable_interrupt();
 
     /* Modbus-RTU帧最大为256字节
      * 子节点地址: 1字节
      * 功能代码: 1字节
      * 数据: 0到252字节
-     * CRC: 2字节(CRC低 CRC高)
+     * CRC: 2字节(CRC低, CRC高)
      * 华兄 */
     if((len < 4) ||
-       (len > MAX_BUF_LEN)) //无效帧
+       (len > 256)) //无效帧
     {
         len = 0;
     }
@@ -324,7 +332,7 @@ void vfd_con(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
 
@@ -336,7 +344,7 @@ void vfd_con(void)
         {
             len = uart_recv_proc();
                         
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -361,6 +369,9 @@ void vfd_con(void)
                         cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
 
                         if(cp_para_ram.fb_sts_word1 & FB_STS_WORD_LOC_CTRL)
                         {
@@ -597,7 +608,7 @@ bool keep_vfd_connect(void)
         cp_cmd_buf[20] &= ~0x08;
     }
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
     
@@ -609,7 +620,7 @@ bool keep_vfd_connect(void)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {
             if((0x04 == (vfd_reply_buf[3] & 0x0f)) && (0xa1 == vfd_reply_buf[4]))
             {
@@ -632,6 +643,9 @@ bool keep_vfd_connect(void)
                 }
 
                 cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
             }
             else
             {
@@ -831,7 +845,7 @@ void form_err_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -843,7 +857,7 @@ void form_err_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -860,6 +874,9 @@ void form_err_callback(void)
                         cp_para_ram.fb_sts_word1 = ((u16)vfd_reply_buf[11] << 8) | ((u16)vfd_reply_buf[12]);
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     break;
 
@@ -1236,7 +1253,7 @@ void form_home_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -1248,7 +1265,7 @@ void form_home_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -1276,6 +1293,9 @@ void form_home_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -1569,7 +1589,7 @@ void form_ref_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -1581,7 +1601,7 @@ void form_ref_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -1607,6 +1627,9 @@ void form_ref_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -1885,7 +1908,7 @@ void form_ref_val_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -1897,7 +1920,7 @@ void form_ref_val_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -2170,7 +2193,7 @@ void form_para_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -2182,7 +2205,7 @@ void form_para_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -2208,6 +2231,9 @@ void form_para_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -2398,7 +2424,7 @@ bool group_update(u8 key_msg)
     cp_cmd_buf[15] = 0;
     cp_cmd_buf[16] = cp_para_ram.group;
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
 
@@ -2410,7 +2436,7 @@ bool group_update(u8 key_msg)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {            
             memcpy(cp_para_ram.group_nearby, &vfd_reply_buf[7], sizeof(cp_para_ram.group_nearby));
 
@@ -2516,7 +2542,7 @@ void form_para_group_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -2528,7 +2554,7 @@ void form_para_group_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -2554,6 +2580,9 @@ void form_para_group_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -2746,7 +2775,7 @@ bool grade_update(u8 key_msg)
     cp_cmd_buf[15] = cp_para_ram.group;
     cp_cmd_buf[16] = cp_para_ram.grade;
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
 
@@ -2758,7 +2787,7 @@ bool grade_update(u8 key_msg)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {            
             memcpy(cp_para_ram.grade_nearby, &vfd_reply_buf[7], sizeof(cp_para_ram.grade_nearby));
 
@@ -2821,7 +2850,7 @@ bool func_code_read(void)
     cp_cmd_buf[15] = cp_para_ram.group;
     cp_cmd_buf[16] = cp_para_ram.grade;
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
     
@@ -2833,7 +2862,7 @@ bool func_code_read(void)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {
             cp_para_ram.vfd_para_attr = vfd_reply_buf[7];
             
@@ -2895,7 +2924,7 @@ bool func_code_visible_init(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -2907,7 +2936,7 @@ bool func_code_visible_init(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -3016,7 +3045,7 @@ void form_para_grade_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -3028,7 +3057,7 @@ void form_para_grade_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -3054,6 +3083,9 @@ void form_para_grade_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -3252,7 +3284,7 @@ bool func_code_write(void)
     cp_cmd_buf[17] = (u8)(cp_para_ram.vfd_para_val >> 8);
     cp_cmd_buf[18] = (u8)cp_para_ram.vfd_para_val;
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
     
@@ -3264,7 +3296,7 @@ bool func_code_write(void)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {
             if(0x40 == (vfd_reply_buf[3] & 0xf0))
             {
@@ -3842,7 +3874,7 @@ void form_para_val_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -3854,7 +3886,7 @@ void form_para_val_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -3880,6 +3912,9 @@ void form_para_val_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -4146,7 +4181,7 @@ void form_copy_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -4158,7 +4193,7 @@ void form_copy_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -4184,6 +4219,9 @@ void form_copy_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -4408,7 +4446,7 @@ void form_copy_upload_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -4420,7 +4458,7 @@ void form_copy_upload_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -4446,6 +4484,9 @@ void form_copy_upload_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -4670,7 +4711,7 @@ void form_copy_download_all_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -4682,7 +4723,7 @@ void form_copy_download_all_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -4708,6 +4749,9 @@ void form_copy_download_all_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -4932,7 +4976,7 @@ void form_copy_download_part_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -4944,7 +4988,7 @@ void form_copy_download_part_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -4970,6 +5014,9 @@ void form_copy_download_part_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -5143,7 +5190,7 @@ bool chang_baudrate(u16 baudrate)
     cp_cmd_buf[19] = (u8)(baudrate >> 8);
     cp_cmd_buf[20] = (u8)baudrate;
 
-    crc = CRC16Calculate(cp_cmd_buf, len);
+    crc = CRC16_Calculate(cp_cmd_buf, len);
     cp_cmd_buf[len++] = (u8)(crc >> 0);
     cp_cmd_buf[len++] = (u8)(crc >> 8);
 
@@ -5155,7 +5202,7 @@ bool chang_baudrate(u16 baudrate)
     {
         len = uart_recv_proc();
         
-        if(0 == CRC16Calculate(vfd_reply_buf, len))
+        if(0 == CRC16_Calculate(vfd_reply_buf, len))
         {
             USART_BaudRate(CP_UART, baudrate);
             
@@ -5252,7 +5299,7 @@ void copy_upload_rate_init(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -5264,7 +5311,7 @@ void copy_upload_rate_init(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -5290,6 +5337,9 @@ void copy_upload_rate_init(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -5428,7 +5478,7 @@ void copy_comm_reset(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -5440,7 +5490,7 @@ void copy_comm_reset(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -5472,6 +5522,9 @@ void copy_comm_reset(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -5613,7 +5666,7 @@ void form_copy_upload_rate_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -5625,7 +5678,7 @@ void form_copy_upload_rate_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -5651,6 +5704,9 @@ void form_copy_upload_rate_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -5993,7 +6049,7 @@ void copy_download_all_rate_init(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -6005,7 +6061,7 @@ void copy_download_all_rate_init(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -6031,6 +6087,9 @@ void copy_download_all_rate_init(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -6294,7 +6353,7 @@ void form_copy_download_all_rate_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -6306,7 +6365,7 @@ void form_copy_download_all_rate_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -6332,6 +6391,9 @@ void form_copy_download_all_rate_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -6728,7 +6790,7 @@ void form_copy_download_part_rate_callback(void)
             break;
         }
 
-        crc = CRC16Calculate(cp_cmd_buf, len);
+        crc = CRC16_Calculate(cp_cmd_buf, len);
         cp_cmd_buf[len++] = (u8)(crc >> 0);
         cp_cmd_buf[len++] = (u8)(crc >> 8);
         
@@ -6740,7 +6802,7 @@ void form_copy_download_part_rate_callback(void)
         {
             len = uart_recv_proc();
             
-            if(0 == CRC16Calculate(vfd_reply_buf, len))
+            if(0 == CRC16_Calculate(vfd_reply_buf, len))
             {
                 switch(i)
                 {
@@ -6766,6 +6828,9 @@ void form_copy_download_part_rate_callback(void)
                         }
 
                         cp_para_ram.ref_cur = (s32)(((u32)vfd_reply_buf[13] << 24) | ((u32)vfd_reply_buf[14] << 16) | ((u32)vfd_reply_buf[15] << 8) | ((u32)vfd_reply_buf[16]));
+
+                        cp_para_ram.ref_min = (s32)(((u32)vfd_reply_buf[17] << 24) | ((u32)vfd_reply_buf[18] << 16) | ((u32)vfd_reply_buf[19] << 8) | ((u32)vfd_reply_buf[20]));
+                        cp_para_ram.ref_max = (s32)(((u32)vfd_reply_buf[21] << 24) | ((u32)vfd_reply_buf[22] << 16) | ((u32)vfd_reply_buf[23] << 8) | ((u32)vfd_reply_buf[24]));
                     }
                     else
                     {
@@ -6999,7 +7064,7 @@ __task void AppTaskCP(void)
     VERSION_Disp();
 #endif
 
-    MEM_Init();
+    //MEM_Init();
 
     MENU_Init();
 
